@@ -11,6 +11,10 @@
 <span>
 </div>
 
+> [!CAUTION]
+> This template uses an older version with Vinxi, and I’m working on updating it to the Vite version.
+
+
 ## Overview
 
 This is a starter template using the following stack:
