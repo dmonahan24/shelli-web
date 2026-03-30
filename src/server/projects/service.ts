@@ -1,24 +1,7 @@
-import { randomUUID } from "node:crypto";
-import {
-  and,
-  asc,
-  desc,
-  eq,
-  gte,
-  like,
-  lte,
-  or,
-  sql,
-} from "drizzle-orm";
+import { and, asc, desc, eq, gte, like, lte, or, sql } from "drizzle-orm";
 import { ZodError } from "zod";
 import { db, type AppDatabase, type AppTransaction } from "@/db";
-import {
-  concretePourEvents,
-  projectActivity,
-  projectAttachments,
-  projects,
-  users,
-} from "@/db/schema";
+import { attachments, auditEvents, projects, pours, users } from "@/db/schema";
 import { assertSameOrigin } from "@/lib/auth/csrf";
 import { requireUser } from "@/lib/auth/session";
 import {
@@ -50,10 +33,18 @@ function normalizeOptionalText(value?: string | null) {
   return trimmed ? trimmed : null;
 }
 
+function toNumber(value: string | number | null | undefined) {
+  if (typeof value === "number") {
+    return value;
+  }
+
+  return value ? Number(value) : 0;
+}
+
 export async function listProjects(rawInput?: unknown) {
   const user = await requireUser();
   const input = projectListQuerySchema.parse(rawInput ?? {});
-  const filters = buildProjectFilters(user.id, input);
+  const filters = buildProjectFilters(user.companyId, input);
   const whereClause = and(...filters);
   const orderByClauses = getProjectOrderBy(input);
   const offset = (input.page - 1) * input.pageSize;
@@ -91,7 +82,11 @@ export async function listProjects(rawInput?: unknown) {
   const pageCount = Math.max(1, Math.ceil(totalCount / input.pageSize));
 
   return {
-    rows,
+    rows: rows.map((project) => ({
+      ...project,
+      totalConcretePoured: toNumber(project.totalConcretePoured),
+      estimatedTotalConcrete: toNumber(project.estimatedTotalConcrete),
+    })),
     totalCount,
     page: input.page,
     pageSize: input.pageSize,
@@ -100,12 +95,12 @@ export async function listProjects(rawInput?: unknown) {
   };
 }
 
-export async function getProjectDetail(rawInput: unknown) {
+export async function getProjectDetail(rawInput: unknown): Promise<any> {
   const user = await requireUser();
   const { projectId } = projectDetailParamsSchema.parse(rawInput);
 
   const project = await db.query.projects.findFirst({
-    where: and(eq(projects.id, projectId), eq(projects.userId, user.id)),
+    where: and(eq(projects.id, projectId), eq(projects.companyId, user.companyId)),
   });
 
   if (!project) {
@@ -115,36 +110,42 @@ export async function getProjectDetail(rawInput: unknown) {
   const [attachmentCountRows, pourCountRows, recentActivity] = await Promise.all([
     db
       .select({ count: sql<number>`count(*)` })
-      .from(projectAttachments)
-      .where(eq(projectAttachments.projectId, projectId)),
+      .from(attachments)
+      .where(eq(attachments.projectId, projectId)),
     db
       .select({ count: sql<number>`count(*)` })
-      .from(concretePourEvents)
-      .where(eq(concretePourEvents.projectId, projectId)),
+      .from(pours)
+      .where(eq(pours.projectId, projectId)),
     db
       .select({
-        id: projectActivity.id,
-        actionType: projectActivity.actionType,
-        detailsJson: projectActivity.detailsJson,
-        createdAt: projectActivity.createdAt,
+        id: auditEvents.id,
+        actionType: auditEvents.actionType,
+        summary: auditEvents.summary,
+        detailsJson: auditEvents.detailsJson,
+        createdAt: auditEvents.createdAt,
         actorName: users.fullName,
       })
-      .from(projectActivity)
-      .innerJoin(users, eq(projectActivity.userId, users.id))
-      .where(eq(projectActivity.projectId, projectId))
-      .orderBy(desc(projectActivity.createdAt))
+      .from(auditEvents)
+      .leftJoin(users, eq(auditEvents.actorUserId, users.id))
+      .where(eq(auditEvents.projectId, projectId))
+      .orderBy(desc(auditEvents.createdAt))
       .limit(6),
   ]);
 
   return {
-    project,
+    project: {
+      ...project,
+      totalConcretePoured: toNumber(project.totalConcretePoured),
+      estimatedTotalConcrete: toNumber(project.estimatedTotalConcrete),
+    },
     summary: {
       totalAttachments: attachmentCountRows[0]?.count ?? 0,
       totalPourEvents: pourCountRows[0]?.count ?? 0,
     },
     recentActivity: recentActivity.map((activity) => ({
       ...activity,
-      summary: summarizeActivity(activity.actionType, activity.detailsJson),
+      actorName: activity.actorName ?? "System",
+      summary: summarizeActivity(activity.summary, activity.actionType, activity.detailsJson),
     })),
   };
 }
@@ -156,12 +157,13 @@ export async function createProject(
     assertSameOrigin();
     const user = await requireUser();
     const input = createProjectSchema.parse(rawInput);
-    const projectId = randomUUID();
 
-    await db.transaction(async (transaction) => {
-      await transaction.insert(projects).values({
-        id: projectId,
-        userId: user.id,
+    const [createdProject] = await db
+      .insert(projects)
+      .values({
+        companyId: user.companyId,
+        createdByUserId: user.id,
+        updatedByUserId: user.id,
         name: input.name.trim(),
         address: input.address.trim(),
         status: input.status,
@@ -169,24 +171,27 @@ export async function createProject(
         projectCode: normalizeOptionalText(input.projectCode),
         dateStarted: input.dateStarted,
         estimatedCompletionDate: input.estimatedCompletionDate,
-        totalConcretePoured: 0,
-        estimatedTotalConcrete: input.estimatedTotalConcrete,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+        totalConcretePoured: "0",
+        estimatedTotalConcrete: String(input.estimatedTotalConcrete),
+      })
+      .returning({ id: projects.id });
 
-      await recordProjectActivity(transaction, {
-        actionType: "project_created",
-        details: {
-          name: input.name.trim(),
-          status: input.status,
-        },
-        projectId,
-        userId: user.id,
-      });
+    if (!createdProject) {
+      return failure("create_project_failed", "Unable to create the project right now.");
+    }
+
+    await recordProjectActivity(db, {
+      actionType: "project_created",
+      details: {
+        name: input.name.trim(),
+        status: input.status,
+      },
+      projectId: createdProject.id,
+      summary: `Project created: ${input.name.trim()}`,
+      userId: user.id,
     });
 
-    return success({ id: projectId }, "Project created.");
+    return success({ id: createdProject.id }, "Project created.");
   } catch (error) {
     if (error instanceof ZodError) {
       return failure("validation_error", "Please fix the highlighted fields.", zodFieldErrors(error));
@@ -208,40 +213,39 @@ export async function updateProject(
     assertSameOrigin();
     const user = await requireUser();
     const input = updateProjectSchema.parse(rawInput);
-    const project = await requireOwnedProject(user.id, projectId);
+    const project = await requireOwnedProject(user.companyId, projectId);
 
-    if (input.estimatedTotalConcrete < project.totalConcretePoured) {
+    if (input.estimatedTotalConcrete < toNumber(project.totalConcretePoured)) {
       return failure("validation_error", "Please fix the highlighted fields.", {
         estimatedTotalConcrete:
           "Estimated total concrete must remain at or above the current total poured.",
       });
     }
 
-    await db.transaction(async (transaction) => {
-      await transaction
-        .update(projects)
-        .set({
-          name: input.name.trim(),
-          address: input.address.trim(),
-          status: input.status,
-          description: normalizeOptionalText(input.description),
-          projectCode: normalizeOptionalText(input.projectCode),
-          dateStarted: input.dateStarted,
-          estimatedCompletionDate: input.estimatedCompletionDate,
-          estimatedTotalConcrete: input.estimatedTotalConcrete,
-          updatedAt: new Date(),
-        })
-        .where(eq(projects.id, projectId));
+    await db
+      .update(projects)
+      .set({
+        updatedByUserId: user.id,
+        name: input.name.trim(),
+        address: input.address.trim(),
+        status: input.status,
+        description: normalizeOptionalText(input.description),
+        projectCode: normalizeOptionalText(input.projectCode),
+        dateStarted: input.dateStarted,
+        estimatedCompletionDate: input.estimatedCompletionDate,
+        estimatedTotalConcrete: String(input.estimatedTotalConcrete),
+      })
+      .where(eq(projects.id, projectId));
 
-      await recordProjectActivity(transaction, {
-        actionType: "project_updated",
-        details: {
-          name: input.name.trim(),
-          status: input.status,
-        },
-        projectId,
-        userId: user.id,
-      });
+    await recordProjectActivity(db, {
+      actionType: "project_updated",
+      details: {
+        name: input.name.trim(),
+        status: input.status,
+      },
+      projectId,
+      summary: `Project updated: ${input.name.trim()}`,
+      userId: user.id,
     });
 
     return success({ id: projectId }, "Project updated.");
@@ -265,20 +269,18 @@ export async function deleteProject(
     assertSameOrigin();
     const user = await requireUser();
     const { projectId } = deleteProjectSchema.parse(rawInput);
-    const project = await requireOwnedProject(user.id, projectId);
+    const project = await requireOwnedProject(user.companyId, projectId);
 
-    const attachments = await db
+    const projectFiles = await db
       .select({
-        storageKey: projectAttachments.storageKey,
+        storagePath: attachments.storagePath,
       })
-      .from(projectAttachments)
-      .where(eq(projectAttachments.projectId, projectId));
+      .from(attachments)
+      .where(eq(attachments.projectId, projectId));
 
-    await db.transaction(async (transaction) => {
-      await transaction.delete(projects).where(eq(projects.id, project.id));
-    });
+    await db.delete(projects).where(eq(projects.id, project.id));
 
-    await Promise.all(attachments.map((attachment) => deleteStoredFile(attachment.storageKey)));
+    await Promise.all(projectFiles.map((attachment) => deleteStoredFile(attachment.storagePath)));
 
     return success({ redirectTo: "/dashboard/projects" }, "Project deleted.");
   } catch (error) {
@@ -294,9 +296,9 @@ export async function deleteProject(
   }
 }
 
-export async function requireOwnedProject(userId: string, projectId: string) {
+export async function requireOwnedProject(companyId: string, projectId: string) {
   const project = await db.query.projects.findFirst({
-    where: and(eq(projects.id, projectId), eq(projects.userId, userId)),
+    where: and(eq(projects.id, projectId), eq(projects.companyId, companyId)),
   });
 
   if (!project) {
@@ -310,27 +312,7 @@ export async function refreshProjectAggregateTotals(
   transaction: AppTransaction | AppDatabase,
   projectId: string
 ) {
-  const aggregate = await transaction
-    .select({
-      totalConcretePoured: sql<number>`coalesce(sum(${concretePourEvents.concreteAmount}), 0)`,
-      lastPourDate: sql<string | null>`max(${concretePourEvents.pourDate})`,
-    })
-    .from(concretePourEvents)
-    .where(eq(concretePourEvents.projectId, projectId));
-
-  const totals = aggregate[0] ?? {
-    totalConcretePoured: 0,
-    lastPourDate: null,
-  };
-
-  await transaction
-    .update(projects)
-    .set({
-      totalConcretePoured: totals.totalConcretePoured ?? 0,
-      lastPourDate: totals.lastPourDate ?? null,
-      updatedAt: new Date(),
-    })
-    .where(eq(projects.id, projectId));
+  await transaction.execute(sql`select public.refresh_project_rollups(${projectId}::uuid)`);
 
   return transaction.query.projects.findFirst({
     where: eq(projects.id, projectId),
@@ -344,20 +326,33 @@ export async function recordProjectActivity(
     userId: string;
     actionType: string;
     details: Record<string, unknown>;
+    summary?: string;
+    pourId?: string;
   }
 ) {
-  await transaction.insert(projectActivity).values({
-    id: randomUUID(),
+  const user = await transaction.query.users.findFirst({
+    where: eq(users.id, input.userId),
+  });
+
+  if (!user) {
+    throw new Error("User profile not found.");
+  }
+
+  await transaction.insert(auditEvents).values({
+    companyId: user.companyId,
     projectId: input.projectId,
-    userId: input.userId,
+    pourId: input.pourId ?? null,
+    actorUserId: input.userId,
+    entityType: input.pourId ? "pour" : "project",
+    entityId: input.pourId ?? input.projectId,
     actionType: input.actionType,
-    detailsJson: JSON.stringify(input.details),
-    createdAt: new Date(),
+    summary: input.summary ?? input.actionType.replaceAll("_", " "),
+    detailsJson: input.details,
   });
 }
 
-function buildProjectFilters(userId: string, input: ProjectListQuery) {
-  const filters = [eq(projects.userId, userId)];
+function buildProjectFilters(companyId: string, input: ProjectListQuery) {
+  const filters = [eq(projects.companyId, companyId)];
   const searchValue = input.q?.trim();
 
   if (searchValue) {
@@ -377,7 +372,7 @@ function buildProjectFilters(userId: string, input: ProjectListQuery) {
 
   if (input.progress && input.progress !== "all") {
     if (input.progress === "not_started") {
-      filters.push(eq(projects.totalConcretePoured, 0));
+      filters.push(eq(projects.totalConcretePoured, "0"));
     }
 
     if (input.progress === "in_progress") {
@@ -424,29 +419,33 @@ function getProjectOrderBy(input: ProjectListQuery) {
   return [direction(sortColumn), direction(projects.id)] as const;
 }
 
-function summarizeActivity(actionType: string, detailsJson: string) {
-  try {
-    const details = JSON.parse(detailsJson) as Record<string, unknown>;
+function summarizeActivity(
+  summary: string,
+  actionType: string,
+  detailsJson: Record<string, unknown> | null
+) {
+  const details = detailsJson ?? {};
 
-    switch (actionType) {
-      case "project_created":
-        return `Project created${details.name ? `: ${String(details.name)}` : ""}`;
-      case "project_updated":
-        return `Project updated${details.name ? `: ${String(details.name)}` : ""}`;
-      case "pour_event_created":
-        return `Pour event added${details.locationDescription ? ` for ${String(details.locationDescription)}` : ""}`;
-      case "pour_event_updated":
-        return `Pour event updated${details.locationDescription ? ` for ${String(details.locationDescription)}` : ""}`;
-      case "pour_event_deleted":
-        return `Pour event deleted${details.locationDescription ? ` from ${String(details.locationDescription)}` : ""}`;
-      case "attachment_uploaded":
-        return `Attachment uploaded${details.originalFileName ? `: ${String(details.originalFileName)}` : ""}`;
-      case "attachment_deleted":
-        return `Attachment deleted${details.originalFileName ? `: ${String(details.originalFileName)}` : ""}`;
-      default:
-        return actionType.replaceAll("_", " ");
-    }
-  } catch {
-    return actionType.replaceAll("_", " ");
+  if (summary) {
+    return summary;
+  }
+
+  switch (actionType) {
+    case "project_created":
+      return `Project created${details.name ? `: ${String(details.name)}` : ""}`;
+    case "project_updated":
+      return `Project updated${details.name ? `: ${String(details.name)}` : ""}`;
+    case "pour_event_created":
+      return `Pour event added${details.locationDescription ? ` for ${String(details.locationDescription)}` : ""}`;
+    case "pour_event_updated":
+      return `Pour event updated${details.locationDescription ? ` for ${String(details.locationDescription)}` : ""}`;
+    case "pour_event_deleted":
+      return `Pour event deleted${details.locationDescription ? ` from ${String(details.locationDescription)}` : ""}`;
+    case "attachment_uploaded":
+      return `Attachment uploaded${details.originalFileName ? `: ${String(details.originalFileName)}` : ""}`;
+    case "attachment_deleted":
+      return `Attachment deleted${details.originalFileName ? `: ${String(details.originalFileName)}` : ""}`;
+    default:
+      return actionType.replaceAll("_", " ");
   }
 }

@@ -15,11 +15,11 @@ describe("auth flows", () => {
     expect(result.status).toBe("missing");
   });
 
-  it("returns an invalid state for unknown tokens", async () => {
+  it("returns a ready state when a reset token hash is present", async () => {
     const result = await getResetPasswordTokenStatus("not-a-real-token");
 
-    expect(result.valid).toBe(false);
-    expect(result.status).toBe("invalid");
+    expect(result.valid).toBe(true);
+    expect(result.status).toBe("valid");
   });
 
   it("rate limits repeated attempts", () => {

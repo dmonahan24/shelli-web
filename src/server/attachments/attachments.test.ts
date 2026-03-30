@@ -1,19 +1,22 @@
 import { describe, expect, it } from "bun:test";
 import {
+  buildAttachmentStorageKey,
   defaultAttachmentTypeForMimeType,
   isAcceptedAttachmentMimeType,
-  resolveStoredFilePath,
+  storageFileName,
 } from "@/server/attachments/storage";
 
 describe("attachment storage", () => {
-  it("resolves safe project storage paths inside the uploads directory", () => {
-    const resolvedPath = resolveStoredFilePath("project-1/1711740100-ticket.pdf");
+  it("builds Supabase storage paths scoped by company and project", () => {
+    const storageKey = buildAttachmentStorageKey(
+      "company-1",
+      "project-1",
+      "ticket.pdf"
+    );
 
-    expect(resolvedPath).toContain("/data/uploads/project-1/");
-  });
-
-  it("rejects path traversal outside the uploads directory", () => {
-    expect(() => resolveStoredFilePath("../secrets.txt")).toThrow("Invalid storage path.");
+    expect(storageKey).toContain("company-1/project-1/project/");
+    expect(storageKey.endsWith(".pdf")).toBe(true);
+    expect(storageFileName(storageKey)).toContain(".pdf");
   });
 
   it("classifies supported attachment mime types", () => {

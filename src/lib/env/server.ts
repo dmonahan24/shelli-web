@@ -1,8 +1,14 @@
 import { z } from "zod";
 
 const envSchema = z.object({
-  DATABASE_URL: z.string().min(1).default("./data/concrete-pours.sqlite"),
-  UPLOADS_DIR: z.string().min(1).default("./data/uploads"),
+  SUPABASE_PROJECT_REF: z.string().min(1),
+  SUPABASE_URL: z.string().url(),
+  SUPABASE_ANON_KEY: z.string().min(1),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+  DATABASE_URL: z.string().min(1),
+  DIRECT_DATABASE_URL: z.string().min(1),
+  SUPABASE_ATTACHMENTS_BUCKET: z.string().min(1).default("project-attachments"),
+  LEGACY_SQLITE_URL: z.string().min(1).default("./data/concrete-pours.sqlite"),
   SESSION_SECRET: z.string().min(32, "SESSION_SECRET must be at least 32 characters"),
   APP_URL: z.string().url(),
   EMAIL_FROM: z.string().email(),
@@ -20,8 +26,14 @@ const envSchema = z.object({
 });
 
 const parsedEnv = envSchema.safeParse({
+  SUPABASE_PROJECT_REF: process.env.SUPABASE_PROJECT_REF,
+  SUPABASE_URL: process.env.SUPABASE_URL,
+  SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
+  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
   DATABASE_URL: process.env.DATABASE_URL,
-  UPLOADS_DIR: process.env.UPLOADS_DIR,
+  DIRECT_DATABASE_URL: process.env.DIRECT_DATABASE_URL,
+  SUPABASE_ATTACHMENTS_BUCKET: process.env.SUPABASE_ATTACHMENTS_BUCKET,
+  LEGACY_SQLITE_URL: process.env.LEGACY_SQLITE_URL,
   SESSION_SECRET: process.env.SESSION_SECRET ?? "development-session-secret-change-me",
   APP_URL: process.env.APP_URL ?? "http://localhost:3001",
   EMAIL_FROM: process.env.EMAIL_FROM ?? "no-reply@concreteco.local",

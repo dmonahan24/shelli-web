@@ -1,39 +1,27 @@
 import { randomUUID } from "node:crypto";
-import { mkdirSync } from "node:fs";
-import { unlink } from "node:fs/promises";
-import { basename, dirname, extname, resolve, sep } from "node:path";
+import { basename, extname } from "node:path";
+import { env } from "@/lib/env/server";
 import {
   acceptedAttachmentMimeTypes,
   attachmentTypeSchema,
 } from "@/lib/validation/attachment";
-import { env } from "@/lib/env/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/server";
 
-const mimeExtensionMap: Record<(typeof acceptedAttachmentMimeTypes)[number], string> = {
+export const mimeExtensionMap: Record<(typeof acceptedAttachmentMimeTypes)[number], string> = {
   "application/pdf": ".pdf",
   "image/jpeg": ".jpg",
   "image/png": ".png",
   "image/webp": ".webp",
 };
 
-export function uploadsRootDirectory() {
-  return resolve(process.cwd(), env.UPLOADS_DIR);
-}
-
-export function resolveStoredFilePath(storageKey: string) {
-  const normalizedKey = storageKey.replace(/^\/+/, "");
-  const absolutePath = resolve(uploadsRootDirectory(), normalizedKey);
-  const uploadsRoot = uploadsRootDirectory();
-
-  if (absolutePath !== uploadsRoot && !absolutePath.startsWith(`${uploadsRoot}${sep}`)) {
-    throw new Error("Invalid storage path.");
-  }
-
-  return absolutePath;
-}
-
-export function buildAttachmentStorageKey(projectId: string, originalFileName: string) {
+export function buildAttachmentStorageKey(
+  companyId: string,
+  projectId: string,
+  originalFileName: string,
+  entity = "project"
+) {
   const extension = normalizeFileExtension(originalFileName);
-  return `${projectId}/${Date.now()}-${randomUUID().slice(0, 8)}${extension}`;
+  return `${companyId}/${projectId}/${entity}/${Date.now()}-${randomUUID().slice(0, 8)}${extension}`;
 }
 
 export function storageFileName(storageKey: string) {
@@ -41,30 +29,54 @@ export function storageFileName(storageKey: string) {
 }
 
 export async function writeStoredFile(storageKey: string, file: File) {
-  const absolutePath = resolveStoredFilePath(storageKey);
-  mkdirSync(dirname(absolutePath), { recursive: true });
-  await Bun.write(absolutePath, file);
-  return absolutePath;
+  const supabase = createSupabaseAdminClient();
+  const uploadResult = await supabase.storage
+    .from(env.SUPABASE_ATTACHMENTS_BUCKET)
+    .upload(storageKey, file, {
+      contentType: file.type,
+      upsert: false,
+    });
+
+  if (uploadResult.error) {
+    throw uploadResult.error;
+  }
+
+  return uploadResult.data.path;
 }
 
 export async function deleteStoredFile(storageKey: string) {
-  const absolutePath = resolveStoredFilePath(storageKey);
+  const supabase = createSupabaseAdminClient();
+  const result = await supabase.storage.from(env.SUPABASE_ATTACHMENTS_BUCKET).remove([storageKey]);
 
-  try {
-    await unlink(absolutePath);
-  } catch (error) {
-    if (
-      !(error instanceof Error) ||
-      !("code" in error) ||
-      (error as NodeJS.ErrnoException).code !== "ENOENT"
-    ) {
-      throw error;
-    }
+  if (result.error) {
+    throw result.error;
   }
 }
 
-export function openStoredFile(storageKey: string) {
-  return Bun.file(resolveStoredFilePath(storageKey));
+export async function openStoredFile(storageKey: string) {
+  const supabase = createSupabaseAdminClient();
+  const result = await supabase.storage
+    .from(env.SUPABASE_ATTACHMENTS_BUCKET)
+    .download(storageKey);
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  return result.data;
+}
+
+export async function createSignedAttachmentUrl(storageKey: string, expiresInSeconds = 60) {
+  const supabase = createSupabaseAdminClient();
+  const result = await supabase.storage
+    .from(env.SUPABASE_ATTACHMENTS_BUCKET)
+    .createSignedUrl(storageKey, expiresInSeconds);
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  return result.data.signedUrl;
 }
 
 export function isAcceptedAttachmentMimeType(mimeType: string) {

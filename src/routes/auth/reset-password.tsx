@@ -31,7 +31,7 @@ function ResetPasswordPage() {
 
     void (async () => {
       const result = (await getResetPasswordTokenStatusServerFn({
-        data: { token: search.token },
+        data: { token: search.token ?? search.token_hash },
       })) as {
         valid: boolean;
         status: string;
@@ -46,7 +46,7 @@ function ResetPasswordPage() {
     return () => {
       cancelled = true;
     };
-  }, [search.token]);
+  }, [search.token, search.token_hash]);
 
   return (
     <AuthPageShell
@@ -62,7 +62,7 @@ function ResetPasswordPage() {
         ) : tokenStatus.valid ? (
           <>
             <TokenStatusNotice title="Reset link ready" message={tokenStatus.message} />
-            <ResetPasswordForm token={search.token ?? ""} />
+            <ResetPasswordForm token={search.token ?? search.token_hash ?? ""} />
           </>
         ) : (
           <TokenStatusNotice

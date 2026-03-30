@@ -1,23 +1,13 @@
-import { randomUUID } from "node:crypto";
 import { getRequestHeader } from "@tanstack/react-start/server";
+import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import {
-  createSessionRecord,
-  deleteSessionRecord,
-  deleteSessionsForUser,
-  findActiveSessionWithUser,
-  updateSessionExpiry,
-} from "@/db/queries/auth";
-import {
-  DEFAULT_SESSION_TTL_MS,
-  REMEMBER_ME_SESSION_TTL_MS,
-  SESSION_ROTATION_WINDOW_MS,
-} from "@/lib/auth/constants";
+import { users } from "@/db/schema";
 import {
   clearSessionCookie,
   readSessionCookie,
   setSessionCookie,
 } from "@/lib/auth/cookies";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export function getRequestIpAddress() {
   const forwarded = getRequestHeader("x-forwarded-for");
@@ -28,61 +18,53 @@ export function getRequestIpAddress() {
   return getRequestHeader("x-real-ip") ?? "unknown";
 }
 
-export async function createSession(userId: string, rememberMe = false) {
-  const sessionId = randomUUID();
-  const ttl = rememberMe ? REMEMBER_ME_SESSION_TTL_MS : DEFAULT_SESSION_TTL_MS;
-  const expiresAt = new Date(Date.now() + ttl);
-
-  await createSessionRecord(db, {
-    id: sessionId,
-    userId,
-    expiresAt,
-    createdAt: new Date(),
-  });
-
-  setSessionCookie(sessionId, expiresAt);
-
-  return {
-    id: sessionId,
-    userId,
-    expiresAt,
-  };
+export function persistSession(session: Parameters<typeof setSessionCookie>[0], rememberMe = false) {
+  setSessionCookie(session, rememberMe);
 }
 
-export async function deleteSession(sessionId?: string | null) {
-  if (sessionId) {
-    await deleteSessionRecord(db, sessionId);
-  }
-
+export async function deleteSession() {
   clearSessionCookie();
 }
 
-export async function revokeUserSessions(userId: string) {
-  await deleteSessionsForUser(db, userId);
+export async function revokeUserSessions(_userId: string) {
   clearSessionCookie();
 }
 
 export async function getCurrentUser() {
-  const sessionId = readSessionCookie();
-  if (!sessionId) {
+  const cookie = readSessionCookie();
+  if (!cookie) {
     return null;
   }
 
-  const session = await findActiveSessionWithUser(db, sessionId);
-  if (!session) {
+  const supabase = createSupabaseServerClient();
+  const { data, error } = await supabase.auth.setSession({
+    access_token: cookie.accessToken,
+    refresh_token: cookie.refreshToken,
+  });
+
+  if (error || !data.session) {
     clearSessionCookie();
     return null;
   }
 
-  const timeRemaining = session.expiresAt.getTime() - Date.now();
-  if (timeRemaining <= SESSION_ROTATION_WINDOW_MS) {
-    const newExpiresAt = new Date(Date.now() + DEFAULT_SESSION_TTL_MS);
-    await updateSessionExpiry(db, session.id, newExpiresAt);
-    setSessionCookie(session.id, newExpiresAt);
-    session.expiresAt = newExpiresAt;
+  setSessionCookie(data.session, cookie.rememberMe);
+
+  const profile = await db.query.users.findFirst({
+    where: eq(users.id, data.session.user.id),
+  });
+
+  if (!profile || !profile.isActive) {
+    clearSessionCookie();
+    return null;
   }
 
-  return session.user;
+  return {
+    id: profile.id,
+    companyId: profile.companyId,
+    email: profile.email,
+    fullName: profile.fullName,
+    role: profile.role,
+  };
 }
 
 export async function requireUser() {

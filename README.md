@@ -15,7 +15,7 @@ Shelli is a construction web app for tracking concrete pour projects. It gives f
 - TanStack Start
 - Bun
 - Drizzle ORM + Drizzle Kit
-- SQLite for local development, with the data layer structured to move to Postgres later
+- Supabase Postgres + Supabase Auth + Supabase Storage
 - shadcn/ui
 - React Hook Form + Zod
 
@@ -43,12 +43,14 @@ src/
   db/
     schema/
     queries/
-    migrations/
   lib/
     auth/
     env/
+    supabase/
     utils/
     validation/
+  supabase/
+    migrations/
   routes/
     auth/
     dashboard/
@@ -59,24 +61,27 @@ src/
 
 ## Environment Variables
 
-Copy `.env.example` to `.env` and set values as needed.
+Copy `.env.example` to `.env` and set Supabase values for the linked project.
 
 ```bash
-DATABASE_URL=./data/concrete-pours.sqlite
+SUPABASE_PROJECT_REF=blfhllxurhdsdforvnnk
+SUPABASE_URL=https://blfhllxurhdsdforvnnk.supabase.co
+SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
+DATABASE_URL=postgresql://...
+DIRECT_DATABASE_URL=postgresql://...
+SUPABASE_ATTACHMENTS_BUCKET=project-attachments
 SESSION_SECRET=replace-with-a-long-random-secret
 APP_URL=http://localhost:3001
 EMAIL_FROM=no-reply@concreteco.local
-SMTP_HOST=
-SMTP_PORT=587
-SMTP_USER=
-SMTP_PASSWORD=
-SMTP_SECURE=false
+LEGACY_SQLITE_URL=./data/concrete-pours.sqlite
 ```
 
 Notes:
 
 - Bun automatically reads `.env`
-- If SMTP is not configured, password reset emails are logged locally instead of being sent
+- Supabase Auth is now the source of truth for user identity and password recovery
+- Self-service signup is intentionally disabled; bootstrap or admin provisioning is required
 
 ## Getting Started
 
@@ -92,16 +97,28 @@ Generate the database migration:
 bun run db:generate
 ```
 
-Apply migrations:
+Apply Supabase SQL migrations:
 
 ```bash
 bun run db:migrate
 ```
 
-Seed local demo data:
+Bootstrap the first company/admin account:
+
+```bash
+bun run db:bootstrap
+```
+
+Seed demo operational data:
 
 ```bash
 bun run db:seed
+```
+
+Import the legacy SQLite dataset into Supabase:
+
+```bash
+bun run db:migrate-legacy
 ```
 
 Start the development server:
@@ -114,7 +131,7 @@ The app runs at `http://localhost:3001`.
 
 ## Demo Account
 
-After seeding local data, you can sign in with:
+After bootstrapping or seeding, you can sign in with:
 
 - Email: `demo@bedrockbuild.com`
 - Password: `password123`
@@ -128,7 +145,9 @@ After seeding local data, you can sign in with:
 - `bun test` runs the Bun test suite
 - `bun run db:generate` generates Drizzle migrations
 - `bun run db:migrate` applies Drizzle migrations
+- `bun run db:bootstrap` provisions the first company and admin user in Supabase
 - `bun run db:seed` seeds demo data
+- `bun run db:migrate-legacy` migrates the legacy SQLite dataset into Supabase
 
 ## Testing
 

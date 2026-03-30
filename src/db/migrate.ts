@@ -1,15 +1,27 @@
-import { mkdirSync } from "node:fs";
-import { dirname } from "node:path";
-import { migrate } from "drizzle-orm/bun-sqlite/migrator";
-import { db } from "@/db";
+import { readdir } from "node:fs/promises";
+import { join } from "node:path";
+import postgres from "postgres";
 import { env } from "@/lib/env/server";
 
-if (env.DATABASE_URL !== ":memory:") {
-  mkdirSync(dirname(env.DATABASE_URL), { recursive: true });
+const migrationsDirectory = join(process.cwd(), "supabase", "migrations");
+const migrationFiles = (await readdir(migrationsDirectory))
+  .filter((fileName) => fileName.endsWith(".sql"))
+  .sort();
+
+if (migrationFiles.length === 0) {
+  throw new Error(`No SQL migrations found in ${migrationsDirectory}`);
 }
 
-await migrate(db, {
-  migrationsFolder: "./src/db/migrations",
+const sql = postgres(env.DIRECT_DATABASE_URL, {
+  max: 1,
+  prepare: false,
 });
+
+for (const migrationFile of migrationFiles) {
+  console.log(`Applying migration ${migrationFile}`);
+  await sql.file(join(migrationsDirectory, migrationFile));
+}
+
+await sql.end();
 
 console.log("Database migrations completed.");

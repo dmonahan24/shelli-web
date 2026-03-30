@@ -1,10 +1,18 @@
 import { desc, eq } from "drizzle-orm";
 import type { AppDatabase } from "@/db";
-import { projectActivity, projects, type NewProject } from "@/db/schema";
+import { auditEvents, projects, type NewProject } from "@/db/schema";
 
 export async function listProjectsByUserId(database: AppDatabase, userId: string) {
+  const user = await database.query.users.findFirst({
+    where: (users, operators) => eq(users.id, userId),
+  });
+
+  if (!user) {
+    return [];
+  }
+
   return database.query.projects.findMany({
-    where: eq(projects.userId, userId),
+    where: eq(projects.companyId, user.companyId),
     orderBy: desc(projects.dateStarted),
   });
 }
@@ -18,7 +26,7 @@ export async function createProjectRecord(database: AppDatabase, input: NewProje
 
 export async function createProjectActivityRecord(
   database: AppDatabase,
-  input: typeof projectActivity.$inferInsert
+  input: typeof auditEvents.$inferInsert
 ) {
-  await database.insert(projectActivity).values(input);
+  await database.insert(auditEvents).values(input);
 }

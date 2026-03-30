@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { ZodError, z } from "zod";
 import { db } from "@/db";
-import { projectAttachments, projects, users } from "@/db/schema";
+import { attachments, projects, users } from "@/db/schema";
 import { assertSameOrigin } from "@/lib/auth/csrf";
 import { requireUser } from "@/lib/auth/session";
 import {
@@ -35,38 +35,38 @@ function normalizeOptionalText(value?: string | null) {
 
 export async function listProjectAttachments(projectId: string, rawInput?: unknown) {
   const user = await requireUser();
-  await requireOwnedProject(user.id, projectId);
+  await requireOwnedProject(user.companyId, projectId);
 
   const input = attachmentListSchema.parse({
     projectId,
     ...(rawInput ?? {}),
   });
   const offset = (input.page - 1) * input.pageSize;
-  const whereClause = eq(projectAttachments.projectId, projectId);
+  const whereClause = eq(attachments.projectId, projectId);
 
   const [rows, totalCountRows] = await Promise.all([
     db
       .select({
-        id: projectAttachments.id,
-        projectId: projectAttachments.projectId,
-        fileName: projectAttachments.fileName,
-        originalFileName: projectAttachments.originalFileName,
-        mimeType: projectAttachments.mimeType,
-        fileSizeBytes: projectAttachments.fileSizeBytes,
-        attachmentType: projectAttachments.attachmentType,
-        caption: projectAttachments.caption,
-        createdAt: projectAttachments.createdAt,
+        id: attachments.id,
+        projectId: attachments.projectId,
+        fileName: attachments.storedFileName,
+        originalFileName: attachments.originalFileName,
+        mimeType: attachments.mimeType,
+        fileSizeBytes: attachments.fileSizeBytes,
+        attachmentType: attachments.attachmentType,
+        caption: attachments.caption,
+        createdAt: attachments.createdAt,
         uploadedBy: users.fullName,
       })
-      .from(projectAttachments)
-      .innerJoin(users, eq(projectAttachments.uploadedByUserId, users.id))
+      .from(attachments)
+      .leftJoin(users, eq(attachments.uploadedByUserId, users.id))
       .where(whereClause)
-      .orderBy(desc(projectAttachments.createdAt), desc(projectAttachments.id))
+      .orderBy(desc(attachments.createdAt), desc(attachments.id))
       .limit(input.pageSize)
       .offset(offset),
     db
       .select({ count: sql<number>`count(*)` })
-      .from(projectAttachments)
+      .from(attachments)
       .where(whereClause),
   ]);
 
@@ -75,6 +75,7 @@ export async function listProjectAttachments(projectId: string, rawInput?: unkno
   return {
     rows: rows.map((row) => ({
       ...row,
+      uploadedBy: row.uploadedBy ?? "System",
       fileUrl: `/dashboard/projects/${row.projectId}/attachments/${row.id}/file`,
       isPreviewable:
         row.mimeType.startsWith("image/") || row.mimeType === "application/pdf",
@@ -114,49 +115,54 @@ export async function uploadProjectAttachment(
       caption: captionValue,
     });
 
-    await requireOwnedProject(user.id, metadata.projectId);
+    const project = await requireOwnedProject(user.companyId, metadata.projectId);
 
     for (const file of files) {
       validateIncomingFile(file);
     }
 
-    await db.transaction(async (transaction) => {
-      for (const file of files) {
-        const storageKey = buildAttachmentStorageKey(metadata.projectId, file.name);
-        await writeStoredFile(storageKey, file);
+    for (const file of files) {
+      const storageKey = buildAttachmentStorageKey(user.companyId, metadata.projectId, file.name);
+      await writeStoredFile(storageKey, file);
 
-        await transaction.insert(projectAttachments).values({
-          id: randomUUID(),
-          projectId: metadata.projectId,
-          uploadedByUserId: user.id,
-          fileName: storageFileName(storageKey),
+      await db.insert(attachments).values({
+        id: randomUUID(),
+        companyId: user.companyId,
+        projectId: metadata.projectId,
+        uploadedByUserId: user.id,
+        storedFileName: storageFileName(storageKey),
+        originalFileName: file.name,
+        mimeType: file.type,
+        fileSizeBytes: file.size,
+        storageBucket: "project-attachments",
+        storagePath: storageKey,
+        attachmentType: metadata.attachmentType,
+        caption: normalizeOptionalText(metadata.caption),
+      });
+
+      await recordProjectActivity(db, {
+        actionType: "attachment_uploaded",
+        details: {
           originalFileName: file.name,
-          mimeType: file.type,
-          fileSizeBytes: file.size,
-          storageKey,
           attachmentType: metadata.attachmentType,
-          caption: normalizeOptionalText(metadata.caption),
-          createdAt: new Date(),
-        });
+        },
+        projectId: metadata.projectId,
+        summary: `Attachment uploaded: ${file.name}`,
+        userId: user.id,
+      });
+    }
 
-        await recordProjectActivity(transaction, {
-          actionType: "attachment_uploaded",
-          details: {
-            originalFileName: file.name,
-            attachmentType: metadata.attachmentType,
-          },
-          projectId: metadata.projectId,
-          userId: user.id,
-        });
-      }
-    });
+    const message =
+      files.length === 1
+        ? `Attachment uploaded for ${project.name}.`
+        : `Attachments uploaded for ${project.name}.`;
 
     return success(
       {
         projectId: metadata.projectId,
         uploadedCount: files.length,
       },
-      files.length === 1 ? "Attachment uploaded." : "Attachments uploaded."
+      message
     );
   } catch (error) {
     if (error instanceof ZodError) {
@@ -178,24 +184,22 @@ export async function deleteProjectAttachment(
     assertSameOrigin();
     const user = await requireUser();
     const input = deleteProjectAttachmentSchema.parse(rawInput);
-    const attachment = await requireOwnedProjectAttachment(user.id, input.projectId, input.attachmentId);
+    const attachment = await requireOwnedProjectAttachment(user.companyId, input.projectId, input.attachmentId);
 
-    await db.transaction(async (transaction) => {
-      await transaction
-        .delete(projectAttachments)
-        .where(eq(projectAttachments.id, input.attachmentId));
-      await recordProjectActivity(transaction, {
-        actionType: "attachment_deleted",
-        details: {
-          originalFileName: attachment.originalFileName,
-          attachmentType: attachment.attachmentType,
-        },
-        projectId: attachment.projectId,
-        userId: user.id,
-      });
+    await db.delete(attachments).where(eq(attachments.id, input.attachmentId));
+
+    await recordProjectActivity(db, {
+      actionType: "attachment_deleted",
+      details: {
+        originalFileName: attachment.originalFileName,
+        attachmentType: attachment.attachmentType,
+      },
+      projectId: attachment.projectId,
+      summary: `Attachment deleted: ${attachment.originalFileName}`,
+      userId: user.id,
     });
 
-    await deleteStoredFile(attachment.storageKey);
+    await deleteStoredFile(attachment.storagePath);
 
     return success(
       { attachmentId: input.attachmentId, projectId: attachment.projectId },
@@ -220,18 +224,14 @@ export async function serveProjectAttachmentFile(input: {
   request: Request;
 }) {
   const user = await requireUser();
-  await requireOwnedProject(user.id, input.projectId);
+  await requireOwnedProject(user.companyId, input.projectId);
 
   const attachment = await requireOwnedProjectAttachment(
-    user.id,
+    user.companyId,
     input.projectId,
     input.attachmentId
   );
-  const file = openStoredFile(attachment.storageKey);
-
-  if (!(await file.exists())) {
-    return new Response("File not found", { status: 404 });
-  }
+  const file = await openStoredFile(attachment.storagePath);
 
   const url = new URL(input.request.url);
   const forceDownload = url.searchParams.get("download") === "1";
@@ -241,7 +241,7 @@ export async function serveProjectAttachmentFile(input: {
       ? "inline"
       : "attachment";
 
-  return new Response(file, {
+  return new Response(file.stream(), {
     status: 200,
     headers: {
       "Content-Disposition": `${contentDisposition}; filename="${attachment.originalFileName.replaceAll(
@@ -256,27 +256,27 @@ export async function serveProjectAttachmentFile(input: {
 }
 
 async function requireOwnedProjectAttachment(
-  userId: string,
+  companyId: string,
   projectId: string,
   attachmentId: string
 ) {
   const attachment = await db
     .select({
-      id: projectAttachments.id,
-      projectId: projectAttachments.projectId,
-      originalFileName: projectAttachments.originalFileName,
-      attachmentType: projectAttachments.attachmentType,
-      storageKey: projectAttachments.storageKey,
-      mimeType: projectAttachments.mimeType,
-      fileSizeBytes: projectAttachments.fileSizeBytes,
+      id: attachments.id,
+      projectId: attachments.projectId,
+      originalFileName: attachments.originalFileName,
+      attachmentType: attachments.attachmentType,
+      storagePath: attachments.storagePath,
+      mimeType: attachments.mimeType,
+      fileSizeBytes: attachments.fileSizeBytes,
     })
-    .from(projectAttachments)
-    .innerJoin(projects, eq(projectAttachments.projectId, projects.id))
+    .from(attachments)
+    .innerJoin(projects, eq(attachments.projectId, projects.id))
     .where(
       and(
-        eq(projectAttachments.id, attachmentId),
-        eq(projectAttachments.projectId, projectId),
-        eq(projects.userId, userId)
+        eq(attachments.id, attachmentId),
+        eq(attachments.projectId, projectId),
+        eq(projects.companyId, companyId)
       )
     )
     .then((rows) => rows[0] ?? null);

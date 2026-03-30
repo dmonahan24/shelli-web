@@ -1,10 +1,10 @@
-import { randomUUID } from "node:crypto";
 import {
   and,
   asc,
   desc,
   eq,
   gte,
+  inArray,
   like,
   lte,
   or,
@@ -12,7 +12,7 @@ import {
 } from "drizzle-orm";
 import { ZodError } from "zod";
 import { db } from "@/db";
-import { concretePourEvents, projects, users } from "@/db/schema";
+import { loadTickets, mixDesigns, pours, users } from "@/db/schema";
 import { assertSameOrigin } from "@/lib/auth/csrf";
 import { requireUser } from "@/lib/auth/session";
 import {
@@ -45,9 +45,17 @@ function normalizeOptionalText(value?: string | null) {
   return trimmed ? trimmed : null;
 }
 
+function toNumber(value: string | number | null | undefined) {
+  if (typeof value === "number") {
+    return value;
+  }
+
+  return value ? Number(value) : 0;
+}
+
 export async function listProjectPours(projectId: string, rawInput?: unknown) {
   const user = await requireUser();
-  await requireOwnedProject(user.id, projectId);
+  await requireOwnedProject(user.companyId, projectId);
 
   const input = pourEventListQuerySchema.parse(rawInput ?? {});
   const filters = buildPourFilters(projectId, input);
@@ -55,40 +63,71 @@ export async function listProjectPours(projectId: string, rawInput?: unknown) {
   const orderByClauses = getPourOrderBy(input);
   const offset = (input.page - 1) * input.pageSize;
 
-  const [rows, totalCountRows] = await Promise.all([
+  const [baseRows, totalCountRows] = await Promise.all([
     db
       .select({
-        id: concretePourEvents.id,
-        projectId: concretePourEvents.projectId,
-        pourDate: concretePourEvents.pourDate,
-        concreteAmount: concretePourEvents.concreteAmount,
-        unit: concretePourEvents.unit,
-        locationDescription: concretePourEvents.locationDescription,
-        mixType: concretePourEvents.mixType,
-        supplierName: concretePourEvents.supplierName,
-        ticketNumber: concretePourEvents.ticketNumber,
-        weatherNotes: concretePourEvents.weatherNotes,
-        crewNotes: concretePourEvents.crewNotes,
-        createdAt: concretePourEvents.createdAt,
-        updatedAt: concretePourEvents.updatedAt,
+        id: pours.id,
+        projectId: pours.projectId,
+        pourDate: pours.scheduledDate,
+        concreteAmount: pours.actualVolume,
+        unit: pours.unit,
+        locationDescription: pours.placementAreaLabel,
+        mixType: mixDesigns.name,
+        weatherNotes: pours.weatherNotes,
+        crewNotes: pours.notes,
+        createdAt: pours.createdAt,
+        updatedAt: pours.updatedAt,
         createdBy: users.fullName,
       })
-      .from(concretePourEvents)
-      .innerJoin(users, eq(concretePourEvents.userId, users.id))
+      .from(pours)
+      .leftJoin(users, eq(pours.createdByUserId, users.id))
+      .leftJoin(mixDesigns, eq(pours.mixDesignId, mixDesigns.id))
       .where(whereClause)
       .orderBy(...orderByClauses)
       .limit(input.pageSize)
       .offset(offset),
     db
       .select({ count: sql<number>`count(*)` })
-      .from(concretePourEvents)
+      .from(pours)
       .where(whereClause),
   ]);
+
+  const pourIds = baseRows.map((row) => row.id);
+  const ticketRows =
+    pourIds.length > 0
+      ? await db
+          .select({
+            id: loadTickets.id,
+            pourId: loadTickets.pourId,
+            supplierName: loadTickets.supplierName,
+            ticketNumber: loadTickets.ticketNumber,
+            createdAt: loadTickets.createdAt,
+          })
+          .from(loadTickets)
+          .where(inArray(loadTickets.pourId, pourIds))
+          .orderBy(desc(loadTickets.createdAt))
+      : [];
+
+  const firstTicketByPour = new Map<string, (typeof ticketRows)[number]>();
+  for (const ticketRow of ticketRows) {
+    if (!firstTicketByPour.has(ticketRow.pourId)) {
+      firstTicketByPour.set(ticketRow.pourId, ticketRow);
+    }
+  }
 
   const totalCount = totalCountRows[0]?.count ?? 0;
 
   return {
-    rows,
+    rows: baseRows.map((row) => {
+      const ticket = firstTicketByPour.get(row.id);
+      return {
+        ...row,
+        concreteAmount: toNumber(row.concreteAmount),
+        supplierName: ticket?.supplierName ?? null,
+        ticketNumber: ticket?.ticketNumber ?? null,
+        createdBy: row.createdBy ?? "System",
+      };
+    }),
     totalCount,
     page: input.page,
     pageSize: input.pageSize,
@@ -108,38 +147,57 @@ export async function createPourEvent(
     assertSameOrigin();
     const user = await requireUser();
     const input = createPourEventSchema.parse(rawInput);
-    const project = await requireOwnedProject(user.id, input.projectId);
-    const pourEventId = randomUUID();
+    const project = await requireOwnedProject(user.companyId, input.projectId);
 
-    await db.transaction(async (transaction) => {
-      await transaction.insert(concretePourEvents).values({
-        id: pourEventId,
+    const [createdPour] = await db
+      .insert(pours)
+      .values({
+        companyId: user.companyId,
         projectId: project.id,
-        userId: user.id,
-        pourDate: input.pourDate,
-        concreteAmount: input.concreteAmount,
+        createdByUserId: user.id,
+        updatedByUserId: user.id,
+        scheduledDate: input.pourDate,
+        placementAreaLabel: input.locationDescription.trim(),
+        placementAreaType: "other",
+        status: "completed",
         unit: input.unit,
-        locationDescription: input.locationDescription.trim(),
-        mixType: normalizeOptionalText(input.mixType),
-        supplierName: normalizeOptionalText(input.supplierName),
-        ticketNumber: normalizeOptionalText(input.ticketNumber),
+        actualVolume: String(input.concreteAmount),
+        deliveredVolume: String(input.concreteAmount),
         weatherNotes: normalizeOptionalText(input.weatherNotes),
-        crewNotes: normalizeOptionalText(input.crewNotes),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+        notes: normalizeOptionalText(input.crewNotes),
+      })
+      .returning({ id: pours.id });
 
-      await refreshProjectAggregateTotals(transaction, project.id);
-      await recordProjectActivity(transaction, {
-        actionType: "pour_event_created",
-        details: {
-          concreteAmount: input.concreteAmount,
-          locationDescription: input.locationDescription.trim(),
-          pourDate: input.pourDate,
-        },
+    if (!createdPour) {
+      return failure("create_pour_event_failed", "Unable to add the pour event right now.");
+    }
+
+    if (input.ticketNumber || input.supplierName) {
+      await db.insert(loadTickets).values({
+        companyId: user.companyId,
         projectId: project.id,
-        userId: user.id,
+        pourId: createdPour.id,
+        createdByUserId: user.id,
+        updatedByUserId: user.id,
+        ticketNumber: normalizeOptionalText(input.ticketNumber),
+        supplierName: normalizeOptionalText(input.supplierName),
+        quantity: String(input.concreteAmount),
+        status: "accepted",
       });
+    }
+
+    await refreshProjectAggregateTotals(db, project.id);
+    await recordProjectActivity(db, {
+      actionType: "pour_event_created",
+      details: {
+        concreteAmount: input.concreteAmount,
+        locationDescription: input.locationDescription.trim(),
+        pourDate: input.pourDate,
+      },
+      projectId: project.id,
+      pourId: createdPour.id,
+      summary: `Pour event added for ${input.locationDescription.trim()}`,
+      userId: user.id,
     });
 
     const message =
@@ -147,7 +205,7 @@ export async function createPourEvent(
         ? "Pour event added. This project is marked completed, so review its status if needed."
         : "Pour event added.";
 
-    return success({ id: pourEventId, projectId: project.id }, message);
+    return success({ id: createdPour.id, projectId: project.id }, message);
   } catch (error) {
     if (error instanceof ZodError) {
       return failure("validation_error", "Please fix the highlighted fields.", zodFieldErrors(error));
@@ -168,36 +226,63 @@ export async function updatePourEvent(
     assertSameOrigin();
     const user = await requireUser();
     const input = updatePourEventSchema.parse(rawInput);
-    const pourEvent = await requireOwnedPourEvent(user.id, input.id);
+    const pourEvent = await requireOwnedPourEvent(user.companyId, input.id);
 
-    await db.transaction(async (transaction) => {
-      await transaction
-        .update(concretePourEvents)
+    await db
+      .update(pours)
+      .set({
+        updatedByUserId: user.id,
+        scheduledDate: input.pourDate,
+        actualVolume: String(input.concreteAmount),
+        deliveredVolume: String(input.concreteAmount),
+        unit: input.unit,
+        placementAreaLabel: input.locationDescription.trim(),
+        weatherNotes: normalizeOptionalText(input.weatherNotes),
+        notes: normalizeOptionalText(input.crewNotes),
+      })
+      .where(eq(pours.id, input.id));
+
+    const existingTicket = await db.query.loadTickets.findFirst({
+      where: eq(loadTickets.pourId, input.id),
+      orderBy: (table, operators) => [operators.desc(table.createdAt)],
+    });
+
+    if (existingTicket) {
+      await db
+        .update(loadTickets)
         .set({
-          pourDate: input.pourDate,
-          concreteAmount: input.concreteAmount,
-          unit: input.unit,
-          locationDescription: input.locationDescription.trim(),
-          mixType: normalizeOptionalText(input.mixType),
-          supplierName: normalizeOptionalText(input.supplierName),
+          updatedByUserId: user.id,
           ticketNumber: normalizeOptionalText(input.ticketNumber),
-          weatherNotes: normalizeOptionalText(input.weatherNotes),
-          crewNotes: normalizeOptionalText(input.crewNotes),
-          updatedAt: new Date(),
+          supplierName: normalizeOptionalText(input.supplierName),
+          quantity: String(input.concreteAmount),
         })
-        .where(eq(concretePourEvents.id, input.id));
-
-      await refreshProjectAggregateTotals(transaction, pourEvent.projectId);
-      await recordProjectActivity(transaction, {
-        actionType: "pour_event_updated",
-        details: {
-          concreteAmount: input.concreteAmount,
-          locationDescription: input.locationDescription.trim(),
-          pourDate: input.pourDate,
-        },
+        .where(eq(loadTickets.id, existingTicket.id));
+    } else if (input.ticketNumber || input.supplierName) {
+      await db.insert(loadTickets).values({
+        companyId: user.companyId,
         projectId: pourEvent.projectId,
-        userId: user.id,
+        pourId: input.id,
+        createdByUserId: user.id,
+        updatedByUserId: user.id,
+        ticketNumber: normalizeOptionalText(input.ticketNumber),
+        supplierName: normalizeOptionalText(input.supplierName),
+        quantity: String(input.concreteAmount),
+        status: "accepted",
       });
+    }
+
+    await refreshProjectAggregateTotals(db, pourEvent.projectId);
+    await recordProjectActivity(db, {
+      actionType: "pour_event_updated",
+      details: {
+        concreteAmount: input.concreteAmount,
+        locationDescription: input.locationDescription.trim(),
+        pourDate: input.pourDate,
+      },
+      projectId: pourEvent.projectId,
+      pourId: input.id,
+      summary: `Pour event updated for ${input.locationDescription.trim()}`,
+      userId: user.id,
     });
 
     return success(
@@ -224,21 +309,21 @@ export async function deletePourEvent(
     assertSameOrigin();
     const user = await requireUser();
     const { id } = deletePourEventSchema.parse(rawInput);
-    const pourEvent = await requireOwnedPourEvent(user.id, id);
+    const pourEvent = await requireOwnedPourEvent(user.companyId, id);
 
-    await db.transaction(async (transaction) => {
-      await transaction.delete(concretePourEvents).where(eq(concretePourEvents.id, id));
-      await refreshProjectAggregateTotals(transaction, pourEvent.projectId);
-      await recordProjectActivity(transaction, {
-        actionType: "pour_event_deleted",
-        details: {
-          concreteAmount: pourEvent.concreteAmount,
-          locationDescription: pourEvent.locationDescription,
-          pourDate: pourEvent.pourDate,
-        },
-        projectId: pourEvent.projectId,
-        userId: user.id,
-      });
+    await db.delete(pours).where(eq(pours.id, id));
+    await refreshProjectAggregateTotals(db, pourEvent.projectId);
+    await recordProjectActivity(db, {
+      actionType: "pour_event_deleted",
+      details: {
+        concreteAmount: toNumber(pourEvent.actualVolume),
+        locationDescription: pourEvent.placementAreaLabel,
+        pourDate: pourEvent.scheduledDate,
+      },
+      projectId: pourEvent.projectId,
+      pourId: id,
+      summary: `Pour event deleted from ${pourEvent.placementAreaLabel}`,
+      userId: user.id,
     });
 
     return success({ id, projectId: pourEvent.projectId }, "Pour event deleted.");
@@ -255,19 +340,10 @@ export async function deletePourEvent(
   }
 }
 
-async function requireOwnedPourEvent(userId: string, pourEventId: string) {
-  const pourEvent = await db
-    .select({
-      id: concretePourEvents.id,
-      projectId: concretePourEvents.projectId,
-      pourDate: concretePourEvents.pourDate,
-      concreteAmount: concretePourEvents.concreteAmount,
-      locationDescription: concretePourEvents.locationDescription,
-    })
-    .from(concretePourEvents)
-    .innerJoin(projects, eq(concretePourEvents.projectId, projects.id))
-    .where(and(eq(concretePourEvents.id, pourEventId), eq(projects.userId, userId)))
-    .then((rows) => rows[0] ?? null);
+async function requireOwnedPourEvent(companyId: string, pourEventId: string) {
+  const pourEvent = await db.query.pours.findFirst({
+    where: and(eq(pours.id, pourEventId), eq(pours.companyId, companyId)),
+  });
 
   if (!pourEvent) {
     throw new Error("Pour event not found.");
@@ -277,35 +353,34 @@ async function requireOwnedPourEvent(userId: string, pourEventId: string) {
 }
 
 function buildPourFilters(projectId: string, input: PourEventListQuery) {
-  const filters = [eq(concretePourEvents.projectId, projectId)];
+  const filters = [eq(pours.projectId, projectId)];
   const searchValue = input.q?.trim();
 
   if (searchValue) {
     const pattern = `%${searchValue}%`;
     filters.push(
       or(
-        like(concretePourEvents.ticketNumber, pattern),
-        like(concretePourEvents.locationDescription, pattern),
-        like(concretePourEvents.supplierName, pattern),
-        like(concretePourEvents.mixType, pattern)
+        like(pours.placementAreaLabel, pattern),
+        like(pours.weatherNotes, pattern),
+        like(pours.notes, pattern)
       )!
     );
   }
 
   if (input.dateFrom) {
-    filters.push(gte(concretePourEvents.pourDate, input.dateFrom));
+    filters.push(gte(pours.scheduledDate, input.dateFrom));
   }
 
   if (input.dateTo) {
-    filters.push(lte(concretePourEvents.pourDate, input.dateTo));
+    filters.push(lte(pours.scheduledDate, input.dateTo));
   }
 
   if (typeof input.minAmount === "number") {
-    filters.push(gte(concretePourEvents.concreteAmount, input.minAmount));
+    filters.push(gte(pours.actualVolume, String(input.minAmount)));
   }
 
   if (typeof input.maxAmount === "number") {
-    filters.push(lte(concretePourEvents.concreteAmount, input.maxAmount));
+    filters.push(lte(pours.actualVolume, String(input.maxAmount)));
   }
 
   return filters;
@@ -313,10 +388,7 @@ function buildPourFilters(projectId: string, input: PourEventListQuery) {
 
 function getPourOrderBy(input: PourEventListQuery) {
   const direction = input.sortDir === "asc" ? asc : desc;
-  const sortColumn =
-    input.sortBy === "concreteAmount"
-      ? concretePourEvents.concreteAmount
-      : concretePourEvents.pourDate;
+  const sortColumn = input.sortBy === "concreteAmount" ? pours.actualVolume : pours.scheduledDate;
 
-  return [direction(sortColumn), direction(concretePourEvents.id)] as const;
+  return [direction(sortColumn), direction(pours.id)] as const;
 }

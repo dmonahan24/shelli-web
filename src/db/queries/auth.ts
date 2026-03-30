@@ -1,11 +1,6 @@
-import { and, eq, gt, isNull } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import type { AppDatabase } from "@/db";
-import {
-  passwordResetTokens,
-  sessions,
-  users,
-  type NewUser,
-} from "@/db/schema";
+import { users, type NewUser } from "@/db/schema";
 
 export async function findUserByEmail(database: AppDatabase, email: string) {
   return database.query.users.findFirst({
@@ -21,100 +16,41 @@ export async function findUserById(database: AppDatabase, userId: string) {
 
 export async function createUser(database: AppDatabase, input: NewUser) {
   await database.insert(users).values(input);
-  return findUserByEmail(database, input.email);
+  return findUserById(database, input.id);
 }
 
-export async function createSessionRecord(
-  database: AppDatabase,
-  input: {
-    id: string;
-    userId: string;
-    expiresAt: Date;
-    createdAt: Date;
-  }
-) {
-  await database.insert(sessions).values(input);
-  return database.query.sessions.findFirst({
-    where: eq(sessions.id, input.id),
-  });
+export async function createSessionRecord() {
+  throw new Error("Supabase Auth owns session records.");
 }
 
-export async function deleteSessionRecord(database: AppDatabase, sessionId: string) {
-  await database.delete(sessions).where(eq(sessions.id, sessionId));
+export async function deleteSessionRecord() {
+  throw new Error("Supabase Auth owns session records.");
 }
 
-export async function deleteSessionsForUser(database: AppDatabase, userId: string) {
-  await database.delete(sessions).where(eq(sessions.userId, userId));
+export async function deleteSessionsForUser() {
+  throw new Error("Supabase Auth owns session records.");
 }
 
-export async function findActiveSessionWithUser(
-  database: AppDatabase,
-  sessionId: string,
-  now = new Date()
-) {
-  const result = await database.query.sessions.findFirst({
-    where: and(eq(sessions.id, sessionId), gt(sessions.expiresAt, now)),
-    with: {
-      user: true,
-    },
-  });
-
-  return result ?? null;
+export async function findActiveSessionWithUser() {
+  throw new Error("Supabase Auth owns session records.");
 }
 
-export async function updateSessionExpiry(
-  database: AppDatabase,
-  sessionId: string,
-  expiresAt: Date
-) {
-  await database
-    .update(sessions)
-    .set({ expiresAt })
-    .where(eq(sessions.id, sessionId));
+export async function updateSessionExpiry() {
+  throw new Error("Supabase Auth owns session records.");
 }
 
-export async function createPasswordResetTokenRecord(
-  database: AppDatabase,
-  input: typeof passwordResetTokens.$inferInsert
-) {
-  await database.insert(passwordResetTokens).values(input);
+export async function createPasswordResetTokenRecord() {
+  throw new Error("Supabase Auth owns password reset tokens.");
 }
 
-export async function findValidPasswordResetToken(
-  database: AppDatabase,
-  tokenHash: string,
-  now = new Date()
-) {
-  return database.query.passwordResetTokens.findFirst({
-    where: and(
-      eq(passwordResetTokens.tokenHash, tokenHash),
-      gt(passwordResetTokens.expiresAt, now),
-      isNull(passwordResetTokens.usedAt)
-    ),
-    with: {
-      user: true,
-    },
-  });
+export async function findValidPasswordResetToken() {
+  throw new Error("Supabase Auth owns password reset tokens.");
 }
 
-export async function markPasswordResetTokenUsed(
-  database: AppDatabase,
-  tokenId: string,
-  usedAt = new Date()
-) {
-  await database
-    .update(passwordResetTokens)
-    .set({ usedAt })
-    .where(eq(passwordResetTokens.id, tokenId));
+export async function markPasswordResetTokenUsed() {
+  throw new Error("Supabase Auth owns password reset tokens.");
 }
 
-export async function invalidateUserPasswordResetTokens(
-  database: AppDatabase,
-  userId: string,
-  usedAt = new Date()
-) {
-  await database
-    .update(passwordResetTokens)
-    .set({ usedAt })
-    .where(and(eq(passwordResetTokens.userId, userId), isNull(passwordResetTokens.usedAt)));
+export async function invalidateUserPasswordResetTokens() {
+  throw new Error("Supabase Auth owns password reset tokens.");
 }

@@ -16,8 +16,8 @@ export const Route = createFileRoute("/auth/create-account")({
 function CreateAccountPage() {
   return (
     <AuthPageShell
-      title="Create Account"
-      description="Create your account to manage concrete pour projects."
+      title="Access Request"
+      description="Self-service signup is disabled. Ask an administrator to provision your Supabase-backed account."
     >
       <CreateAccountForm />
     </AuthPageShell>

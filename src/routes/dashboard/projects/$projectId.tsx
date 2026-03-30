@@ -119,7 +119,7 @@ function ProjectDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {detail.recentActivity.length > 0 ? (
-                detail.recentActivity.map((activity) => (
+                detail.recentActivity.map((activity: any) => (
                   <div key={activity.id} className="space-y-1 text-sm">
                     <p className="font-medium">{activity.summary}</p>
                     <p className="text-muted-foreground">
