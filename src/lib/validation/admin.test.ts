@@ -30,7 +30,7 @@ describe("admin validation", () => {
     const result = updateAdminUserAccessSchema.safeParse({
       authUserId: crypto.randomUUID(),
       companyId: crypto.randomUUID(),
-      role: "dispatcher_admin",
+      role: "admin",
       fullName: "Jordan Smith",
       notes: "Move this user to the active operating company.",
     });

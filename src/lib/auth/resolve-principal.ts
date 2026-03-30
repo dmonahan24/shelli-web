@@ -1,7 +1,7 @@
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { accessRequests, platformAdmins, users } from "@/db/schema";
+import { accessRequests, companies, companyMemberships, platformAdmins, users } from "@/db/schema";
 import {
   type AppPrincipal,
   type PendingAccessPrincipal,
@@ -57,13 +57,43 @@ export async function resolvePrincipalFromAuthUser(
   }
 
   if (profile?.isActive) {
+    const membership =
+      (await db.query.companyMemberships.findFirst({
+        where: eq(companyMemberships.userId, authUser.id),
+      })) ??
+      (profile.companyId
+        ? await db
+            .insert(companyMemberships)
+            .values({
+              companyId: profile.companyId,
+              userId: profile.id,
+              role: profile.role,
+              status: "active",
+              joinedAt: profile.createdAt,
+            })
+            .onConflictDoNothing()
+            .returning()
+            .then((rows) => rows[0] ?? null)
+        : null) ??
+      (profile.companyId
+        ? await db.query.companyMemberships.findFirst({
+            where: eq(companyMemberships.userId, authUser.id),
+          })
+        : null);
+
+    const company = await db.query.companies.findFirst({
+      where: eq(companies.id, membership?.companyId ?? profile.companyId),
+    });
+
     const principal: TenantUserPrincipal = {
       kind: "tenant_user",
       id: profile.id,
-      companyId: profile.companyId,
+      companyId: company?.id ?? profile.companyId,
+      companyName: company?.name ?? "Company",
+      companySlug: company?.slug ?? "company",
       email: profile.email,
       fullName: profile.fullName,
-      role: profile.role,
+      role: membership?.role ?? profile.role,
     };
 
     return principal;

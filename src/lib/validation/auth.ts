@@ -16,6 +16,7 @@ export const createAccountSchema = z
     email: emailSchema,
     password: passwordSchema,
     confirmPassword: z.string(),
+    inviteToken: z.string().trim().optional().or(z.literal("")),
   })
   .refine((value) => value.password === value.confirmPassword, {
     path: ["confirmPassword"],

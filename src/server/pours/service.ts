@@ -14,7 +14,7 @@ import { ZodError } from "zod";
 import { db } from "@/db";
 import { loadTickets, mixDesigns, pours, users } from "@/db/schema";
 import { assertSameOrigin } from "@/lib/auth/csrf";
-import { requireTenantUser } from "@/lib/auth/session";
+import { requireProjectAccess } from "@/lib/auth/project-access";
 import {
   createPourEventSchema,
   deletePourEventSchema,
@@ -54,8 +54,7 @@ function toNumber(value: string | number | null | undefined) {
 }
 
 export async function listProjectPours(projectId: string, rawInput?: unknown) {
-  const user = await requireTenantUser();
-  await requireOwnedProject(user.companyId, projectId);
+  await requireProjectAccess(projectId, "view");
 
   const input = pourEventListQuerySchema.parse(rawInput ?? {});
   const filters = buildPourFilters(projectId, input);
@@ -145,9 +144,10 @@ export async function createPourEvent(
 > {
   try {
     assertSameOrigin();
-    const user = await requireTenantUser();
     const input = createPourEventSchema.parse(rawInput);
-    const project = await requireOwnedProject(user.companyId, input.projectId);
+    const access = await requireProjectAccess(input.projectId, "edit");
+    const { user } = access;
+    const project = await requireOwnedProject(access.context.project.companyId, input.projectId);
 
     const [createdPour] = await db
       .insert(pours)
@@ -161,6 +161,7 @@ export async function createPourEvent(
         placementAreaType: "other",
         status: "completed",
         unit: input.unit,
+        mixDesignLabel: normalizeOptionalText(input.mixType),
         actualVolume: String(input.concreteAmount),
         deliveredVolume: String(input.concreteAmount),
         weatherNotes: normalizeOptionalText(input.weatherNotes),
@@ -228,9 +229,10 @@ export async function updatePourEvent(
 ): Promise<ActionResult<{ id: string; projectId: string }>> {
   try {
     assertSameOrigin();
-    const user = await requireTenantUser();
     const input = updatePourEventSchema.parse(rawInput);
-    const pourEvent = await requireOwnedPourEvent(user.companyId, input.id);
+    const access = await requireProjectAccess(input.projectId, "edit");
+    const user = access.user;
+    const pourEvent = await requireOwnedPourEvent(access.context.project.companyId, input.id);
 
     await db
       .update(pours)
@@ -240,6 +242,7 @@ export async function updatePourEvent(
         actualVolume: String(input.concreteAmount),
         deliveredVolume: String(input.concreteAmount),
         unit: input.unit,
+        mixDesignLabel: normalizeOptionalText(input.mixType),
         placementAreaLabel: input.locationDescription.trim(),
         weatherNotes: normalizeOptionalText(input.weatherNotes),
         notes: normalizeOptionalText(input.crewNotes),
@@ -315,9 +318,10 @@ export async function deletePourEvent(
 ): Promise<ActionResult<{ id: string; projectId: string }>> {
   try {
     assertSameOrigin();
-    const user = await requireTenantUser();
     const { id } = deletePourEventSchema.parse(rawInput);
-    const pourEvent = await requireOwnedPourEvent(user.companyId, id);
+    const pourEvent = await requireOwnedPourEventById(id);
+    const access = await requireProjectAccess(pourEvent.projectId, "edit");
+    const user = access.user;
 
     await db.delete(pours).where(eq(pours.id, id));
     await refreshProjectAggregateTotals(db, pourEvent.projectId);
@@ -355,6 +359,18 @@ export async function deletePourEvent(
 async function requireOwnedPourEvent(companyId: string, pourEventId: string) {
   const pourEvent = await db.query.pours.findFirst({
     where: and(eq(pours.id, pourEventId), eq(pours.companyId, companyId)),
+  });
+
+  if (!pourEvent) {
+    throw new Error("Pour event not found.");
+  }
+
+  return pourEvent;
+}
+
+async function requireOwnedPourEventById(pourEventId: string) {
+  const pourEvent = await db.query.pours.findFirst({
+    where: eq(pours.id, pourEventId),
   });
 
   if (!pourEvent) {

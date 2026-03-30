@@ -1,12 +1,22 @@
 export const appUserRoleValues = [
-  "dispatcher_admin",
+  "owner",
+  "admin",
   "project_manager",
-  "field_superintendent",
-  "qc_technician",
-  "executive_owner",
+  "field_supervisor",
+  "viewer",
 ] as const;
 
 export type AppUserRole = (typeof appUserRoleValues)[number];
+export type CompanyRole = AppUserRole;
+
+export const projectRoleValues = [
+  "project_admin",
+  "editor",
+  "contributor",
+  "viewer",
+] as const;
+
+export type ProjectRole = (typeof projectRoleValues)[number];
 
 export const accessRequestStatusValues = ["pending", "approved", "rejected"] as const;
 
@@ -26,6 +36,8 @@ export type TenantUserPrincipal = {
   kind: "tenant_user";
   id: string;
   companyId: string;
+  companyName: string;
+  companySlug: string;
   email: string;
   fullName: string;
   role: AppUserRole;

@@ -1,6 +1,26 @@
 import { z } from "zod";
 import { appUserRoleValues } from "@/lib/auth/principal";
 
+function normalizeBootstrapRole(value: string | undefined) {
+  if (value === "dispatcher_admin") {
+    return "admin";
+  }
+
+  if (value === "field_superintendent") {
+    return "field_supervisor";
+  }
+
+  if (value === "executive_owner") {
+    return "owner";
+  }
+
+  if (value === "qc_technician") {
+    return "viewer";
+  }
+
+  return value;
+}
+
 const envSchema = z.object({
   SUPABASE_PROJECT_REF: z.string().min(1),
   SUPABASE_URL: z.string().url(),
@@ -26,7 +46,7 @@ const envSchema = z.object({
   BOOTSTRAP_PLATFORM_ADMIN_COMPANY_SLUG: z.string().trim().min(1).optional(),
   BOOTSTRAP_PLATFORM_ADMIN_COMPANY_ROLE: z
     .enum(appUserRoleValues)
-    .default("dispatcher_admin"),
+    .default("owner"),
   BOOTSTRAP_DEMO_COMPANY_NAME: z.string().min(1).default("Bedrock Build"),
   BOOTSTRAP_DEMO_COMPANY_SLUG: z.string().min(1).default("bedrock-build"),
   BOOTSTRAP_DEMO_ADMIN_EMAIL: z.string().email().default("demo@bedrockbuild.com"),
@@ -65,7 +85,9 @@ const parsedEnv = envSchema.safeParse({
   BOOTSTRAP_PLATFORM_ADMIN_FULL_NAME: process.env.BOOTSTRAP_PLATFORM_ADMIN_FULL_NAME,
   BOOTSTRAP_PLATFORM_ADMIN_COMPANY_NAME: process.env.BOOTSTRAP_PLATFORM_ADMIN_COMPANY_NAME,
   BOOTSTRAP_PLATFORM_ADMIN_COMPANY_SLUG: process.env.BOOTSTRAP_PLATFORM_ADMIN_COMPANY_SLUG,
-  BOOTSTRAP_PLATFORM_ADMIN_COMPANY_ROLE: process.env.BOOTSTRAP_PLATFORM_ADMIN_COMPANY_ROLE,
+  BOOTSTRAP_PLATFORM_ADMIN_COMPANY_ROLE: normalizeBootstrapRole(
+    process.env.BOOTSTRAP_PLATFORM_ADMIN_COMPANY_ROLE
+  ),
   BOOTSTRAP_DEMO_COMPANY_NAME: process.env.BOOTSTRAP_DEMO_COMPANY_NAME,
   BOOTSTRAP_DEMO_COMPANY_SLUG: process.env.BOOTSTRAP_DEMO_COMPANY_SLUG,
   BOOTSTRAP_DEMO_ADMIN_EMAIL: process.env.BOOTSTRAP_DEMO_ADMIN_EMAIL,

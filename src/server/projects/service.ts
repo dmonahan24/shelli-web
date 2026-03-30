@@ -1,8 +1,11 @@
-import { and, asc, desc, eq, gte, like, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, like, lte, or, sql } from "drizzle-orm";
 import { ZodError } from "zod";
 import { db, type AppDatabase, type AppTransaction } from "@/db";
-import { attachments, auditEvents, projects, pours, users } from "@/db/schema";
+import { attachments, projectMembers, projects, pours } from "@/db/schema";
 import { assertSameOrigin } from "@/lib/auth/csrf";
+import { requireCompanyMembership } from "@/lib/auth/company-access";
+import { hasCompanyPermission } from "@/lib/auth/permissions";
+import { listAccessibleProjectIds, requireProjectAccess } from "@/lib/auth/project-access";
 import { requireTenantUser } from "@/lib/auth/session";
 import {
   createProjectSchema,
@@ -17,6 +20,7 @@ import {
   type ProjectListQuery,
 } from "@/lib/validation/project-list";
 import { failure, success, type ActionResult } from "@/lib/utils/action-result";
+import { listRecentActivity, recordActivityEvent } from "@/server/activity/service";
 import { deleteStoredFile } from "@/server/attachments/storage";
 
 function zodFieldErrors(error: ZodError) {
@@ -91,7 +95,20 @@ function toNumber(value: string | number | null | undefined) {
 export async function listProjects(rawInput?: unknown) {
   const user = await requireTenantUser();
   const input = projectListQuerySchema.parse(rawInput ?? {});
-  const filters = buildProjectFilters(user.companyId, input);
+  const accessibleProjectIds = await listAccessibleProjectIds(user, user.companyId);
+
+  if (accessibleProjectIds.length === 0) {
+    return {
+      rows: [],
+      totalCount: 0,
+      page: input.page,
+      pageSize: input.pageSize,
+      pageCount: 1,
+      cursor: null as string | null,
+    };
+  }
+
+  const filters = buildProjectFilters(user.companyId, accessibleProjectIds, input);
   const whereClause = and(...filters);
   const orderByClauses = getProjectOrderBy(input);
   const offset = (input.page - 1) * input.pageSize;
@@ -143,11 +160,11 @@ export async function listProjects(rawInput?: unknown) {
 }
 
 export async function getProjectDetail(rawInput: unknown): Promise<any> {
-  const user = await requireTenantUser();
   const { projectId } = projectDetailParamsSchema.parse(rawInput);
+  const access = await requireProjectAccess(projectId, "view");
 
   const project = await db.query.projects.findFirst({
-    where: and(eq(projects.id, projectId), eq(projects.companyId, user.companyId)),
+    where: eq(projects.id, projectId),
   });
 
   if (!project) {
@@ -163,20 +180,11 @@ export async function getProjectDetail(rawInput: unknown): Promise<any> {
       .select({ count: sql<number>`count(*)` })
       .from(pours)
       .where(eq(pours.projectId, projectId)),
-    db
-      .select({
-        id: auditEvents.id,
-        actionType: auditEvents.actionType,
-        summary: auditEvents.summary,
-        detailsJson: auditEvents.detailsJson,
-        createdAt: auditEvents.createdAt,
-        actorName: users.fullName,
-      })
-      .from(auditEvents)
-      .leftJoin(users, eq(auditEvents.actorUserId, users.id))
-      .where(eq(auditEvents.projectId, projectId))
-      .orderBy(desc(auditEvents.createdAt))
-      .limit(6),
+    listRecentActivity({
+      companyId: access.context.project.companyId,
+      projectId,
+      limit: 6,
+    }),
   ]);
 
   return {
@@ -191,8 +199,7 @@ export async function getProjectDetail(rawInput: unknown): Promise<any> {
     },
     recentActivity: recentActivity.map((activity) => ({
       ...activity,
-      actorName: activity.actorName ?? "System",
-      summary: summarizeActivity(activity.summary, activity.actionType, activity.detailsJson),
+      summary: summarizeActivity(activity.summary, activity.eventType, activity.metadataJson),
     })),
   };
 }
@@ -203,7 +210,12 @@ export async function createProject(
   try {
     assertSameOrigin();
     const user = await requireTenantUser();
+    const companyAccess = await requireCompanyMembership(user.companyId);
     const input = createProjectSchema.parse(rawInput);
+
+    if (!hasCompanyPermission(companyAccess.membership.role, "manage_projects")) {
+      return failure("unauthorized", "You do not have permission to create projects.");
+    }
 
     const createdProject = await db.transaction(async (tx) => {
       const [project] = await tx
@@ -227,6 +239,12 @@ export async function createProject(
       if (!project) {
         throw new Error("Unable to create the project right now.");
       }
+
+      await tx.insert(projectMembers).values({
+        projectId: project.id,
+        userId: user.id,
+        role: "project_admin",
+      });
 
       await recordProjectActivity(tx, {
         actionType: "project_created",
@@ -271,9 +289,10 @@ export async function updateProject(
 ): Promise<ActionResult<{ id: string }>> {
   try {
     assertSameOrigin();
-    const user = await requireTenantUser();
     const input = updateProjectSchema.parse(rawInput);
-    const project = await requireOwnedProject(user.companyId, projectId);
+    const access = await requireProjectAccess(projectId, "edit");
+    const { user } = access;
+    const project = await requireOwnedProject(access.context.project.companyId, projectId);
 
     if (input.estimatedTotalConcrete < toNumber(project.totalConcretePoured)) {
       return failure("validation_error", "Please fix the highlighted fields.", {
@@ -338,9 +357,10 @@ export async function deleteProject(
 ): Promise<ActionResult<{ redirectTo: "/dashboard/projects" }>> {
   try {
     assertSameOrigin();
-    const user = await requireTenantUser();
     const { projectId } = deleteProjectSchema.parse(rawInput);
-    const project = await requireOwnedProject(user.companyId, projectId);
+    const access = await requireProjectAccess(projectId, "delete");
+    const user = access.user;
+    const project = await requireOwnedProject(access.context.project.companyId, projectId);
 
     const projectFiles = await db
       .select({
@@ -349,7 +369,20 @@ export async function deleteProject(
       .from(attachments)
       .where(eq(attachments.projectId, projectId));
 
-    await db.delete(projects).where(eq(projects.id, project.id));
+    await db.transaction(async (tx) => {
+      await recordProjectActivity(tx, {
+        actionType: "project_deleted",
+        details: {
+          name: project.name,
+          status: project.status,
+        },
+        projectId: project.id,
+        summary: `Project deleted: ${project.name}`,
+        userId: user.id,
+      });
+
+      await tx.delete(projects).where(eq(projects.id, project.id));
+    });
 
     await Promise.all(projectFiles.map((attachment) => deleteStoredFile(attachment.storagePath)));
 
@@ -405,29 +438,32 @@ export async function recordProjectActivity(
     pourId?: string;
   }
 ) {
-  const user = await transaction.query.users.findFirst({
-    where: eq(users.id, input.userId),
+  const project = await transaction.query.projects.findFirst({
+    where: eq(projects.id, input.projectId),
   });
 
-  if (!user) {
-    throw new Error("User profile not found.");
+  if (!project) {
+    throw new Error("Project not found.");
   }
 
-  await transaction.insert(auditEvents).values({
-    companyId: user.companyId,
+  await recordActivityEvent(transaction, {
+    companyId: project.companyId,
     projectId: input.projectId,
-    pourId: input.pourId ?? null,
     actorUserId: input.userId,
     entityType: input.pourId ? "pour" : "project",
     entityId: input.pourId ?? input.projectId,
-    actionType: input.actionType,
+    eventType: input.actionType,
     summary: input.summary ?? input.actionType.replaceAll("_", " "),
-    detailsJson: input.details,
+    metadata: input.details,
   });
 }
 
-function buildProjectFilters(companyId: string, input: ProjectListQuery) {
-  const filters = [eq(projects.companyId, companyId)];
+function buildProjectFilters(
+  companyId: string,
+  accessibleProjectIds: string[],
+  input: ProjectListQuery
+) {
+  const filters = [eq(projects.companyId, companyId), inArray(projects.id, accessibleProjectIds)];
   const searchValue = input.q?.trim();
 
   if (searchValue) {

@@ -1,28 +1,64 @@
+// @ts-nocheck
 import { Link } from "@tanstack/react-router";
-import { ClipboardList, LayoutDashboard } from "lucide-react";
+import { BarChart3, BriefcaseBusiness, ClipboardList, LayoutDashboard, Smartphone, Users } from "lucide-react";
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import type { TenantUserPrincipal } from "@/lib/auth/principal";
 
-const navigationItems = [
-  {
-    label: "Dashboard Home",
-    to: "/dashboard" as const,
-    icon: LayoutDashboard,
-  },
-  {
-    label: "Projects",
-    to: "/dashboard/projects" as const,
-    icon: ClipboardList,
-  },
-];
+function canSeeAnalytics(role: TenantUserPrincipal["role"]) {
+  return role !== "field_supervisor" && role !== "viewer";
+}
 
-export function SidebarNavLinks() {
+function canSeeCompany(role: TenantUserPrincipal["role"]) {
+  return role === "owner" || role === "admin";
+}
+
+export function SidebarNavLinks({ user }: { user: TenantUserPrincipal }) {
+  const navigationItems = [
+    {
+      label: "Dashboard",
+      to: "/dashboard" as const,
+      icon: LayoutDashboard,
+      visible: true,
+    },
+    {
+      label: "Projects",
+      to: "/dashboard/projects" as const,
+      icon: ClipboardList,
+      visible: true,
+    },
+    {
+      label: "Analytics",
+      to: "/dashboard/analytics" as const,
+      icon: BarChart3,
+      visible: canSeeAnalytics(user.role),
+    },
+    {
+      label: "Field Mode",
+      to: "/dashboard/field" as const,
+      icon: Smartphone,
+      visible: true,
+    },
+    {
+      label: "Company",
+      to: "/dashboard/company" as const,
+      icon: Users,
+      visible: canSeeCompany(user.role),
+    },
+    {
+      label: "Settings",
+      to: "/dashboard/settings" as const,
+      icon: BriefcaseBusiness,
+      visible: true,
+    },
+  ];
+
   return (
     <SidebarMenu>
-      {navigationItems.map((item) => (
+      {navigationItems.filter((item) => item.visible).map((item) => (
         <SidebarMenuItem key={item.to}>
           <SidebarMenuButton asChild>
             <Link

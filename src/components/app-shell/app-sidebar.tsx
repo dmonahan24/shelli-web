@@ -9,14 +9,12 @@ import {
   SidebarHeader,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
+import type { TenantUserPrincipal } from "@/lib/auth/principal";
 
 export function AppSidebar({
   user,
 }: {
-  user: {
-    fullName: string;
-    email: string;
-  };
+  user: TenantUserPrincipal;
 }) {
   return (
     <Sidebar collapsible="offcanvas" className="border-r border-sidebar-border">
@@ -31,10 +29,17 @@ export function AppSidebar({
           </div>
         </div>
         <UserProfileCard fullName={user.fullName} email={user.email} />
+        <div className="rounded-2xl border border-sidebar-border/70 bg-sidebar-accent/50 px-3 py-3">
+          <p className="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase">
+            Company
+          </p>
+          <p className="mt-1 text-sm font-semibold">{user.companyName}</p>
+          <p className="text-xs text-muted-foreground">{user.role.replaceAll("_", " ")}</p>
+        </div>
       </SidebarHeader>
       <SidebarSeparator />
       <SidebarContent className="p-3">
-        <SidebarNavLinks />
+        <SidebarNavLinks user={user} />
       </SidebarContent>
       <SidebarFooter className="p-3">
         <SidebarFooterActions />

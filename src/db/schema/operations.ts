@@ -5,6 +5,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import {
@@ -39,6 +40,7 @@ export const pours = pgTable(
     mixDesignId: uuid("mix_design_id").references(() => mixDesigns.id, {
       onDelete: "set null",
     }),
+    mixDesignLabel: text("mix_design_label"),
     createdByUserId: createdByUserIdColumn().references(() => users.id, {
       onDelete: "set null",
     }),
@@ -58,6 +60,7 @@ export const pours = pgTable(
     scheduledStartAt: timestamp("scheduled_start_at", { withTimezone: true }),
     placementStartAt: timestamp("placement_start_at", { withTimezone: true }),
     placementEndAt: timestamp("placement_end_at", { withTimezone: true }),
+    clientSubmissionId: text("client_submission_id"),
     weatherNotes: notesColumn("weather_notes"),
     delayReason: notesColumn("delay_reason"),
     notes: notesColumn("notes"),
@@ -74,6 +77,12 @@ export const pours = pgTable(
       table.companyId,
       table.status,
       table.scheduledDate
+    ),
+    submissionIndex: uniqueIndex("pours_company_project_submission_id_idx").on(
+      table.companyId,
+      table.projectId,
+      table.createdByUserId,
+      table.clientSubmissionId
     ),
   })
 );

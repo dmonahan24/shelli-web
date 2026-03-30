@@ -17,7 +17,7 @@ const bootstrapConfig = {
   adminEmail: env.BOOTSTRAP_DEMO_ADMIN_EMAIL,
   adminPassword: env.BOOTSTRAP_DEMO_ADMIN_PASSWORD,
   adminFullName: env.BOOTSTRAP_DEMO_ADMIN_FULL_NAME,
-  role: "dispatcher_admin" as const,
+  role: "admin" as const,
 };
 
 export async function ensureBootstrapData() {

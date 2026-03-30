@@ -17,16 +17,18 @@ export function ProjectsDashboardView({
   projects,
   title,
   subtitle,
+  showActions = true,
 }: {
   projects: ProjectRow[];
   title: string;
   subtitle: string;
+  showActions?: boolean;
 }) {
   return (
     <div className="space-y-6">
-      <DashboardHeader title={title} subtitle={subtitle} action={<AddProjectDialog />} />
+      <DashboardHeader title={title} subtitle={subtitle} action={showActions ? <AddProjectDialog /> : null} />
       {projects.length === 0 ? (
-        <ProjectsEmptyState action={<AddProjectDialog />} />
+        <ProjectsEmptyState action={showActions ? <AddProjectDialog /> : null} />
       ) : (
         <ProjectsTable projects={projects} />
       )}

@@ -5,15 +5,13 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import type { TenantUserPrincipal } from "@/lib/auth/principal";
 
 export function DashboardShell({
   user,
   children,
 }: {
-  user: {
-    fullName: string;
-    email: string;
-  };
+  user: TenantUserPrincipal;
   children: ReactNode;
 }) {
   return (
@@ -26,9 +24,9 @@ export function DashboardShell({
             <div className="hidden h-6 w-px bg-border md:block" />
             <div>
               <p className="text-xs font-semibold tracking-[0.24em] text-muted-foreground uppercase">
-                Operations
+                {user.companyName}
               </p>
-              <p className="text-sm font-medium">Concrete project tracking</p>
+              <p className="text-sm font-medium">Concrete field operations</p>
             </div>
           </header>
           <main className="flex-1 px-4 py-6 md:px-6">{children}</main>

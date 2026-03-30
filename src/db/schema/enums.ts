@@ -1,11 +1,24 @@
 import { pgEnum } from "drizzle-orm/pg-core";
 
 export const userRoleEnum = pgEnum("user_role", [
-  "dispatcher_admin",
+  "owner",
+  "admin",
   "project_manager",
-  "field_superintendent",
-  "qc_technician",
-  "executive_owner",
+  "field_supervisor",
+  "viewer",
+]);
+
+export const companyMembershipStatusEnum = pgEnum("company_membership_status", [
+  "invited",
+  "active",
+  "inactive",
+]);
+
+export const projectMemberRoleEnum = pgEnum("project_member_role", [
+  "project_admin",
+  "editor",
+  "contributor",
+  "viewer",
 ]);
 
 export const accessRequestStatusEnum = pgEnum("access_request_status", [

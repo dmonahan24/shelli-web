@@ -4,7 +4,7 @@ import { ZodError, z } from "zod";
 import { db } from "@/db";
 import { attachments, projects, users } from "@/db/schema";
 import { assertSameOrigin } from "@/lib/auth/csrf";
-import { requireTenantUser } from "@/lib/auth/session";
+import { requireProjectAccess } from "@/lib/auth/project-access";
 import {
   attachmentUploadSchema,
   deleteProjectAttachmentSchema,
@@ -20,7 +20,7 @@ import {
   storageFileName,
   writeStoredFile,
 } from "@/server/attachments/storage";
-import { recordProjectActivity, requireOwnedProject } from "@/server/projects/service";
+import { recordProjectActivity } from "@/server/projects/service";
 
 const attachmentListSchema = z.object({
   projectId: z.string().uuid("Invalid project id"),
@@ -34,8 +34,7 @@ function normalizeOptionalText(value?: string | null) {
 }
 
 export async function listProjectAttachments(projectId: string, rawInput?: unknown) {
-  const user = await requireTenantUser();
-  await requireOwnedProject(user.companyId, projectId);
+  await requireProjectAccess(projectId, "view");
 
   const input = attachmentListSchema.parse({
     projectId,
@@ -92,7 +91,6 @@ export async function uploadProjectAttachment(
 ): Promise<ActionResult<{ projectId: string; uploadedCount: number }>> {
   try {
     assertSameOrigin();
-    const user = await requireTenantUser();
     const files = collectAttachmentFiles(formData);
     const projectIdValue = formData.get("projectId");
     const attachmentTypeValue = formData.get("attachmentType");
@@ -114,8 +112,9 @@ export async function uploadProjectAttachment(
       attachmentType,
       caption: captionValue,
     });
-
-    const project = await requireOwnedProject(user.companyId, metadata.projectId);
+    const access = await requireProjectAccess(metadata.projectId, "upload");
+    const { user } = access;
+    const project = access.context.project;
 
     for (const file of files) {
       validateIncomingFile(file);
@@ -186,9 +185,14 @@ export async function deleteProjectAttachment(
 ): Promise<ActionResult<{ attachmentId: string; projectId: string }>> {
   try {
     assertSameOrigin();
-    const user = await requireTenantUser();
     const input = deleteProjectAttachmentSchema.parse(rawInput);
-    const attachment = await requireOwnedProjectAttachment(user.companyId, input.projectId, input.attachmentId);
+    const access = await requireProjectAccess(input.projectId, "edit");
+    const user = access.user;
+    const attachment = await requireOwnedProjectAttachment(
+      access.context.project.companyId,
+      input.projectId,
+      input.attachmentId
+    );
 
     await db.delete(attachments).where(eq(attachments.id, input.attachmentId));
 
@@ -231,11 +235,10 @@ export async function serveProjectAttachmentFile(input: {
   attachmentId: string;
   request: Request;
 }) {
-  const user = await requireTenantUser();
-  await requireOwnedProject(user.companyId, input.projectId);
+  const access = await requireProjectAccess(input.projectId, "view");
 
   const attachment = await requireOwnedProjectAttachment(
-    user.companyId,
+    access.context.project.companyId,
     input.projectId,
     input.attachmentId
   );

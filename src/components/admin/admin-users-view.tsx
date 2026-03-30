@@ -194,7 +194,7 @@ function AdminUserCard({
   const router = useRouter();
   const activeCompanies = companies.filter((company) => company.isActive);
   const [companyId, setCompanyId] = React.useState(user.companyId ?? activeCompanies[0]?.id ?? "");
-  const [role, setRole] = React.useState<AppUserRole>(user.role ?? "dispatcher_admin");
+  const [role, setRole] = React.useState<AppUserRole>(user.role ?? "admin");
   const [fullNameOverride, setFullNameOverride] = React.useState("");
   const [accessNotes, setAccessNotes] = React.useState("");
   const [statusNotes, setStatusNotes] = React.useState("");

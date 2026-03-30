@@ -1,8 +1,9 @@
 import { eq, sql } from "drizzle-orm";
 import { ZodError } from "zod";
 import { db } from "@/db";
-import { accessRequests } from "@/db/schema";
+import { accessRequests, companies, companyInvitations, companyMemberships, users } from "@/db/schema";
 import { assertSameOrigin } from "@/lib/auth/csrf";
+import { hashToken } from "@/lib/auth/crypto";
 import { getPrincipalHomePath, isPendingAccessPrincipal } from "@/lib/auth/principal";
 import { normalizeEmail } from "@/lib/auth/password";
 import { assertRateLimit } from "@/lib/auth/rate-limit";
@@ -26,6 +27,7 @@ import {
   type SignInInput,
 } from "@/lib/validation/auth";
 import { failure, success, type ActionResult } from "@/lib/utils/action-result";
+import { slugifyCompanyName } from "@/server/company/service";
 
 function zodFieldErrors(error: ZodError) {
   const flattened = error.flatten().fieldErrors;
@@ -93,11 +95,159 @@ export async function createAccount(
 ): Promise<ActionResult<{ redirectTo: string }>> {
   try {
     assertSameOrigin();
-    createAccountSchema.parse(rawInput);
-    return failure(
-      "signup_disabled",
-      "Account creation is invitation-only right now. Ask an administrator to provision your access."
-    );
+    const input = createAccountSchema.parse(rawInput);
+    const email = normalizeEmail(input.email);
+    const supabase = createSupabaseServerClient();
+    const signUpResult = await supabase.auth.signUp({
+      email,
+      password: input.password,
+      options: {
+        data: {
+          full_name: input.fullName.trim(),
+        },
+      },
+    });
+
+    if (signUpResult.error || !signUpResult.data.user) {
+      return failure("create_account_failed", signUpResult.error?.message ?? "Unable to create the account right now.");
+    }
+
+    const authUser = signUpResult.data.user;
+    let redirectTo = "/auth/onboarding";
+
+    if (input.inviteToken) {
+      const invitation = await db.query.companyInvitations.findFirst({
+        where: eq(companyInvitations.tokenHash, hashToken(input.inviteToken)),
+      });
+
+      if (
+        invitation &&
+        !invitation.acceptedAt &&
+        !invitation.revokedAt &&
+        invitation.expiresAt.getTime() > Date.now() &&
+        invitation.email.toLowerCase() === email
+      ) {
+        await db.transaction(async (tx) => {
+          await tx
+            .insert(users)
+            .values({
+              id: authUser.id,
+              companyId: invitation.companyId,
+              role: invitation.role,
+              email,
+              fullName: input.fullName.trim(),
+              isActive: true,
+            })
+            .onConflictDoUpdate({
+              target: users.id,
+              set: {
+                companyId: invitation.companyId,
+                role: invitation.role,
+                email,
+                fullName: input.fullName.trim(),
+                isActive: true,
+                updatedAt: new Date(),
+              },
+            });
+
+          await tx
+            .insert(companyMemberships)
+            .values({
+              companyId: invitation.companyId,
+              userId: authUser.id,
+              role: invitation.role,
+              status: "active",
+              invitedByUserId: invitation.invitedByUserId,
+              joinedAt: new Date(),
+            })
+            .onConflictDoUpdate({
+              target: [companyMemberships.companyId, companyMemberships.userId],
+              set: {
+                role: invitation.role,
+                status: "active",
+                joinedAt: new Date(),
+                updatedAt: new Date(),
+              },
+            });
+
+          await tx
+            .update(companyInvitations)
+            .set({
+              acceptedAt: new Date(),
+              updatedAt: new Date(),
+            })
+            .where(eq(companyInvitations.id, invitation.id));
+        });
+
+        redirectTo = "/dashboard/company";
+      }
+    } else {
+      const baseSlug = slugifyCompanyName(input.fullName.split(" ")[0] ?? "company") || "company";
+      let slug = baseSlug;
+      let suffix = 1;
+      while (await db.query.companies.findFirst({ where: eq(companies.slug, slug) })) {
+        suffix += 1;
+        slug = `${baseSlug}-${suffix}`;
+      }
+
+      const [company] = await db
+        .insert(companies)
+        .values({
+          name: `${input.fullName.trim()}'s Company`,
+          slug,
+          isActive: true,
+        })
+        .returning();
+
+      if (!company) {
+        return failure("create_account_failed", "Unable to create the company right now.");
+      }
+
+      await db.transaction(async (tx) => {
+        await tx
+          .insert(users)
+          .values({
+            id: authUser.id,
+            companyId: company.id,
+            role: "owner",
+            email,
+            fullName: input.fullName.trim(),
+            isActive: true,
+          })
+          .onConflictDoUpdate({
+            target: users.id,
+            set: {
+              companyId: company.id,
+              role: "owner",
+              email,
+              fullName: input.fullName.trim(),
+              isActive: true,
+              updatedAt: new Date(),
+            },
+          });
+
+        await tx.insert(companyMemberships).values({
+          companyId: company.id,
+          userId: authUser.id,
+          role: "owner",
+          status: "active",
+          joinedAt: new Date(),
+        });
+      });
+    }
+
+    const session =
+      signUpResult.data.session ??
+      (await supabase.auth.signInWithPassword({
+        email,
+        password: input.password,
+      })).data.session;
+
+    if (session) {
+      persistSession(session, true);
+    }
+
+    return success({ redirectTo }, "Account created.");
   } catch (error) {
     if (error instanceof ZodError) {
       return failure("validation_error", "Please fix the highlighted fields.", zodFieldErrors(error));

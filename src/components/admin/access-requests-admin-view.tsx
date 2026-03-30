@@ -126,7 +126,7 @@ function AccessRequestCard({
   const [newCompanyName, setNewCompanyName] = React.useState("");
   const [newCompanySlug, setNewCompanySlug] = React.useState("");
   const [targetRole, setTargetRole] = React.useState<AppUserRole>(
-    request.targetRole ?? "dispatcher_admin"
+    request.targetRole ?? "admin"
   );
   const [approveNotes, setApproveNotes] = React.useState(request.notes ?? "");
   const [rejectNotes, setRejectNotes] = React.useState(request.notes ?? "");

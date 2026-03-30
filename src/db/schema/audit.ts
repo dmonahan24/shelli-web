@@ -1,3 +1,4 @@
+import { relations } from "drizzle-orm";
 import { index, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { pourStatusEnum } from "@/db/schema/enums";
 import {
@@ -34,6 +35,37 @@ export const auditEvents = pgTable(
     companyCreatedAtIndex: index("audit_events_company_created_at_idx").on(
       table.companyId,
       table.createdAt
+    ),
+  })
+);
+
+export const activityEvents = pgTable(
+  "activity_events",
+  {
+    id: idColumn(),
+    companyId: companyIdColumn().references(() => companies.id, { onDelete: "cascade" }),
+    projectId: uuid("project_id").references(() => projects.id, { onDelete: "cascade" }),
+    actorUserId: uuid("actor_user_id").references(() => users.id, { onDelete: "set null" }),
+    eventType: text("event_type").notNull(),
+    entityType: text("entity_type").notNull(),
+    entityId: uuid("entity_id"),
+    summary: text("summary").notNull(),
+    metadataJson: jsonDetailsColumn("metadata_json"),
+    createdAt: createdOnlyAuditColumns.createdAt,
+  },
+  (table) => ({
+    companyProjectIndex: index("activity_events_company_project_idx").on(
+      table.companyId,
+      table.projectId
+    ),
+    companyCreatedAtIndex: index("activity_events_company_created_at_idx").on(
+      table.companyId,
+      table.createdAt
+    ),
+    companyEntityIndex: index("activity_events_company_entity_idx").on(
+      table.companyId,
+      table.entityType,
+      table.entityId
     ),
   })
 );
@@ -96,3 +128,18 @@ export const adminAuditEvents = pgTable(
     ),
   })
 );
+
+export const activityEventsRelations = relations(activityEvents, ({ one }) => ({
+  company: one(companies, {
+    fields: [activityEvents.companyId],
+    references: [companies.id],
+  }),
+  project: one(projects, {
+    fields: [activityEvents.projectId],
+    references: [projects.id],
+  }),
+  actorUser: one(users, {
+    fields: [activityEvents.actorUserId],
+    references: [users.id],
+  }),
+}));

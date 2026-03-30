@@ -1,3 +1,4 @@
+import { relations } from "drizzle-orm";
 import {
   index,
   integer,
@@ -7,7 +8,7 @@ import {
   date,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
-import { projectStatusEnum } from "@/db/schema/enums";
+import { projectMemberRoleEnum, projectStatusEnum } from "@/db/schema/enums";
 import {
   auditColumns,
   companyIdColumn,
@@ -37,6 +38,12 @@ export const projects = pgTable(
     projectCode: text("project_code"),
     clientName: text("client_name"),
     generalContractor: text("general_contractor"),
+    projectManagerUserId: uuid("project_manager_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    superintendentUserId: uuid("superintendent_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
     dateStarted: date("date_started", { mode: "string" }).notNull(),
     estimatedCompletionDate: date("estimated_completion_date", { mode: "string" }).notNull(),
     lastPourDate: date("last_pour_date", { mode: "string" }),
@@ -58,6 +65,29 @@ export const projects = pgTable(
       table.companyId,
       table.projectCode
     ),
+  })
+);
+
+export const projectMembers = pgTable(
+  "project_members",
+  {
+    id: idColumn(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: projectMemberRoleEnum("role").notNull().default("viewer"),
+    createdAt: auditColumns.createdAt,
+  },
+  (table) => ({
+    projectUserIndex: uniqueIndex("project_members_project_user_idx").on(
+      table.projectId,
+      table.userId
+    ),
+    projectRoleIndex: index("project_members_project_role_idx").on(table.projectId, table.role),
+    userIndex: index("project_members_user_id_idx").on(table.userId),
   })
 );
 
@@ -123,3 +153,68 @@ export const mixDesigns = pgTable(
     ),
   })
 );
+
+export const projectsRelations = relations(projects, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [projects.companyId],
+    references: [companies.id],
+  }),
+  createdByUser: one(users, {
+    fields: [projects.createdByUserId],
+    references: [users.id],
+    relationName: "project_created_by_user",
+  }),
+  updatedByUser: one(users, {
+    fields: [projects.updatedByUserId],
+    references: [users.id],
+    relationName: "project_updated_by_user",
+  }),
+  projectManagerUser: one(users, {
+    fields: [projects.projectManagerUserId],
+    references: [users.id],
+    relationName: "project_manager_user",
+  }),
+  superintendentUser: one(users, {
+    fields: [projects.superintendentUserId],
+    references: [users.id],
+    relationName: "project_superintendent_user",
+  }),
+  members: many(projectMembers),
+  contacts: many(projectContacts),
+}));
+
+export const projectMembersRelations = relations(projectMembers, ({ one }) => ({
+  project: one(projects, {
+    fields: [projectMembers.projectId],
+    references: [projects.id],
+  }),
+  user: one(users, {
+    fields: [projectMembers.userId],
+    references: [users.id],
+  }),
+}));
+
+export const projectContactsRelations = relations(projectContacts, ({ one }) => ({
+  company: one(companies, {
+    fields: [projectContacts.companyId],
+    references: [companies.id],
+  }),
+  project: one(projects, {
+    fields: [projectContacts.projectId],
+    references: [projects.id],
+  }),
+}));
+
+export const crewsRelations = relations(crews, ({ one }) => ({
+  company: one(companies, {
+    fields: [crews.companyId],
+    references: [companies.id],
+  }),
+}));
+
+export const mixDesignsRelations = relations(mixDesigns, ({ one }) => ({
+  company: one(companies, {
+    fields: [mixDesigns.companyId],
+    references: [companies.id],
+  }),
+}));
