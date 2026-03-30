@@ -1,30 +1,17 @@
 import {
   HeadContent,
-  Link,
   Outlet,
   Scripts,
   createRootRouteWithContext,
 } from "@tanstack/react-router";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import * as React from "react";
-import type { QueryClient } from "@tanstack/react-query";
 import { DefaultCatchBoundary } from "@/components/default-catch-boundary";
 import { NotFound } from "@/components/not-found";
 import appCss from "@/styles/app.css?url";
 import { seo } from "@/utils/seo";
-import { authQueries } from "@/services/queries";
 import { Providers } from "@/components/providers";
 
-export const Route = createRootRouteWithContext<{
-  queryClient: QueryClient;
-}>()({
-  beforeLoad: async ({ context }) => {
-    const userSession = await context.queryClient.fetchQuery(
-      authQueries.user()
-    );
-    return { userSession };
-  },
+export const Route = createRootRouteWithContext<Record<string, never>>()({
   head: () => ({
     meta: [
       {
@@ -35,9 +22,9 @@ export const Route = createRootRouteWithContext<{
         content: "width=device-width, initial-scale=1",
       },
       ...seo({
-        title:
-          "TanStack Start | Type-Safe, Client-First, Full-Stack React Framework",
-        description: `TanStack Start is a type-safe, client-first, full-stack React framework. `,
+        title: "Concrete Pour Tracker",
+        description:
+          "Construction project tracking for concrete pours, schedules, and field-ready records.",
       }),
     ],
     links: [
@@ -90,8 +77,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <Providers>{children}</Providers>
-        <TanStackRouterDevtools position="bottom-right" />
-        <ReactQueryDevtools buttonPosition="bottom-right" />
         <Scripts />
       </body>
     </html>

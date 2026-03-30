@@ -5,9 +5,12 @@ yarn.lock
 .DS_Store
 .cache
 .env
+.env.local
+.env.test
 .vercel
 .output
 .vinxi
+app.config.timestamp_*.js
 
 /build/
 /api/
@@ -20,3 +23,7 @@ yarn.lock
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+/data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

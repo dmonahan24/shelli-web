@@ -15,7 +15,15 @@ import { Route as DashboardRouteImport } from './routes/dashboard/route'
 import { Route as IndexImport } from './routes/index'
 import { Route as DashboardIndexImport } from './routes/dashboard/index'
 import { Route as DashboardSettingsImport } from './routes/dashboard/settings'
-import { Route as DashboardProductsImport } from './routes/dashboard/products'
+import { Route as AuthSignInImport } from './routes/auth/sign-in'
+import { Route as AuthResetPasswordImport } from './routes/auth/reset-password'
+import { Route as AuthForgotPasswordImport } from './routes/auth/forgot-password'
+import { Route as AuthCreateAccountImport } from './routes/auth/create-account'
+import { Route as DashboardProjectsIndexImport } from './routes/dashboard/projects/index'
+import { Route as DashboardProjectsProjectIdImport } from './routes/dashboard/projects/$projectId'
+import { Route as DashboardProjectsProjectIdEditImport } from './routes/dashboard/projects/$projectId.edit'
+import { Route as DashboardProjectsProjectIdPoursNewImport } from './routes/dashboard/projects/$projectId.pours.new'
+import { Route as DashboardProjectsProjectIdAttachmentsAttachmentIdFileImport } from './routes/dashboard/projects/$projectId.attachments.$attachmentId.file'
 
 // Create/Update Routes
 
@@ -43,11 +51,64 @@ const DashboardSettingsRoute = DashboardSettingsImport.update({
   getParentRoute: () => DashboardRouteRoute,
 } as any)
 
-const DashboardProductsRoute = DashboardProductsImport.update({
-  id: '/products',
-  path: '/products',
+const AuthSignInRoute = AuthSignInImport.update({
+  id: '/auth/sign-in',
+  path: '/auth/sign-in',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AuthResetPasswordRoute = AuthResetPasswordImport.update({
+  id: '/auth/reset-password',
+  path: '/auth/reset-password',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AuthForgotPasswordRoute = AuthForgotPasswordImport.update({
+  id: '/auth/forgot-password',
+  path: '/auth/forgot-password',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AuthCreateAccountRoute = AuthCreateAccountImport.update({
+  id: '/auth/create-account',
+  path: '/auth/create-account',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const DashboardProjectsIndexRoute = DashboardProjectsIndexImport.update({
+  id: '/projects/',
+  path: '/projects/',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
+
+const DashboardProjectsProjectIdRoute = DashboardProjectsProjectIdImport.update(
+  {
+    id: '/projects/$projectId',
+    path: '/projects/$projectId',
+    getParentRoute: () => DashboardRouteRoute,
+  } as any,
+)
+
+const DashboardProjectsProjectIdEditRoute =
+  DashboardProjectsProjectIdEditImport.update({
+    id: '/edit',
+    path: '/edit',
+    getParentRoute: () => DashboardProjectsProjectIdRoute,
+  } as any)
+
+const DashboardProjectsProjectIdPoursNewRoute =
+  DashboardProjectsProjectIdPoursNewImport.update({
+    id: '/pours/new',
+    path: '/pours/new',
+    getParentRoute: () => DashboardProjectsProjectIdRoute,
+  } as any)
+
+const DashboardProjectsProjectIdAttachmentsAttachmentIdFileRoute =
+  DashboardProjectsProjectIdAttachmentsAttachmentIdFileImport.update({
+    id: '/attachments/$attachmentId/file',
+    path: '/attachments/$attachmentId/file',
+    getParentRoute: () => DashboardProjectsProjectIdRoute,
+  } as any)
 
 // Populate the FileRoutesByPath interface
 
@@ -67,12 +128,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRoute
     }
-    '/dashboard/products': {
-      id: '/dashboard/products'
-      path: '/products'
-      fullPath: '/dashboard/products'
-      preLoaderRoute: typeof DashboardProductsImport
-      parentRoute: typeof DashboardRouteImport
+    '/auth/create-account': {
+      id: '/auth/create-account'
+      path: '/auth/create-account'
+      fullPath: '/auth/create-account'
+      preLoaderRoute: typeof AuthCreateAccountImport
+      parentRoute: typeof rootRoute
+    }
+    '/auth/forgot-password': {
+      id: '/auth/forgot-password'
+      path: '/auth/forgot-password'
+      fullPath: '/auth/forgot-password'
+      preLoaderRoute: typeof AuthForgotPasswordImport
+      parentRoute: typeof rootRoute
+    }
+    '/auth/reset-password': {
+      id: '/auth/reset-password'
+      path: '/auth/reset-password'
+      fullPath: '/auth/reset-password'
+      preLoaderRoute: typeof AuthResetPasswordImport
+      parentRoute: typeof rootRoute
+    }
+    '/auth/sign-in': {
+      id: '/auth/sign-in'
+      path: '/auth/sign-in'
+      fullPath: '/auth/sign-in'
+      preLoaderRoute: typeof AuthSignInImport
+      parentRoute: typeof rootRoute
     }
     '/dashboard/settings': {
       id: '/dashboard/settings'
@@ -88,21 +170,78 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardIndexImport
       parentRoute: typeof DashboardRouteImport
     }
+    '/dashboard/projects/$projectId': {
+      id: '/dashboard/projects/$projectId'
+      path: '/projects/$projectId'
+      fullPath: '/dashboard/projects/$projectId'
+      preLoaderRoute: typeof DashboardProjectsProjectIdImport
+      parentRoute: typeof DashboardRouteImport
+    }
+    '/dashboard/projects/': {
+      id: '/dashboard/projects/'
+      path: '/projects'
+      fullPath: '/dashboard/projects'
+      preLoaderRoute: typeof DashboardProjectsIndexImport
+      parentRoute: typeof DashboardRouteImport
+    }
+    '/dashboard/projects/$projectId/edit': {
+      id: '/dashboard/projects/$projectId/edit'
+      path: '/edit'
+      fullPath: '/dashboard/projects/$projectId/edit'
+      preLoaderRoute: typeof DashboardProjectsProjectIdEditImport
+      parentRoute: typeof DashboardProjectsProjectIdImport
+    }
+    '/dashboard/projects/$projectId/pours/new': {
+      id: '/dashboard/projects/$projectId/pours/new'
+      path: '/pours/new'
+      fullPath: '/dashboard/projects/$projectId/pours/new'
+      preLoaderRoute: typeof DashboardProjectsProjectIdPoursNewImport
+      parentRoute: typeof DashboardProjectsProjectIdImport
+    }
+    '/dashboard/projects/$projectId/attachments/$attachmentId/file': {
+      id: '/dashboard/projects/$projectId/attachments/$attachmentId/file'
+      path: '/attachments/$attachmentId/file'
+      fullPath: '/dashboard/projects/$projectId/attachments/$attachmentId/file'
+      preLoaderRoute: typeof DashboardProjectsProjectIdAttachmentsAttachmentIdFileImport
+      parentRoute: typeof DashboardProjectsProjectIdImport
+    }
   }
 }
 
 // Create and export the route tree
 
+interface DashboardProjectsProjectIdRouteChildren {
+  DashboardProjectsProjectIdEditRoute: typeof DashboardProjectsProjectIdEditRoute
+  DashboardProjectsProjectIdPoursNewRoute: typeof DashboardProjectsProjectIdPoursNewRoute
+  DashboardProjectsProjectIdAttachmentsAttachmentIdFileRoute: typeof DashboardProjectsProjectIdAttachmentsAttachmentIdFileRoute
+}
+
+const DashboardProjectsProjectIdRouteChildren: DashboardProjectsProjectIdRouteChildren =
+  {
+    DashboardProjectsProjectIdEditRoute: DashboardProjectsProjectIdEditRoute,
+    DashboardProjectsProjectIdPoursNewRoute:
+      DashboardProjectsProjectIdPoursNewRoute,
+    DashboardProjectsProjectIdAttachmentsAttachmentIdFileRoute:
+      DashboardProjectsProjectIdAttachmentsAttachmentIdFileRoute,
+  }
+
+const DashboardProjectsProjectIdRouteWithChildren =
+  DashboardProjectsProjectIdRoute._addFileChildren(
+    DashboardProjectsProjectIdRouteChildren,
+  )
+
 interface DashboardRouteRouteChildren {
-  DashboardProductsRoute: typeof DashboardProductsRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
+  DashboardProjectsProjectIdRoute: typeof DashboardProjectsProjectIdRouteWithChildren
+  DashboardProjectsIndexRoute: typeof DashboardProjectsIndexRoute
 }
 
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
-  DashboardProductsRoute: DashboardProductsRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardIndexRoute: DashboardIndexRoute,
+  DashboardProjectsProjectIdRoute: DashboardProjectsProjectIdRouteWithChildren,
+  DashboardProjectsIndexRoute: DashboardProjectsIndexRoute,
 }
 
 const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
@@ -112,25 +251,49 @@ const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteRouteWithChildren
-  '/dashboard/products': typeof DashboardProductsRoute
+  '/auth/create-account': typeof AuthCreateAccountRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/auth/sign-in': typeof AuthSignInRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/projects/$projectId': typeof DashboardProjectsProjectIdRouteWithChildren
+  '/dashboard/projects': typeof DashboardProjectsIndexRoute
+  '/dashboard/projects/$projectId/edit': typeof DashboardProjectsProjectIdEditRoute
+  '/dashboard/projects/$projectId/pours/new': typeof DashboardProjectsProjectIdPoursNewRoute
+  '/dashboard/projects/$projectId/attachments/$attachmentId/file': typeof DashboardProjectsProjectIdAttachmentsAttachmentIdFileRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/dashboard/products': typeof DashboardProductsRoute
+  '/auth/create-account': typeof AuthCreateAccountRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/auth/sign-in': typeof AuthSignInRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard': typeof DashboardIndexRoute
+  '/dashboard/projects/$projectId': typeof DashboardProjectsProjectIdRouteWithChildren
+  '/dashboard/projects': typeof DashboardProjectsIndexRoute
+  '/dashboard/projects/$projectId/edit': typeof DashboardProjectsProjectIdEditRoute
+  '/dashboard/projects/$projectId/pours/new': typeof DashboardProjectsProjectIdPoursNewRoute
+  '/dashboard/projects/$projectId/attachments/$attachmentId/file': typeof DashboardProjectsProjectIdAttachmentsAttachmentIdFileRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteRouteWithChildren
-  '/dashboard/products': typeof DashboardProductsRoute
+  '/auth/create-account': typeof AuthCreateAccountRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/auth/sign-in': typeof AuthSignInRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/projects/$projectId': typeof DashboardProjectsProjectIdRouteWithChildren
+  '/dashboard/projects/': typeof DashboardProjectsIndexRoute
+  '/dashboard/projects/$projectId/edit': typeof DashboardProjectsProjectIdEditRoute
+  '/dashboard/projects/$projectId/pours/new': typeof DashboardProjectsProjectIdPoursNewRoute
+  '/dashboard/projects/$projectId/attachments/$attachmentId/file': typeof DashboardProjectsProjectIdAttachmentsAttachmentIdFileRoute
 }
 
 export interface FileRouteTypes {
@@ -138,29 +301,65 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
-    | '/dashboard/products'
+    | '/auth/create-account'
+    | '/auth/forgot-password'
+    | '/auth/reset-password'
+    | '/auth/sign-in'
     | '/dashboard/settings'
     | '/dashboard/'
+    | '/dashboard/projects/$projectId'
+    | '/dashboard/projects'
+    | '/dashboard/projects/$projectId/edit'
+    | '/dashboard/projects/$projectId/pours/new'
+    | '/dashboard/projects/$projectId/attachments/$attachmentId/file'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard/products' | '/dashboard/settings' | '/dashboard'
+  to:
+    | '/'
+    | '/auth/create-account'
+    | '/auth/forgot-password'
+    | '/auth/reset-password'
+    | '/auth/sign-in'
+    | '/dashboard/settings'
+    | '/dashboard'
+    | '/dashboard/projects/$projectId'
+    | '/dashboard/projects'
+    | '/dashboard/projects/$projectId/edit'
+    | '/dashboard/projects/$projectId/pours/new'
+    | '/dashboard/projects/$projectId/attachments/$attachmentId/file'
   id:
     | '__root__'
     | '/'
     | '/dashboard'
-    | '/dashboard/products'
+    | '/auth/create-account'
+    | '/auth/forgot-password'
+    | '/auth/reset-password'
+    | '/auth/sign-in'
     | '/dashboard/settings'
     | '/dashboard/'
+    | '/dashboard/projects/$projectId'
+    | '/dashboard/projects/'
+    | '/dashboard/projects/$projectId/edit'
+    | '/dashboard/projects/$projectId/pours/new'
+    | '/dashboard/projects/$projectId/attachments/$attachmentId/file'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
+  AuthCreateAccountRoute: typeof AuthCreateAccountRoute
+  AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
+  AuthResetPasswordRoute: typeof AuthResetPasswordRoute
+  AuthSignInRoute: typeof AuthSignInRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRouteRoute: DashboardRouteRouteWithChildren,
+  AuthCreateAccountRoute: AuthCreateAccountRoute,
+  AuthForgotPasswordRoute: AuthForgotPasswordRoute,
+  AuthResetPasswordRoute: AuthResetPasswordRoute,
+  AuthSignInRoute: AuthSignInRoute,
 }
 
 export const routeTree = rootRoute
@@ -174,7 +373,11 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
-        "/dashboard"
+        "/dashboard",
+        "/auth/create-account",
+        "/auth/forgot-password",
+        "/auth/reset-password",
+        "/auth/sign-in"
       ]
     },
     "/": {
@@ -183,14 +386,23 @@ export const routeTree = rootRoute
     "/dashboard": {
       "filePath": "dashboard/route.tsx",
       "children": [
-        "/dashboard/products",
         "/dashboard/settings",
-        "/dashboard/"
+        "/dashboard/",
+        "/dashboard/projects/$projectId",
+        "/dashboard/projects/"
       ]
     },
-    "/dashboard/products": {
-      "filePath": "dashboard/products.tsx",
-      "parent": "/dashboard"
+    "/auth/create-account": {
+      "filePath": "auth/create-account.tsx"
+    },
+    "/auth/forgot-password": {
+      "filePath": "auth/forgot-password.tsx"
+    },
+    "/auth/reset-password": {
+      "filePath": "auth/reset-password.tsx"
+    },
+    "/auth/sign-in": {
+      "filePath": "auth/sign-in.tsx"
     },
     "/dashboard/settings": {
       "filePath": "dashboard/settings.tsx",
@@ -199,6 +411,31 @@ export const routeTree = rootRoute
     "/dashboard/": {
       "filePath": "dashboard/index.tsx",
       "parent": "/dashboard"
+    },
+    "/dashboard/projects/$projectId": {
+      "filePath": "dashboard/projects/$projectId.tsx",
+      "parent": "/dashboard",
+      "children": [
+        "/dashboard/projects/$projectId/edit",
+        "/dashboard/projects/$projectId/pours/new",
+        "/dashboard/projects/$projectId/attachments/$attachmentId/file"
+      ]
+    },
+    "/dashboard/projects/": {
+      "filePath": "dashboard/projects/index.tsx",
+      "parent": "/dashboard"
+    },
+    "/dashboard/projects/$projectId/edit": {
+      "filePath": "dashboard/projects/$projectId.edit.tsx",
+      "parent": "/dashboard/projects/$projectId"
+    },
+    "/dashboard/projects/$projectId/pours/new": {
+      "filePath": "dashboard/projects/$projectId.pours.new.tsx",
+      "parent": "/dashboard/projects/$projectId"
+    },
+    "/dashboard/projects/$projectId/attachments/$attachmentId/file": {
+      "filePath": "dashboard/projects/$projectId.attachments.$attachmentId.file.ts",
+      "parent": "/dashboard/projects/$projectId"
     }
   }
 }
