@@ -15,5 +15,5 @@ const listProjectAttachmentsSchema = z.object({
 export const listProjectAttachmentsServerFn = createServerFn({
   method: "GET",
 })
-  .inputValidator((input) => listProjectAttachmentsSchema.parse(input ?? {}))
+  .validator((input) => listProjectAttachmentsSchema.parse(input ?? {}))
   .handler(async ({ data }) => listProjectAttachments(data.projectId, data.query));

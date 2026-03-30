@@ -1,13 +1,14 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { AuthPageShell } from "@/components/auth/auth-page-shell";
 import { ForgotPasswordForm } from "@/components/auth/forgot-password-form";
-import { getCurrentUserServerFn } from "@/server/auth/get-current-user";
+import { getPrincipalHomePath } from "@/lib/auth/principal";
+import { getCurrentPrincipalServerFn } from "@/server/auth/get-current-user";
 
 export const Route = createFileRoute("/auth/forgot-password")({
   beforeLoad: async () => {
-    const user = await getCurrentUserServerFn();
-    if (user) {
-      throw redirect({ to: "/dashboard" });
+    const principal = await getCurrentPrincipalServerFn();
+    if (principal) {
+      throw redirect({ to: getPrincipalHomePath(principal) });
     }
   },
   component: ForgotPasswordPage,

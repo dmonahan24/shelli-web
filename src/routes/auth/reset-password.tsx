@@ -3,16 +3,17 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { AuthPageShell } from "@/components/auth/auth-page-shell";
 import { ResetPasswordForm } from "@/components/auth/reset-password-form";
 import { TokenStatusNotice } from "@/components/auth/token-status-notice";
+import { getPrincipalHomePath } from "@/lib/auth/principal";
 import { resetPasswordTokenSearchSchema } from "@/lib/validation/auth";
-import { getCurrentUserServerFn } from "@/server/auth/get-current-user";
+import { getCurrentPrincipalServerFn } from "@/server/auth/get-current-user";
 import { getResetPasswordTokenStatusServerFn } from "@/server/auth/reset-password";
 
 export const Route = createFileRoute("/auth/reset-password")({
   validateSearch: resetPasswordTokenSearchSchema,
   beforeLoad: async () => {
-    const user = await getCurrentUserServerFn();
-    if (user) {
-      throw redirect({ to: "/dashboard" });
+    const principal = await getCurrentPrincipalServerFn();
+    if (principal) {
+      throw redirect({ to: getPrincipalHomePath(principal) });
     }
   },
   component: ResetPasswordPage,

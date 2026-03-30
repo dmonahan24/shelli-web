@@ -3,7 +3,7 @@ import { ZodError } from "zod";
 import { db, type AppDatabase, type AppTransaction } from "@/db";
 import { attachments, auditEvents, projects, pours, users } from "@/db/schema";
 import { assertSameOrigin } from "@/lib/auth/csrf";
-import { requireUser } from "@/lib/auth/session";
+import { requireTenantUser } from "@/lib/auth/session";
 import {
   createProjectSchema,
   deleteProjectSchema,
@@ -33,6 +33,53 @@ function normalizeOptionalText(value?: string | null) {
   return trimmed ? trimmed : null;
 }
 
+type ProjectWriteAction = "create" | "update";
+
+function getProjectWriteFailure(
+  error: unknown,
+  action: ProjectWriteAction
+): ActionResult<never> | null {
+  const databaseError =
+    error && typeof error === "object"
+      ? (error as {
+          code?: string;
+          constraint_name?: string;
+          constraint?: string;
+          message?: string;
+          detail?: string;
+        })
+      : null;
+
+  const constraintName = databaseError?.constraint_name ?? databaseError?.constraint ?? "";
+  const message = databaseError?.message ?? "";
+
+  if (
+    databaseError?.code === "23505" &&
+    (constraintName === "projects_company_project_code_idx" ||
+      message.includes("projects_company_project_code_idx") ||
+      message.includes("(company_id, project_code)"))
+  ) {
+    return failure(
+      "validation_error",
+      "Please fix the highlighted fields.",
+      {
+        projectCode: "A project with that code already exists for this company.",
+      }
+    );
+  }
+
+  if (error instanceof Error && error.message === "User profile not found.") {
+    return failure(
+      "unauthorized",
+      action === "create"
+        ? "You must be signed in to create a project."
+        : "You must be signed in to update this project."
+    );
+  }
+
+  return null;
+}
+
 function toNumber(value: string | number | null | undefined) {
   if (typeof value === "number") {
     return value;
@@ -42,7 +89,7 @@ function toNumber(value: string | number | null | undefined) {
 }
 
 export async function listProjects(rawInput?: unknown) {
-  const user = await requireUser();
+  const user = await requireTenantUser();
   const input = projectListQuerySchema.parse(rawInput ?? {});
   const filters = buildProjectFilters(user.companyId, input);
   const whereClause = and(...filters);
@@ -96,7 +143,7 @@ export async function listProjects(rawInput?: unknown) {
 }
 
 export async function getProjectDetail(rawInput: unknown): Promise<any> {
-  const user = await requireUser();
+  const user = await requireTenantUser();
   const { projectId } = projectDetailParamsSchema.parse(rawInput);
 
   const project = await db.query.projects.findFirst({
@@ -155,40 +202,44 @@ export async function createProject(
 ): Promise<ActionResult<{ id: string }>> {
   try {
     assertSameOrigin();
-    const user = await requireUser();
+    const user = await requireTenantUser();
     const input = createProjectSchema.parse(rawInput);
 
-    const [createdProject] = await db
-      .insert(projects)
-      .values({
-        companyId: user.companyId,
-        createdByUserId: user.id,
-        updatedByUserId: user.id,
-        name: input.name.trim(),
-        address: input.address.trim(),
-        status: input.status,
-        description: normalizeOptionalText(input.description),
-        projectCode: normalizeOptionalText(input.projectCode),
-        dateStarted: input.dateStarted,
-        estimatedCompletionDate: input.estimatedCompletionDate,
-        totalConcretePoured: "0",
-        estimatedTotalConcrete: String(input.estimatedTotalConcrete),
-      })
-      .returning({ id: projects.id });
+    const createdProject = await db.transaction(async (tx) => {
+      const [project] = await tx
+        .insert(projects)
+        .values({
+          companyId: user.companyId,
+          createdByUserId: user.id,
+          updatedByUserId: user.id,
+          name: input.name.trim(),
+          address: input.address.trim(),
+          status: input.status,
+          description: normalizeOptionalText(input.description),
+          projectCode: normalizeOptionalText(input.projectCode),
+          dateStarted: input.dateStarted,
+          estimatedCompletionDate: input.estimatedCompletionDate,
+          totalConcretePoured: "0",
+          estimatedTotalConcrete: String(input.estimatedTotalConcrete),
+        })
+        .returning({ id: projects.id });
 
-    if (!createdProject) {
-      return failure("create_project_failed", "Unable to create the project right now.");
-    }
+      if (!project) {
+        throw new Error("Unable to create the project right now.");
+      }
 
-    await recordProjectActivity(db, {
-      actionType: "project_created",
-      details: {
-        name: input.name.trim(),
-        status: input.status,
-      },
-      projectId: createdProject.id,
-      summary: `Project created: ${input.name.trim()}`,
-      userId: user.id,
+      await recordProjectActivity(tx, {
+        actionType: "project_created",
+        details: {
+          name: input.name.trim(),
+          status: input.status,
+        },
+        projectId: project.id,
+        summary: `Project created: ${input.name.trim()}`,
+        userId: user.id,
+      });
+
+      return project;
     });
 
     return success({ id: createdProject.id }, "Project created.");
@@ -197,8 +248,17 @@ export async function createProject(
       return failure("validation_error", "Please fix the highlighted fields.", zodFieldErrors(error));
     }
 
-    if (error instanceof Error && error.message === "Authentication required.") {
+    if (
+      error instanceof Error &&
+      (error.message === "Authentication required." ||
+        error.message === "Tenant access required.")
+    ) {
       return failure("unauthorized", "You must be signed in to create a project.");
+    }
+
+    const databaseFailure = getProjectWriteFailure(error, "create");
+    if (databaseFailure) {
+      return databaseFailure;
     }
 
     return failure("create_project_failed", "Unable to create the project right now.");
@@ -211,7 +271,7 @@ export async function updateProject(
 ): Promise<ActionResult<{ id: string }>> {
   try {
     assertSameOrigin();
-    const user = await requireUser();
+    const user = await requireTenantUser();
     const input = updateProjectSchema.parse(rawInput);
     const project = await requireOwnedProject(user.companyId, projectId);
 
@@ -222,30 +282,32 @@ export async function updateProject(
       });
     }
 
-    await db
-      .update(projects)
-      .set({
-        updatedByUserId: user.id,
-        name: input.name.trim(),
-        address: input.address.trim(),
-        status: input.status,
-        description: normalizeOptionalText(input.description),
-        projectCode: normalizeOptionalText(input.projectCode),
-        dateStarted: input.dateStarted,
-        estimatedCompletionDate: input.estimatedCompletionDate,
-        estimatedTotalConcrete: String(input.estimatedTotalConcrete),
-      })
-      .where(eq(projects.id, projectId));
+    await db.transaction(async (tx) => {
+      await tx
+        .update(projects)
+        .set({
+          updatedByUserId: user.id,
+          name: input.name.trim(),
+          address: input.address.trim(),
+          status: input.status,
+          description: normalizeOptionalText(input.description),
+          projectCode: normalizeOptionalText(input.projectCode),
+          dateStarted: input.dateStarted,
+          estimatedCompletionDate: input.estimatedCompletionDate,
+          estimatedTotalConcrete: String(input.estimatedTotalConcrete),
+        })
+        .where(eq(projects.id, projectId));
 
-    await recordProjectActivity(db, {
-      actionType: "project_updated",
-      details: {
-        name: input.name.trim(),
-        status: input.status,
-      },
-      projectId,
-      summary: `Project updated: ${input.name.trim()}`,
-      userId: user.id,
+      await recordProjectActivity(tx, {
+        actionType: "project_updated",
+        details: {
+          name: input.name.trim(),
+          status: input.status,
+        },
+        projectId,
+        summary: `Project updated: ${input.name.trim()}`,
+        userId: user.id,
+      });
     });
 
     return success({ id: projectId }, "Project updated.");
@@ -254,8 +316,17 @@ export async function updateProject(
       return failure("validation_error", "Please fix the highlighted fields.", zodFieldErrors(error));
     }
 
-    if (error instanceof Error && error.message === "Authentication required.") {
+    if (
+      error instanceof Error &&
+      (error.message === "Authentication required." ||
+        error.message === "Tenant access required.")
+    ) {
       return failure("unauthorized", "You must be signed in to update this project.");
+    }
+
+    const databaseFailure = getProjectWriteFailure(error, "update");
+    if (databaseFailure) {
+      return databaseFailure;
     }
 
     return failure("update_project_failed", "Unable to update the project right now.");
@@ -267,7 +338,7 @@ export async function deleteProject(
 ): Promise<ActionResult<{ redirectTo: "/dashboard/projects" }>> {
   try {
     assertSameOrigin();
-    const user = await requireUser();
+    const user = await requireTenantUser();
     const { projectId } = deleteProjectSchema.parse(rawInput);
     const project = await requireOwnedProject(user.companyId, projectId);
 
@@ -288,7 +359,11 @@ export async function deleteProject(
       return failure("validation_error", "Unable to delete the requested project.");
     }
 
-    if (error instanceof Error && error.message === "Authentication required.") {
+    if (
+      error instanceof Error &&
+      (error.message === "Authentication required." ||
+        error.message === "Tenant access required.")
+    ) {
       return failure("unauthorized", "You must be signed in to delete this project.");
     }
 

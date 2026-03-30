@@ -9,5 +9,5 @@ const updateProjectServerSchema = z.object({
 });
 
 export const updateProjectServerFn = createServerFn({ method: "POST" })
-  .inputValidator(updateProjectServerSchema)
+  .validator(updateProjectServerSchema)
   .handler(async ({ data }) => updateProject(data.projectId, data.values));

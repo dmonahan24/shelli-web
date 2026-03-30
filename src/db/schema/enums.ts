@@ -8,6 +8,12 @@ export const userRoleEnum = pgEnum("user_role", [
   "executive_owner",
 ]);
 
+export const accessRequestStatusEnum = pgEnum("access_request_status", [
+  "pending",
+  "approved",
+  "rejected",
+]);
+
 export const projectStatusEnum = pgEnum("project_status", [
   "active",
   "completed",

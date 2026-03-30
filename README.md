@@ -26,6 +26,10 @@ Shelli is a construction web app for tracking concrete pour projects. It gives f
 - `/auth/sign-in`
 - `/auth/forgot-password`
 - `/auth/reset-password`
+- `/auth/pending-access`
+- `/admin`
+- `/admin/access-requests`
+- `/admin/companies`
 - `/dashboard`
 - `/dashboard/projects`
 - `/dashboard/settings`
@@ -68,12 +72,24 @@ SUPABASE_PROJECT_REF=blfhllxurhdsdforvnnk
 SUPABASE_URL=https://blfhllxurhdsdforvnnk.supabase.co
 SUPABASE_ANON_KEY=...
 SUPABASE_SERVICE_ROLE_KEY=...
-DATABASE_URL=postgresql://...
-DIRECT_DATABASE_URL=postgresql://...
+DATABASE_URL=postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres
+DIRECT_DATABASE_URL=postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres
 SUPABASE_ATTACHMENTS_BUCKET=project-attachments
 SESSION_SECRET=replace-with-a-long-random-secret
 APP_URL=http://localhost:3001
 EMAIL_FROM=no-reply@concreteco.local
+BOOTSTRAP_PLATFORM_ADMIN_EMAIL=platform-admin@shelli.local
+BOOTSTRAP_PLATFORM_ADMIN_PASSWORD=password123
+BOOTSTRAP_PLATFORM_ADMIN_FULL_NAME=Platform Admin
+# Optional: also provision the platform admin as a tenant user
+# BOOTSTRAP_PLATFORM_ADMIN_COMPANY_NAME=Shelli Internal Ops
+# BOOTSTRAP_PLATFORM_ADMIN_COMPANY_SLUG=shelli-internal
+# BOOTSTRAP_PLATFORM_ADMIN_COMPANY_ROLE=dispatcher_admin
+BOOTSTRAP_DEMO_COMPANY_NAME=Bedrock Build Co.
+BOOTSTRAP_DEMO_COMPANY_SLUG=bedrock-build
+BOOTSTRAP_DEMO_ADMIN_EMAIL=demo@bedrockbuild.com
+BOOTSTRAP_DEMO_ADMIN_PASSWORD=password123
+BOOTSTRAP_DEMO_ADMIN_FULL_NAME=Demo Dispatcher
 LEGACY_SQLITE_URL=./data/concrete-pours.sqlite
 ```
 
@@ -81,7 +97,8 @@ Notes:
 
 - Bun automatically reads `.env`
 - Supabase Auth is now the source of truth for user identity and password recovery
-- Self-service signup is intentionally disabled; bootstrap or admin provisioning is required
+- Self-service signup is intentionally disabled; bootstrap or platform-admin provisioning is required
+- If `BOOTSTRAP_PLATFORM_ADMIN_COMPANY_NAME` and `BOOTSTRAP_PLATFORM_ADMIN_COMPANY_SLUG` are set, `bun run db:bootstrap` also creates a tenant `users` row for that same platform-admin auth identity
 
 ## Getting Started
 
@@ -103,7 +120,7 @@ Apply Supabase SQL migrations:
 bun run db:migrate
 ```
 
-Bootstrap the first company/admin account:
+Bootstrap the first platform admin plus the demo tenant company/admin:
 
 ```bash
 bun run db:bootstrap
@@ -129,12 +146,18 @@ bun run dev
 
 The app runs at `http://localhost:3001`.
 
-## Demo Account
+## Bootstrap Accounts
 
-After bootstrapping or seeding, you can sign in with:
+After `bun run db:bootstrap`, you can sign in with:
 
-- Email: `demo@bedrockbuild.com`
-- Password: `password123`
+- Platform Admin
+  - Email: `platform-admin@shelli.local`
+  - Password: `password123`
+- Demo Tenant Admin
+  - Email: `demo@bedrockbuild.com`
+  - Password: `password123`
+
+If you override the bootstrap env vars, those credentials change with them.
 
 ## Scripts
 
@@ -145,7 +168,7 @@ After bootstrapping or seeding, you can sign in with:
 - `bun test` runs the Bun test suite
 - `bun run db:generate` generates Drizzle migrations
 - `bun run db:migrate` applies Drizzle migrations
-- `bun run db:bootstrap` provisions the first company and admin user in Supabase
+- `bun run db:bootstrap` provisions the first platform admin plus the demo tenant company/admin in Supabase
 - `bun run db:seed` seeds demo data
 - `bun run db:migrate-legacy` migrates the legacy SQLite dataset into Supabase
 

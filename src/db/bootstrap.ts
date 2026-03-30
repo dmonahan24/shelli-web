@@ -1,18 +1,59 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { companies, users } from "@/db/schema";
+import { companies, platformAdmins, users } from "@/db/schema";
+import { type AppUserRole } from "@/lib/auth/principal";
+import { env } from "@/lib/env/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 
 const bootstrapConfig = {
-  companyName: "Bedrock Build",
-  companySlug: "bedrock-build",
-  adminEmail: "demo@bedrockbuild.com",
-  adminPassword: "password123",
-  adminFullName: "Demo Superintendent",
+  platformAdminEmail: env.BOOTSTRAP_PLATFORM_ADMIN_EMAIL,
+  platformAdminPassword: env.BOOTSTRAP_PLATFORM_ADMIN_PASSWORD,
+  platformAdminFullName: env.BOOTSTRAP_PLATFORM_ADMIN_FULL_NAME,
+  platformAdminCompanyName: env.BOOTSTRAP_PLATFORM_ADMIN_COMPANY_NAME,
+  platformAdminCompanySlug: env.BOOTSTRAP_PLATFORM_ADMIN_COMPANY_SLUG,
+  platformAdminCompanyRole: env.BOOTSTRAP_PLATFORM_ADMIN_COMPANY_ROLE,
+  companyName: env.BOOTSTRAP_DEMO_COMPANY_NAME,
+  companySlug: env.BOOTSTRAP_DEMO_COMPANY_SLUG,
+  adminEmail: env.BOOTSTRAP_DEMO_ADMIN_EMAIL,
+  adminPassword: env.BOOTSTRAP_DEMO_ADMIN_PASSWORD,
+  adminFullName: env.BOOTSTRAP_DEMO_ADMIN_FULL_NAME,
   role: "dispatcher_admin" as const,
 };
 
 export async function ensureBootstrapData() {
+  const platformAdminAuthUser = await ensureAuthUser({
+    email: bootstrapConfig.platformAdminEmail,
+    password: bootstrapConfig.platformAdminPassword,
+    fullName: bootstrapConfig.platformAdminFullName,
+  });
+  const platformAdmin = await ensurePlatformAdmin({
+    id: platformAdminAuthUser.id,
+    email: bootstrapConfig.platformAdminEmail,
+    fullName: bootstrapConfig.platformAdminFullName,
+  });
+  let platformAdminCompanyId: string | null = null;
+  let platformAdminTenantUserId: string | null = null;
+
+  if (
+    bootstrapConfig.platformAdminCompanyName &&
+    bootstrapConfig.platformAdminCompanySlug
+  ) {
+    const platformAdminCompany = await ensureCompany(
+      bootstrapConfig.platformAdminCompanyName,
+      bootstrapConfig.platformAdminCompanySlug
+    );
+    const platformAdminTenantUser = await ensureUserProfile({
+      id: platformAdminAuthUser.id,
+      companyId: platformAdminCompany.id,
+      email: bootstrapConfig.platformAdminEmail,
+      fullName: bootstrapConfig.platformAdminFullName,
+      role: bootstrapConfig.platformAdminCompanyRole,
+    });
+
+    platformAdminCompanyId = platformAdminCompany.id;
+    platformAdminTenantUserId = platformAdminTenantUser.id;
+  }
+
   const company = await ensureCompany(
     bootstrapConfig.companyName,
     bootstrapConfig.companySlug
@@ -31,6 +72,9 @@ export async function ensureBootstrapData() {
   });
 
   return {
+    platformAdminId: platformAdmin.id,
+    platformAdminCompanyId,
+    platformAdminTenantUserId,
     companyId: company.id,
     userId: user.id,
   };
@@ -42,7 +86,19 @@ async function ensureCompany(name: string, slug: string) {
   });
 
   if (existingCompany) {
-    return existingCompany;
+    if (existingCompany.isActive) {
+      return existingCompany;
+    }
+
+    const [reactivatedCompany] = await db
+      .update(companies)
+      .set({
+        isActive: true,
+      })
+      .where(eq(companies.id, existingCompany.id))
+      .returning();
+
+    return reactivatedCompany ?? existingCompany;
   }
 
   const [createdCompany] = await db
@@ -104,14 +160,30 @@ async function ensureUserProfile(input: {
   companyId: string;
   email: string;
   fullName: string;
-  role: "dispatcher_admin";
+  role: AppUserRole;
 }) {
   const existingUser = await db.query.users.findFirst({
     where: eq(users.id, input.id),
   });
 
   if (existingUser) {
-    return existingUser;
+    if (existingUser.isActive) {
+      return existingUser;
+    }
+
+    const [reactivatedUser] = await db
+      .update(users)
+      .set({
+        companyId: input.companyId,
+        email: input.email,
+        fullName: input.fullName,
+        role: input.role,
+        isActive: true,
+      })
+      .where(eq(users.id, input.id))
+      .returning();
+
+    return reactivatedUser ?? existingUser;
   }
 
   const [createdUser] = await db
@@ -131,6 +203,50 @@ async function ensureUserProfile(input: {
   }
 
   return createdUser;
+}
+
+async function ensurePlatformAdmin(input: {
+  id: string;
+  email: string;
+  fullName: string;
+}) {
+  const existingPlatformAdmin = await db.query.platformAdmins.findFirst({
+    where: eq(platformAdmins.id, input.id),
+  });
+
+  if (existingPlatformAdmin) {
+    if (existingPlatformAdmin.isActive) {
+      return existingPlatformAdmin;
+    }
+
+    const [reactivatedPlatformAdmin] = await db
+      .update(platformAdmins)
+      .set({
+        email: input.email,
+        fullName: input.fullName,
+        isActive: true,
+      })
+      .where(eq(platformAdmins.id, input.id))
+      .returning();
+
+    return reactivatedPlatformAdmin ?? existingPlatformAdmin;
+  }
+
+  const [createdPlatformAdmin] = await db
+    .insert(platformAdmins)
+    .values({
+      id: input.id,
+      email: input.email,
+      fullName: input.fullName,
+      isActive: true,
+    })
+    .returning();
+
+  if (!createdPlatformAdmin) {
+    throw new Error("Unable to create bootstrap platform admin.");
+  }
+
+  return createdPlatformAdmin;
 }
 
 if (import.meta.main) {

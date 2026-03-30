@@ -96,6 +96,27 @@ begin
 end;
 $$;
 
+create table if not exists public.companies (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  slug text not null unique,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
+create table if not exists public.users (
+  id uuid primary key references auth.users (id) on delete cascade,
+  company_id uuid not null references public.companies (id) on delete cascade,
+  role user_role not null,
+  email text not null,
+  full_name text not null,
+  is_active boolean not null default true,
+  last_seen_at timestamptz,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now()),
+  unique (company_id, email)
+);
+
 create or replace function public.current_company_id()
 returns uuid
 language sql
@@ -131,27 +152,6 @@ set search_path = public
 as $$
   select coalesce(public.current_user_role() = any(allowed_roles), false)
 $$;
-
-create table if not exists public.companies (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  slug text not null unique,
-  created_at timestamptz not null default timezone('utc', now()),
-  updated_at timestamptz not null default timezone('utc', now())
-);
-
-create table if not exists public.users (
-  id uuid primary key references auth.users (id) on delete cascade,
-  company_id uuid not null references public.companies (id) on delete cascade,
-  role user_role not null,
-  email text not null,
-  full_name text not null,
-  is_active boolean not null default true,
-  last_seen_at timestamptz,
-  created_at timestamptz not null default timezone('utc', now()),
-  updated_at timestamptz not null default timezone('utc', now()),
-  unique (company_id, email)
-);
 
 create table if not exists public.projects (
   id uuid primary key default gen_random_uuid(),
@@ -642,10 +642,12 @@ alter table public.attachments enable row level security;
 alter table public.audit_events enable row level security;
 alter table public.pour_status_history enable row level security;
 
+drop policy if exists "users_select_own_company" on public.users;
 create policy "users_select_own_company" on public.users
 for select to authenticated
 using (company_id = public.current_company_id());
 
+drop policy if exists "users_update_self_or_admin" on public.users;
 create policy "users_update_self_or_admin" on public.users
 for update to authenticated
 using (
@@ -654,10 +656,12 @@ using (
 )
 with check (company_id = public.current_company_id());
 
+drop policy if exists "projects_read" on public.projects;
 create policy "projects_read" on public.projects
 for select to authenticated
 using (company_id = public.current_company_id());
 
+drop policy if exists "projects_write" on public.projects;
 create policy "projects_write" on public.projects
 for all to authenticated
 using (
@@ -669,10 +673,12 @@ with check (
   and public.has_any_role(array['dispatcher_admin'::user_role, 'project_manager'::user_role])
 );
 
+drop policy if exists "project_contacts_read" on public.project_contacts;
 create policy "project_contacts_read" on public.project_contacts
 for select to authenticated
 using (company_id = public.current_company_id());
 
+drop policy if exists "project_contacts_write" on public.project_contacts;
 create policy "project_contacts_write" on public.project_contacts
 for all to authenticated
 using (
@@ -684,10 +690,12 @@ with check (
   and public.has_any_role(array['dispatcher_admin'::user_role, 'project_manager'::user_role])
 );
 
+drop policy if exists "crews_read" on public.crews;
 create policy "crews_read" on public.crews
 for select to authenticated
 using (company_id = public.current_company_id());
 
+drop policy if exists "crews_write" on public.crews;
 create policy "crews_write" on public.crews
 for all to authenticated
 using (
@@ -699,10 +707,12 @@ with check (
   and public.has_any_role(array['dispatcher_admin'::user_role, 'project_manager'::user_role])
 );
 
+drop policy if exists "mix_designs_read" on public.mix_designs;
 create policy "mix_designs_read" on public.mix_designs
 for select to authenticated
 using (company_id = public.current_company_id());
 
+drop policy if exists "mix_designs_write" on public.mix_designs;
 create policy "mix_designs_write" on public.mix_designs
 for all to authenticated
 using (
@@ -714,10 +724,12 @@ with check (
   and public.has_any_role(array['dispatcher_admin'::user_role, 'project_manager'::user_role])
 );
 
+drop policy if exists "pours_read" on public.pours;
 create policy "pours_read" on public.pours
 for select to authenticated
 using (company_id = public.current_company_id());
 
+drop policy if exists "pours_write" on public.pours;
 create policy "pours_write" on public.pours
 for all to authenticated
 using (
@@ -737,10 +749,12 @@ with check (
   ])
 );
 
+drop policy if exists "pour_assignments_read" on public.pour_assignments;
 create policy "pour_assignments_read" on public.pour_assignments
 for select to authenticated
 using (company_id = public.current_company_id());
 
+drop policy if exists "pour_assignments_write" on public.pour_assignments;
 create policy "pour_assignments_write" on public.pour_assignments
 for all to authenticated
 using (
@@ -760,10 +774,12 @@ with check (
   ])
 );
 
+drop policy if exists "pour_mix_requirements_read" on public.pour_mix_requirements;
 create policy "pour_mix_requirements_read" on public.pour_mix_requirements
 for select to authenticated
 using (company_id = public.current_company_id());
 
+drop policy if exists "pour_mix_requirements_write" on public.pour_mix_requirements;
 create policy "pour_mix_requirements_write" on public.pour_mix_requirements
 for all to authenticated
 using (
@@ -781,10 +797,12 @@ with check (
   ])
 );
 
+drop policy if exists "load_tickets_read" on public.load_tickets;
 create policy "load_tickets_read" on public.load_tickets
 for select to authenticated
 using (company_id = public.current_company_id());
 
+drop policy if exists "load_tickets_write" on public.load_tickets;
 create policy "load_tickets_write" on public.load_tickets
 for all to authenticated
 using (
@@ -804,10 +822,12 @@ with check (
   ])
 );
 
+drop policy if exists "qc_tests_read" on public.qc_tests;
 create policy "qc_tests_read" on public.qc_tests
 for select to authenticated
 using (company_id = public.current_company_id());
 
+drop policy if exists "qc_tests_write" on public.qc_tests;
 create policy "qc_tests_write" on public.qc_tests
 for all to authenticated
 using (
@@ -827,10 +847,12 @@ with check (
   ])
 );
 
+drop policy if exists "issues_read" on public.issues;
 create policy "issues_read" on public.issues
 for select to authenticated
 using (company_id = public.current_company_id());
 
+drop policy if exists "issues_write" on public.issues;
 create policy "issues_write" on public.issues
 for all to authenticated
 using (
@@ -850,10 +872,12 @@ with check (
   ])
 );
 
+drop policy if exists "daily_reports_read" on public.daily_reports;
 create policy "daily_reports_read" on public.daily_reports
 for select to authenticated
 using (company_id = public.current_company_id());
 
+drop policy if exists "daily_reports_write" on public.daily_reports;
 create policy "daily_reports_write" on public.daily_reports
 for all to authenticated
 using (
@@ -871,10 +895,12 @@ with check (
   ])
 );
 
+drop policy if exists "attachments_read" on public.attachments;
 create policy "attachments_read" on public.attachments
 for select to authenticated
 using (company_id = public.current_company_id());
 
+drop policy if exists "attachments_write" on public.attachments;
 create policy "attachments_write" on public.attachments
 for all to authenticated
 using (
@@ -894,10 +920,12 @@ with check (
   ])
 );
 
+drop policy if exists "audit_events_read" on public.audit_events;
 create policy "audit_events_read" on public.audit_events
 for select to authenticated
 using (company_id = public.current_company_id());
 
+drop policy if exists "pour_status_history_read" on public.pour_status_history;
 create policy "pour_status_history_read" on public.pour_status_history
 for select to authenticated
 using (company_id = public.current_company_id());

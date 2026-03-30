@@ -5,5 +5,5 @@ import { getProjectDetail } from "@/server/projects/service";
 export const getProjectDetailServerFn = createServerFn({
   method: "GET",
 })
-  .inputValidator(projectDetailParamsSchema)
+  .validator(projectDetailParamsSchema)
   .handler(async ({ data }) => getProjectDetail(data));

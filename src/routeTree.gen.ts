@@ -12,24 +12,35 @@
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as DashboardRouteImport } from './routes/dashboard/route'
+import { Route as AdminRouteImport } from './routes/admin/route'
 import { Route as IndexImport } from './routes/index'
 import { Route as DashboardIndexImport } from './routes/dashboard/index'
+import { Route as AdminIndexImport } from './routes/admin/index'
 import { Route as DashboardSettingsImport } from './routes/dashboard/settings'
 import { Route as AuthSignInImport } from './routes/auth/sign-in'
 import { Route as AuthResetPasswordImport } from './routes/auth/reset-password'
+import { Route as AuthPendingAccessImport } from './routes/auth/pending-access'
 import { Route as AuthForgotPasswordImport } from './routes/auth/forgot-password'
 import { Route as AuthCreateAccountImport } from './routes/auth/create-account'
+import { Route as AdminUsersImport } from './routes/admin/users'
+import { Route as AdminCompaniesImport } from './routes/admin/companies'
+import { Route as AdminAccessRequestsImport } from './routes/admin/access-requests'
 import { Route as DashboardProjectsIndexImport } from './routes/dashboard/projects/index'
 import { Route as DashboardProjectsProjectIdImport } from './routes/dashboard/projects/$projectId'
 import { Route as DashboardProjectsProjectIdEditImport } from './routes/dashboard/projects/$projectId.edit'
 import { Route as DashboardProjectsProjectIdPoursNewImport } from './routes/dashboard/projects/$projectId.pours.new'
-import { Route as DashboardProjectsProjectIdAttachmentsAttachmentIdFileImport } from './routes/dashboard/projects/$projectId.attachments.$attachmentId.file'
 
 // Create/Update Routes
 
 const DashboardRouteRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AdminRouteRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -43,6 +54,12 @@ const DashboardIndexRoute = DashboardIndexImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => DashboardRouteRoute,
+} as any)
+
+const AdminIndexRoute = AdminIndexImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRouteRoute,
 } as any)
 
 const DashboardSettingsRoute = DashboardSettingsImport.update({
@@ -63,6 +80,12 @@ const AuthResetPasswordRoute = AuthResetPasswordImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const AuthPendingAccessRoute = AuthPendingAccessImport.update({
+  id: '/auth/pending-access',
+  path: '/auth/pending-access',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const AuthForgotPasswordRoute = AuthForgotPasswordImport.update({
   id: '/auth/forgot-password',
   path: '/auth/forgot-password',
@@ -73,6 +96,24 @@ const AuthCreateAccountRoute = AuthCreateAccountImport.update({
   id: '/auth/create-account',
   path: '/auth/create-account',
   getParentRoute: () => rootRoute,
+} as any)
+
+const AdminUsersRoute = AdminUsersImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+
+const AdminCompaniesRoute = AdminCompaniesImport.update({
+  id: '/companies',
+  path: '/companies',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+
+const AdminAccessRequestsRoute = AdminAccessRequestsImport.update({
+  id: '/access-requests',
+  path: '/access-requests',
+  getParentRoute: () => AdminRouteRoute,
 } as any)
 
 const DashboardProjectsIndexRoute = DashboardProjectsIndexImport.update({
@@ -103,13 +144,6 @@ const DashboardProjectsProjectIdPoursNewRoute =
     getParentRoute: () => DashboardProjectsProjectIdRoute,
   } as any)
 
-const DashboardProjectsProjectIdAttachmentsAttachmentIdFileRoute =
-  DashboardProjectsProjectIdAttachmentsAttachmentIdFileImport.update({
-    id: '/attachments/$attachmentId/file',
-    path: '/attachments/$attachmentId/file',
-    getParentRoute: () => DashboardProjectsProjectIdRoute,
-  } as any)
-
 // Populate the FileRoutesByPath interface
 
 declare module '@tanstack/react-router' {
@@ -121,12 +155,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexImport
       parentRoute: typeof rootRoute
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRoute
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRoute
+    }
+    '/admin/access-requests': {
+      id: '/admin/access-requests'
+      path: '/access-requests'
+      fullPath: '/admin/access-requests'
+      preLoaderRoute: typeof AdminAccessRequestsImport
+      parentRoute: typeof AdminRouteImport
+    }
+    '/admin/companies': {
+      id: '/admin/companies'
+      path: '/companies'
+      fullPath: '/admin/companies'
+      preLoaderRoute: typeof AdminCompaniesImport
+      parentRoute: typeof AdminRouteImport
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersImport
+      parentRoute: typeof AdminRouteImport
     }
     '/auth/create-account': {
       id: '/auth/create-account'
@@ -140,6 +202,13 @@ declare module '@tanstack/react-router' {
       path: '/auth/forgot-password'
       fullPath: '/auth/forgot-password'
       preLoaderRoute: typeof AuthForgotPasswordImport
+      parentRoute: typeof rootRoute
+    }
+    '/auth/pending-access': {
+      id: '/auth/pending-access'
+      path: '/auth/pending-access'
+      fullPath: '/auth/pending-access'
+      preLoaderRoute: typeof AuthPendingAccessImport
       parentRoute: typeof rootRoute
     }
     '/auth/reset-password': {
@@ -162,6 +231,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard/settings'
       preLoaderRoute: typeof DashboardSettingsImport
       parentRoute: typeof DashboardRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexImport
+      parentRoute: typeof AdminRouteImport
     }
     '/dashboard/': {
       id: '/dashboard/'
@@ -198,22 +274,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardProjectsProjectIdPoursNewImport
       parentRoute: typeof DashboardProjectsProjectIdImport
     }
-    '/dashboard/projects/$projectId/attachments/$attachmentId/file': {
-      id: '/dashboard/projects/$projectId/attachments/$attachmentId/file'
-      path: '/attachments/$attachmentId/file'
-      fullPath: '/dashboard/projects/$projectId/attachments/$attachmentId/file'
-      preLoaderRoute: typeof DashboardProjectsProjectIdAttachmentsAttachmentIdFileImport
-      parentRoute: typeof DashboardProjectsProjectIdImport
-    }
   }
 }
 
 // Create and export the route tree
 
+interface AdminRouteRouteChildren {
+  AdminAccessRequestsRoute: typeof AdminAccessRequestsRoute
+  AdminCompaniesRoute: typeof AdminCompaniesRoute
+  AdminUsersRoute: typeof AdminUsersRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminAccessRequestsRoute: AdminAccessRequestsRoute,
+  AdminCompaniesRoute: AdminCompaniesRoute,
+  AdminUsersRoute: AdminUsersRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
+  AdminRouteRouteChildren,
+)
+
 interface DashboardProjectsProjectIdRouteChildren {
   DashboardProjectsProjectIdEditRoute: typeof DashboardProjectsProjectIdEditRoute
   DashboardProjectsProjectIdPoursNewRoute: typeof DashboardProjectsProjectIdPoursNewRoute
-  DashboardProjectsProjectIdAttachmentsAttachmentIdFileRoute: typeof DashboardProjectsProjectIdAttachmentsAttachmentIdFileRoute
 }
 
 const DashboardProjectsProjectIdRouteChildren: DashboardProjectsProjectIdRouteChildren =
@@ -221,8 +307,6 @@ const DashboardProjectsProjectIdRouteChildren: DashboardProjectsProjectIdRouteCh
     DashboardProjectsProjectIdEditRoute: DashboardProjectsProjectIdEditRoute,
     DashboardProjectsProjectIdPoursNewRoute:
       DashboardProjectsProjectIdPoursNewRoute,
-    DashboardProjectsProjectIdAttachmentsAttachmentIdFileRoute:
-      DashboardProjectsProjectIdAttachmentsAttachmentIdFileRoute,
   }
 
 const DashboardProjectsProjectIdRouteWithChildren =
@@ -250,114 +334,146 @@ const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteRouteWithChildren
   '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/admin/access-requests': typeof AdminAccessRequestsRoute
+  '/admin/companies': typeof AdminCompaniesRoute
+  '/admin/users': typeof AdminUsersRoute
   '/auth/create-account': typeof AuthCreateAccountRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/pending-access': typeof AuthPendingAccessRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
+  '/admin/': typeof AdminIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/projects/$projectId': typeof DashboardProjectsProjectIdRouteWithChildren
   '/dashboard/projects': typeof DashboardProjectsIndexRoute
   '/dashboard/projects/$projectId/edit': typeof DashboardProjectsProjectIdEditRoute
   '/dashboard/projects/$projectId/pours/new': typeof DashboardProjectsProjectIdPoursNewRoute
-  '/dashboard/projects/$projectId/attachments/$attachmentId/file': typeof DashboardProjectsProjectIdAttachmentsAttachmentIdFileRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin/access-requests': typeof AdminAccessRequestsRoute
+  '/admin/companies': typeof AdminCompaniesRoute
+  '/admin/users': typeof AdminUsersRoute
   '/auth/create-account': typeof AuthCreateAccountRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/pending-access': typeof AuthPendingAccessRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
+  '/admin': typeof AdminIndexRoute
   '/dashboard': typeof DashboardIndexRoute
   '/dashboard/projects/$projectId': typeof DashboardProjectsProjectIdRouteWithChildren
   '/dashboard/projects': typeof DashboardProjectsIndexRoute
   '/dashboard/projects/$projectId/edit': typeof DashboardProjectsProjectIdEditRoute
   '/dashboard/projects/$projectId/pours/new': typeof DashboardProjectsProjectIdPoursNewRoute
-  '/dashboard/projects/$projectId/attachments/$attachmentId/file': typeof DashboardProjectsProjectIdAttachmentsAttachmentIdFileRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteRouteWithChildren
   '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/admin/access-requests': typeof AdminAccessRequestsRoute
+  '/admin/companies': typeof AdminCompaniesRoute
+  '/admin/users': typeof AdminUsersRoute
   '/auth/create-account': typeof AuthCreateAccountRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/pending-access': typeof AuthPendingAccessRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
+  '/admin/': typeof AdminIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/projects/$projectId': typeof DashboardProjectsProjectIdRouteWithChildren
   '/dashboard/projects/': typeof DashboardProjectsIndexRoute
   '/dashboard/projects/$projectId/edit': typeof DashboardProjectsProjectIdEditRoute
   '/dashboard/projects/$projectId/pours/new': typeof DashboardProjectsProjectIdPoursNewRoute
-  '/dashboard/projects/$projectId/attachments/$attachmentId/file': typeof DashboardProjectsProjectIdAttachmentsAttachmentIdFileRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/dashboard'
+    | '/admin/access-requests'
+    | '/admin/companies'
+    | '/admin/users'
     | '/auth/create-account'
     | '/auth/forgot-password'
+    | '/auth/pending-access'
     | '/auth/reset-password'
     | '/auth/sign-in'
     | '/dashboard/settings'
+    | '/admin/'
     | '/dashboard/'
     | '/dashboard/projects/$projectId'
     | '/dashboard/projects'
     | '/dashboard/projects/$projectId/edit'
     | '/dashboard/projects/$projectId/pours/new'
-    | '/dashboard/projects/$projectId/attachments/$attachmentId/file'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin/access-requests'
+    | '/admin/companies'
+    | '/admin/users'
     | '/auth/create-account'
     | '/auth/forgot-password'
+    | '/auth/pending-access'
     | '/auth/reset-password'
     | '/auth/sign-in'
     | '/dashboard/settings'
+    | '/admin'
     | '/dashboard'
     | '/dashboard/projects/$projectId'
     | '/dashboard/projects'
     | '/dashboard/projects/$projectId/edit'
     | '/dashboard/projects/$projectId/pours/new'
-    | '/dashboard/projects/$projectId/attachments/$attachmentId/file'
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/dashboard'
+    | '/admin/access-requests'
+    | '/admin/companies'
+    | '/admin/users'
     | '/auth/create-account'
     | '/auth/forgot-password'
+    | '/auth/pending-access'
     | '/auth/reset-password'
     | '/auth/sign-in'
     | '/dashboard/settings'
+    | '/admin/'
     | '/dashboard/'
     | '/dashboard/projects/$projectId'
     | '/dashboard/projects/'
     | '/dashboard/projects/$projectId/edit'
     | '/dashboard/projects/$projectId/pours/new'
-    | '/dashboard/projects/$projectId/attachments/$attachmentId/file'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRouteRoute: typeof AdminRouteRouteWithChildren
   DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
   AuthCreateAccountRoute: typeof AuthCreateAccountRoute
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
+  AuthPendingAccessRoute: typeof AuthPendingAccessRoute
   AuthResetPasswordRoute: typeof AuthResetPasswordRoute
   AuthSignInRoute: typeof AuthSignInRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRouteRoute: AdminRouteRouteWithChildren,
   DashboardRouteRoute: DashboardRouteRouteWithChildren,
   AuthCreateAccountRoute: AuthCreateAccountRoute,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
+  AuthPendingAccessRoute: AuthPendingAccessRoute,
   AuthResetPasswordRoute: AuthResetPasswordRoute,
   AuthSignInRoute: AuthSignInRoute,
 }
@@ -373,15 +489,26 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
+        "/admin",
         "/dashboard",
         "/auth/create-account",
         "/auth/forgot-password",
+        "/auth/pending-access",
         "/auth/reset-password",
         "/auth/sign-in"
       ]
     },
     "/": {
       "filePath": "index.tsx"
+    },
+    "/admin": {
+      "filePath": "admin/route.tsx",
+      "children": [
+        "/admin/access-requests",
+        "/admin/companies",
+        "/admin/users",
+        "/admin/"
+      ]
     },
     "/dashboard": {
       "filePath": "dashboard/route.tsx",
@@ -392,11 +519,26 @@ export const routeTree = rootRoute
         "/dashboard/projects/"
       ]
     },
+    "/admin/access-requests": {
+      "filePath": "admin/access-requests.tsx",
+      "parent": "/admin"
+    },
+    "/admin/companies": {
+      "filePath": "admin/companies.tsx",
+      "parent": "/admin"
+    },
+    "/admin/users": {
+      "filePath": "admin/users.tsx",
+      "parent": "/admin"
+    },
     "/auth/create-account": {
       "filePath": "auth/create-account.tsx"
     },
     "/auth/forgot-password": {
       "filePath": "auth/forgot-password.tsx"
+    },
+    "/auth/pending-access": {
+      "filePath": "auth/pending-access.tsx"
     },
     "/auth/reset-password": {
       "filePath": "auth/reset-password.tsx"
@@ -408,6 +550,10 @@ export const routeTree = rootRoute
       "filePath": "dashboard/settings.tsx",
       "parent": "/dashboard"
     },
+    "/admin/": {
+      "filePath": "admin/index.tsx",
+      "parent": "/admin"
+    },
     "/dashboard/": {
       "filePath": "dashboard/index.tsx",
       "parent": "/dashboard"
@@ -417,8 +563,7 @@ export const routeTree = rootRoute
       "parent": "/dashboard",
       "children": [
         "/dashboard/projects/$projectId/edit",
-        "/dashboard/projects/$projectId/pours/new",
-        "/dashboard/projects/$projectId/attachments/$attachmentId/file"
+        "/dashboard/projects/$projectId/pours/new"
       ]
     },
     "/dashboard/projects/": {
@@ -431,10 +576,6 @@ export const routeTree = rootRoute
     },
     "/dashboard/projects/$projectId/pours/new": {
       "filePath": "dashboard/projects/$projectId.pours.new.tsx",
-      "parent": "/dashboard/projects/$projectId"
-    },
-    "/dashboard/projects/$projectId/attachments/$attachmentId/file": {
-      "filePath": "dashboard/projects/$projectId.attachments.$attachmentId.file.ts",
       "parent": "/dashboard/projects/$projectId"
     }
   }

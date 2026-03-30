@@ -1,10 +1,15 @@
+import { eq, sql } from "drizzle-orm";
 import { ZodError } from "zod";
+import { db } from "@/db";
+import { accessRequests } from "@/db/schema";
 import { assertSameOrigin } from "@/lib/auth/csrf";
+import { getPrincipalHomePath, isPendingAccessPrincipal } from "@/lib/auth/principal";
 import { normalizeEmail } from "@/lib/auth/password";
 import { assertRateLimit } from "@/lib/auth/rate-limit";
+import { resolvePrincipalFromAuthUser } from "@/lib/auth/resolve-principal";
 import {
   deleteSession,
-  getCurrentUser,
+  getCurrentPrincipal,
   getRequestIpAddress,
   persistSession,
 } from "@/lib/auth/session";
@@ -29,6 +34,58 @@ function zodFieldErrors(error: ZodError) {
       .map(([key, value]) => [key, value?.[0]])
       .filter((entry): entry is [string, string] => Boolean(entry[1]))
   );
+}
+
+async function ensureAccessRequestForAuthUser(input: {
+  authUserId: string;
+  email: string;
+  fullName: string;
+}) {
+  const existingRequest = await db.query.accessRequests.findFirst({
+    where: eq(accessRequests.authUserId, input.authUserId),
+  });
+
+  if (existingRequest?.status === "rejected") {
+    await db
+      .update(accessRequests)
+      .set({
+        email: input.email,
+        fullName: input.fullName,
+        updatedAt: sql`now()`,
+      })
+      .where(eq(accessRequests.id, existingRequest.id));
+
+    return;
+  }
+
+  await db
+    .insert(accessRequests)
+    .values({
+      authUserId: input.authUserId,
+      email: input.email,
+      fullName: input.fullName,
+      status: "pending",
+      requestedAt: new Date(),
+      resolvedAt: null,
+      resolvedByPlatformAdminId: null,
+      targetCompanyId: null,
+      targetRole: null,
+      notes: null,
+    })
+    .onConflictDoUpdate({
+      target: accessRequests.authUserId,
+      set: {
+        email: input.email,
+        fullName: input.fullName,
+        status: "pending",
+        requestedAt: new Date(),
+        resolvedAt: null,
+        resolvedByPlatformAdminId: null,
+        targetCompanyId: null,
+        targetRole: null,
+        updatedAt: sql`now()`,
+      },
+    });
 }
 
 export async function createAccount(
@@ -72,16 +129,29 @@ export async function signIn(
 
     persistSession(data.session, input.rememberMe);
 
-    const user = await getCurrentUser();
-    if (!user) {
+    const principal = await resolvePrincipalFromAuthUser(data.session.user);
+    if (principal.kind === "inactive_tenant_user") {
       await deleteSession();
       return failure(
-        "not_provisioned",
-        "Your login is valid, but this app does not have a company profile for the account yet."
+        "inactive_account",
+        "This account is inactive right now. Contact a platform administrator for access."
       );
     }
 
-    return success({ redirectTo: "/dashboard" }, "Signed in.");
+    if (!principal) {
+      await deleteSession();
+      return failure("sign_in_failed", "Unable to sign in right now.");
+    }
+
+    if (isPendingAccessPrincipal(principal)) {
+      await ensureAccessRequestForAuthUser({
+        authUserId: principal.id,
+        email: principal.email,
+        fullName: principal.fullName,
+      });
+    }
+
+    return success({ redirectTo: getPrincipalHomePath(principal) }, "Signed in.");
   } catch (error) {
     if (error instanceof ZodError) {
       return failure("validation_error", "Please fix the highlighted fields.", zodFieldErrors(error));
@@ -186,6 +256,6 @@ export async function resetPassword(
   }
 }
 
-export async function getAuthenticatedUser() {
-  return getCurrentUser();
+export async function getAuthenticatedPrincipal() {
+  return getCurrentPrincipal();
 }

@@ -12,16 +12,39 @@ if (migrationFiles.length === 0) {
   throw new Error(`No SQL migrations found in ${migrationsDirectory}`);
 }
 
-const sql = postgres(env.DIRECT_DATABASE_URL, {
-  max: 1,
-  prepare: false,
-});
+async function runMigrations(connectionString: string) {
+  const sql = postgres(connectionString, {
+    max: 1,
+    prepare: false,
+  });
 
-for (const migrationFile of migrationFiles) {
-  console.log(`Applying migration ${migrationFile}`);
-  await sql.file(join(migrationsDirectory, migrationFile));
+  try {
+    for (const migrationFile of migrationFiles) {
+      console.log(`Applying migration ${migrationFile}`);
+      await sql.file(join(migrationsDirectory, migrationFile));
+    }
+  } finally {
+    await sql.end({ timeout: 0 }).catch(() => undefined);
+  }
 }
 
-await sql.end();
+try {
+  await runMigrations(env.DIRECT_DATABASE_URL);
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  const directHostLooksIpv6Only = env.DIRECT_DATABASE_URL.includes("@db.");
+  const shouldRetryWithPooler =
+    directHostLooksIpv6Only &&
+    (message.includes("ECONNREFUSED") || message.includes("getaddrinfo"));
+
+  if (!shouldRetryWithPooler) {
+    throw error;
+  }
+
+  console.warn(
+    "Direct Supabase host was unreachable from this machine. Retrying migrations with DATABASE_URL."
+  );
+  await runMigrations(env.DATABASE_URL);
+}
 
 console.log("Database migrations completed.");

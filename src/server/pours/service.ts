@@ -14,7 +14,7 @@ import { ZodError } from "zod";
 import { db } from "@/db";
 import { loadTickets, mixDesigns, pours, users } from "@/db/schema";
 import { assertSameOrigin } from "@/lib/auth/csrf";
-import { requireUser } from "@/lib/auth/session";
+import { requireTenantUser } from "@/lib/auth/session";
 import {
   createPourEventSchema,
   deletePourEventSchema,
@@ -54,7 +54,7 @@ function toNumber(value: string | number | null | undefined) {
 }
 
 export async function listProjectPours(projectId: string, rawInput?: unknown) {
-  const user = await requireUser();
+  const user = await requireTenantUser();
   await requireOwnedProject(user.companyId, projectId);
 
   const input = pourEventListQuerySchema.parse(rawInput ?? {});
@@ -145,7 +145,7 @@ export async function createPourEvent(
 > {
   try {
     assertSameOrigin();
-    const user = await requireUser();
+    const user = await requireTenantUser();
     const input = createPourEventSchema.parse(rawInput);
     const project = await requireOwnedProject(user.companyId, input.projectId);
 
@@ -211,7 +211,11 @@ export async function createPourEvent(
       return failure("validation_error", "Please fix the highlighted fields.", zodFieldErrors(error));
     }
 
-    if (error instanceof Error && error.message === "Authentication required.") {
+    if (
+      error instanceof Error &&
+      (error.message === "Authentication required." ||
+        error.message === "Tenant access required.")
+    ) {
       return failure("unauthorized", "You must be signed in to add a pour event.");
     }
 
@@ -224,7 +228,7 @@ export async function updatePourEvent(
 ): Promise<ActionResult<{ id: string; projectId: string }>> {
   try {
     assertSameOrigin();
-    const user = await requireUser();
+    const user = await requireTenantUser();
     const input = updatePourEventSchema.parse(rawInput);
     const pourEvent = await requireOwnedPourEvent(user.companyId, input.id);
 
@@ -294,7 +298,11 @@ export async function updatePourEvent(
       return failure("validation_error", "Please fix the highlighted fields.", zodFieldErrors(error));
     }
 
-    if (error instanceof Error && error.message === "Authentication required.") {
+    if (
+      error instanceof Error &&
+      (error.message === "Authentication required." ||
+        error.message === "Tenant access required.")
+    ) {
       return failure("unauthorized", "You must be signed in to update a pour event.");
     }
 
@@ -307,7 +315,7 @@ export async function deletePourEvent(
 ): Promise<ActionResult<{ id: string; projectId: string }>> {
   try {
     assertSameOrigin();
-    const user = await requireUser();
+    const user = await requireTenantUser();
     const { id } = deletePourEventSchema.parse(rawInput);
     const pourEvent = await requireOwnedPourEvent(user.companyId, id);
 
@@ -332,7 +340,11 @@ export async function deletePourEvent(
       return failure("validation_error", "Unable to delete the requested pour event.");
     }
 
-    if (error instanceof Error && error.message === "Authentication required.") {
+    if (
+      error instanceof Error &&
+      (error.message === "Authentication required." ||
+        error.message === "Tenant access required.")
+    ) {
       return failure("unauthorized", "You must be signed in to delete a pour event.");
     }
 

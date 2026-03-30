@@ -1,3 +1,4 @@
+import { useNavigate } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -21,6 +22,8 @@ type ProjectRow = {
 };
 
 export function ProjectsTable({ projects }: { projects: ProjectRow[] }) {
+  const navigate = useNavigate();
+
   return (
     <Card className="rounded-[28px] border-border/80 bg-card/90 shadow-sm">
       <CardHeader className="pb-2">
@@ -44,7 +47,24 @@ export function ProjectsTable({ projects }: { projects: ProjectRow[] }) {
                 <TableRow
                   key={project.id}
                   className="cursor-pointer transition-colors hover:bg-muted/40"
-                  title="Project detail pages are the next expansion point."
+                  title={`Open ${project.name}`}
+                  role="link"
+                  tabIndex={0}
+                  onClick={() =>
+                    navigate({
+                      to: "/dashboard/projects/$projectId",
+                      params: { projectId: project.id },
+                    })
+                  }
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      void navigate({
+                        to: "/dashboard/projects/$projectId",
+                        params: { projectId: project.id },
+                      });
+                    }
+                  }}
                 >
                   <TableCell className="font-medium">
                     <div className="flex items-center justify-between gap-2">

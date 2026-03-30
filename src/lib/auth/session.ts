@@ -1,12 +1,15 @@
 import { getRequestHeader } from "@tanstack/react-start/server";
-import { eq } from "drizzle-orm";
-import { db } from "@/db";
-import { users } from "@/db/schema";
 import {
   clearSessionCookie,
   readSessionCookie,
   setSessionCookie,
 } from "@/lib/auth/cookies";
+import {
+  type AppPrincipal,
+  isPlatformAdminPrincipal,
+  isTenantUserPrincipal,
+} from "@/lib/auth/principal";
+import { resolvePrincipalFromAuthUser } from "@/lib/auth/resolve-principal";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export function getRequestIpAddress() {
@@ -30,7 +33,7 @@ export async function revokeUserSessions(_userId: string) {
   clearSessionCookie();
 }
 
-export async function getCurrentUser() {
+export async function getCurrentPrincipal(): Promise<AppPrincipal | null> {
   const cookie = readSessionCookie();
   if (!cookie) {
     return null;
@@ -49,29 +52,44 @@ export async function getCurrentUser() {
 
   setSessionCookie(data.session, cookie.rememberMe);
 
-  const profile = await db.query.users.findFirst({
-    where: eq(users.id, data.session.user.id),
-  });
+  const resolvedPrincipal = await resolvePrincipalFromAuthUser(data.session.user);
 
-  if (!profile || !profile.isActive) {
+  if (resolvedPrincipal.kind === "inactive_tenant_user") {
     clearSessionCookie();
     return null;
   }
 
-  return {
-    id: profile.id,
-    companyId: profile.companyId,
-    email: profile.email,
-    fullName: profile.fullName,
-    role: profile.role,
-  };
+  return resolvedPrincipal;
 }
 
-export async function requireUser() {
-  const user = await getCurrentUser();
-  if (!user) {
+export async function getCurrentUser() {
+  const principal = await getCurrentPrincipal();
+  return isTenantUserPrincipal(principal) ? principal : null;
+}
+
+export async function requireAuthenticatedPrincipal() {
+  const principal = await getCurrentPrincipal();
+  if (!principal) {
     throw new Error("Authentication required.");
   }
 
-  return user;
+  return principal;
+}
+
+export async function requireTenantUser() {
+  const principal = await requireAuthenticatedPrincipal();
+  if (!isTenantUserPrincipal(principal)) {
+    throw new Error("Tenant access required.");
+  }
+
+  return principal;
+}
+
+export async function requirePlatformAdmin() {
+  const principal = await requireAuthenticatedPrincipal();
+  if (!isPlatformAdminPrincipal(principal)) {
+    throw new Error("Platform admin access required.");
+  }
+
+  return principal;
 }

@@ -11,5 +11,5 @@ const listProjectPoursSchema = z.object({
 export const listProjectPoursServerFn = createServerFn({
   method: "GET",
 })
-  .inputValidator((input) => listProjectPoursSchema.parse(input ?? {}))
+  .validator((input) => listProjectPoursSchema.parse(input ?? {}))
   .handler(async ({ data }) => listProjectPours(data.projectId, data.query));

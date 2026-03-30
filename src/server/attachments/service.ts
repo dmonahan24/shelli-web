@@ -4,7 +4,7 @@ import { ZodError, z } from "zod";
 import { db } from "@/db";
 import { attachments, projects, users } from "@/db/schema";
 import { assertSameOrigin } from "@/lib/auth/csrf";
-import { requireUser } from "@/lib/auth/session";
+import { requireTenantUser } from "@/lib/auth/session";
 import {
   attachmentUploadSchema,
   deleteProjectAttachmentSchema,
@@ -34,7 +34,7 @@ function normalizeOptionalText(value?: string | null) {
 }
 
 export async function listProjectAttachments(projectId: string, rawInput?: unknown) {
-  const user = await requireUser();
+  const user = await requireTenantUser();
   await requireOwnedProject(user.companyId, projectId);
 
   const input = attachmentListSchema.parse({
@@ -76,7 +76,7 @@ export async function listProjectAttachments(projectId: string, rawInput?: unkno
     rows: rows.map((row) => ({
       ...row,
       uploadedBy: row.uploadedBy ?? "System",
-      fileUrl: `/dashboard/projects/${row.projectId}/attachments/${row.id}/file`,
+      fileUrl: `/api/projects/${row.projectId}/attachments/${row.id}/file`,
       isPreviewable:
         row.mimeType.startsWith("image/") || row.mimeType === "application/pdf",
     })),
@@ -92,7 +92,7 @@ export async function uploadProjectAttachment(
 ): Promise<ActionResult<{ projectId: string; uploadedCount: number }>> {
   try {
     assertSameOrigin();
-    const user = await requireUser();
+    const user = await requireTenantUser();
     const files = collectAttachmentFiles(formData);
     const projectIdValue = formData.get("projectId");
     const attachmentTypeValue = formData.get("attachmentType");
@@ -169,7 +169,11 @@ export async function uploadProjectAttachment(
       return failure("validation_error", "Please fix the highlighted fields.");
     }
 
-    if (error instanceof Error && error.message === "Authentication required.") {
+    if (
+      error instanceof Error &&
+      (error.message === "Authentication required." ||
+        error.message === "Tenant access required.")
+    ) {
       return failure("unauthorized", "You must be signed in to upload attachments.");
     }
 
@@ -182,7 +186,7 @@ export async function deleteProjectAttachment(
 ): Promise<ActionResult<{ attachmentId: string; projectId: string }>> {
   try {
     assertSameOrigin();
-    const user = await requireUser();
+    const user = await requireTenantUser();
     const input = deleteProjectAttachmentSchema.parse(rawInput);
     const attachment = await requireOwnedProjectAttachment(user.companyId, input.projectId, input.attachmentId);
 
@@ -210,7 +214,11 @@ export async function deleteProjectAttachment(
       return failure("validation_error", "Unable to delete the requested attachment.");
     }
 
-    if (error instanceof Error && error.message === "Authentication required.") {
+    if (
+      error instanceof Error &&
+      (error.message === "Authentication required." ||
+        error.message === "Tenant access required.")
+    ) {
       return failure("unauthorized", "You must be signed in to delete an attachment.");
     }
 
@@ -223,7 +231,7 @@ export async function serveProjectAttachmentFile(input: {
   attachmentId: string;
   request: Request;
 }) {
-  const user = await requireUser();
+  const user = await requireTenantUser();
   await requireOwnedProject(user.companyId, input.projectId);
 
   const attachment = await requireOwnedProjectAttachment(
