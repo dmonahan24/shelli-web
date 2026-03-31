@@ -5,6 +5,15 @@ import { getFloorRouteParams } from "@/lib/project-paths";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  MobileActionRow,
+  MobileCard,
+  MobileCardHeader,
+  MobileCardList,
+  MobileMetric,
+  MobileMetricGrid,
+  ResponsiveTableLayout,
+} from "@/components/ui/responsive-layout";
+import {
   Table,
   TableBody,
   TableCell,
@@ -52,91 +61,152 @@ export function FloorsTable({
         <CardTitle className="text-lg">Floors</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="overflow-hidden rounded-2xl border border-border/70">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Floor</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead className="text-right">Level</TableHead>
-                <TableHead className="text-right">Pour Types</TableHead>
-                <TableHead className="text-right">Estimated</TableHead>
-                <TableHead className="text-right">Actual</TableHead>
-                <TableHead className="text-right">Remaining</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {floors.length > 0 ? (
-                floors.map((floor) => (
-                  <TableRow key={floor.id}>
-                    <TableCell className="font-medium">
-                      <PendingLink
-                        className="hover:underline"
-                        preload="intent"
-                        to="/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier"
-                        params={getFloorRouteParams(project, building, floor)}
-                      >
-                        {floor.name}
-                      </PendingLink>
-                    </TableCell>
-                    <TableCell>{floor.floorType.replaceAll("_", " ")}</TableCell>
-                    <TableCell className="text-right">{floor.levelNumber ?? "—"}</TableCell>
-                    <TableCell className="text-right">{floor.pourTypeCount}</TableCell>
-                    <TableCell className="text-right">
-                      {formatConcreteVolume(floor.estimatedConcreteTotal)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {formatConcreteVolume(floor.actualConcreteTotal)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {formatConcreteVolume(floor.remainingConcrete)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-2">
-                        <Button asChild size="sm" variant="outline">
+        <ResponsiveTableLayout
+          desktop={
+            <div className="overflow-hidden rounded-2xl border border-border/70">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Floor</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead className="text-right">Level</TableHead>
+                    <TableHead className="text-right">Pour Types</TableHead>
+                    <TableHead className="text-right">Estimated</TableHead>
+                    <TableHead className="text-right">Actual</TableHead>
+                    <TableHead className="text-right">Remaining</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {floors.length > 0 ? (
+                    floors.map((floor) => (
+                      <TableRow key={floor.id}>
+                        <TableCell className="font-medium">
                           <PendingLink
-                            preload="intent"
+                            className="hover:underline"
+                        preload="intent"
                             to="/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier"
                             params={getFloorRouteParams(project, building, floor)}
                           >
-                            View
+                            {floor.name}
                           </PendingLink>
-                        </Button>
-                        <EditFloorDialog
-                          floor={floor}
-                          onUpdated={async () => {
-                            await onMutationComplete();
-                          }}
-                          trigger={
-                            <Button size="sm" variant="outline">
-                              Edit
+                        </TableCell>
+                        <TableCell>{floor.floorType.replaceAll("_", " ")}</TableCell>
+                        <TableCell className="text-right">{floor.levelNumber ?? "—"}</TableCell>
+                        <TableCell className="text-right">{floor.pourTypeCount}</TableCell>
+                        <TableCell className="text-right">
+                          {formatConcreteVolume(floor.estimatedConcreteTotal)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatConcreteVolume(floor.actualConcreteTotal)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatConcreteVolume(floor.remainingConcrete)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex justify-end gap-2">
+                            <Button asChild size="sm" variant="outline">
+                              <PendingLink
+                            preload="intent"
+                                to="/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier"
+                                params={getFloorRouteParams(project, building, floor)}
+                              >
+                                View
+                              </PendingLink>
                             </Button>
-                          }
-                        />
-                        <DeleteFloorDialog
-                          floor={floor}
-                          onDeleted={onMutationComplete}
-                          trigger={
-                            <Button size="sm" variant="destructive">
-                              Delete
-                            </Button>
-                          }
-                        />
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                            <EditFloorDialog
+                              floor={floor}
+                              onUpdated={async () => {
+                                await onMutationComplete();
+                              }}
+                              trigger={
+                                <Button size="sm" variant="outline">
+                                  Edit
+                                </Button>
+                              }
+                            />
+                            <DeleteFloorDialog
+                              floor={floor}
+                              onDeleted={onMutationComplete}
+                              trigger={
+                                <Button size="sm" variant="destructive">
+                                  Delete
+                                </Button>
+                              }
+                            />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell className="h-24 text-center" colSpan={8}>
+                        No floors yet.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          }
+          mobile={
+            <MobileCardList>
+              {floors.length > 0 ? (
+                floors.map((floor) => (
+                  <MobileCard key={floor.id}>
+                    <MobileCardHeader
+                      title={floor.name}
+                      subtitle={floor.floorType.replaceAll("_", " ")}
+                    />
+                    <MobileMetricGrid>
+                      <MobileMetric label="Level" value={floor.levelNumber ?? "—"} />
+                      <MobileMetric label="Pour Types" value={floor.pourTypeCount} />
+                      <MobileMetric
+                        label="Estimated"
+                        value={formatConcreteVolume(floor.estimatedConcreteTotal)}
+                      />
+                      <MobileMetric
+                        label="Actual"
+                        value={formatConcreteVolume(floor.actualConcreteTotal)}
+                      />
+                      <MobileMetric
+                        label="Remaining"
+                        value={formatConcreteVolume(floor.remainingConcrete)}
+                      />
+                    </MobileMetricGrid>
+                    <MobileActionRow className="[&>*]:flex-1">
+                      <Button asChild variant="outline">
+                        <PendingLink
+                          to="/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier"
+                          preload="intent"
+                          params={getFloorRouteParams(project, building, floor)}
+                        >
+                          View
+                        </PendingLink>
+                      </Button>
+                      <EditFloorDialog
+                        floor={floor}
+                        onUpdated={async () => {
+                          await onMutationComplete();
+                        }}
+                        trigger={<Button variant="outline">Edit</Button>}
+                      />
+                      <DeleteFloorDialog
+                        floor={floor}
+                        onDeleted={onMutationComplete}
+                        trigger={<Button variant="destructive">Delete</Button>}
+                      />
+                    </MobileActionRow>
+                  </MobileCard>
                 ))
               ) : (
-                <TableRow>
-                  <TableCell className="h-24 text-center" colSpan={8}>
-                    No floors yet.
-                  </TableCell>
-                </TableRow>
+                <MobileCard>
+                  <p className="text-sm text-muted-foreground">No floors yet.</p>
+                </MobileCard>
               )}
-            </TableBody>
-          </Table>
-        </div>
+            </MobileCardList>
+          }
+        />
       </CardContent>
     </Card>
   );

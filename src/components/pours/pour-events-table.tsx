@@ -21,6 +21,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  MobileActionRow,
+  MobileCard,
+  MobileCardHeader,
+  MobileCardList,
+  MobileMetric,
+  MobileMetricGrid,
+  ResponsiveTableLayout,
+} from "@/components/ui/responsive-layout";
+import {
   Table,
   TableBody,
   TableCell,
@@ -124,38 +133,102 @@ export function PourEventsTable({
           />
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="overflow-hidden rounded-2xl border border-border/70">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Pour Date</TableHead>
-                  <TableHead>Concrete Amount</TableHead>
-                  <TableHead>Unit</TableHead>
-                  <TableHead>Location Description</TableHead>
-                  <TableHead>Mix Type</TableHead>
-                  <TableHead>Supplier</TableHead>
-                  <TableHead>Ticket Number</TableHead>
-                  <TableHead>Notes Summary</TableHead>
-                  <TableHead>Created By</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+          <ResponsiveTableLayout
+            desktop={
+              <div className="overflow-hidden rounded-2xl border border-border/70">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Pour Date</TableHead>
+                      <TableHead>Concrete Amount</TableHead>
+                      <TableHead>Unit</TableHead>
+                      <TableHead>Location Description</TableHead>
+                      <TableHead>Mix Type</TableHead>
+                      <TableHead>Supplier</TableHead>
+                      <TableHead>Ticket Number</TableHead>
+                      <TableHead>Notes Summary</TableHead>
+                      <TableHead>Created By</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {data.rows.length > 0 ? (
+                      data.rows.map((pourEvent) => (
+                        <TableRow key={pourEvent.id}>
+                          <TableCell>{formatDate(pourEvent.pourDate)}</TableCell>
+                          <TableCell>{formatConcreteVolume(pourEvent.concreteAmount)}</TableCell>
+                          <TableCell>{pourEvent.unit.replaceAll("_", " ")}</TableCell>
+                          <TableCell>{pourEvent.locationDescription}</TableCell>
+                          <TableCell>{pourEvent.mixType ?? "Not recorded"}</TableCell>
+                          <TableCell>{pourEvent.supplierName ?? "Not recorded"}</TableCell>
+                          <TableCell>{pourEvent.ticketNumber ?? "Not recorded"}</TableCell>
+                          <TableCell className="max-w-52 truncate text-muted-foreground">
+                            {pourEvent.crewNotes ?? pourEvent.weatherNotes ?? "No notes"}
+                          </TableCell>
+                          <TableCell>{pourEvent.createdBy}</TableCell>
+                          <TableCell className="text-right">
+                            <PourEventRowActions
+                              onDelete={async () => {
+                                await refresh();
+                                await onMutationComplete();
+                              }}
+                              onEdit={() => setEditingPour(pourEvent)}
+                              onView={() => setSelectedPour(pourEvent)}
+                              pourEvent={pourEvent}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={10} className="h-24 text-center text-muted-foreground">
+                          {isRefreshing
+                            ? "Loading pour events..."
+                            : "No pour events found for this project yet."}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            }
+            mobile={
+              <MobileCardList>
                 {data.rows.length > 0 ? (
                   data.rows.map((pourEvent) => (
-                    <TableRow key={pourEvent.id}>
-                      <TableCell>{formatDate(pourEvent.pourDate)}</TableCell>
-                      <TableCell>{formatConcreteVolume(pourEvent.concreteAmount)}</TableCell>
-                      <TableCell>{pourEvent.unit.replaceAll("_", " ")}</TableCell>
-                      <TableCell>{pourEvent.locationDescription}</TableCell>
-                      <TableCell>{pourEvent.mixType ?? "Not recorded"}</TableCell>
-                      <TableCell>{pourEvent.supplierName ?? "Not recorded"}</TableCell>
-                      <TableCell>{pourEvent.ticketNumber ?? "Not recorded"}</TableCell>
-                      <TableCell className="max-w-52 truncate text-muted-foreground">
-                        {pourEvent.crewNotes ?? pourEvent.weatherNotes ?? "No notes"}
-                      </TableCell>
-                      <TableCell>{pourEvent.createdBy}</TableCell>
-                      <TableCell className="text-right">
+                    <MobileCard key={pourEvent.id}>
+                      <MobileCardHeader
+                        title={formatDate(pourEvent.pourDate)}
+                        subtitle={pourEvent.locationDescription}
+                      />
+                      <MobileMetricGrid>
+                        <MobileMetric
+                          label="Amount"
+                          value={formatConcreteVolume(pourEvent.concreteAmount)}
+                        />
+                        <MobileMetric label="Unit" value={pourEvent.unit.replaceAll("_", " ")} />
+                        <MobileMetric
+                          label="Mix"
+                          value={pourEvent.mixType ?? "Not recorded"}
+                        />
+                        <MobileMetric
+                          label="Supplier"
+                          value={pourEvent.supplierName ?? "Not recorded"}
+                        />
+                        <MobileMetric
+                          label="Ticket"
+                          value={pourEvent.ticketNumber ?? "Not recorded"}
+                        />
+                        <MobileMetric label="Created By" value={pourEvent.createdBy} />
+                      </MobileMetricGrid>
+                      <MobileMetric
+                        label="Notes"
+                        value={pourEvent.crewNotes ?? pourEvent.weatherNotes ?? "No notes"}
+                      />
+                      <MobileActionRow className="[&>*]:flex-1">
+                        <Button variant="outline" onClick={() => setSelectedPour(pourEvent)}>
+                          View
+                        </Button>
                         <PourEventRowActions
                           onDelete={async () => {
                             await refresh();
@@ -165,19 +238,21 @@ export function PourEventsTable({
                           onView={() => setSelectedPour(pourEvent)}
                           pourEvent={pourEvent}
                         />
-                      </TableCell>
-                    </TableRow>
+                      </MobileActionRow>
+                    </MobileCard>
                   ))
                 ) : (
-                  <TableRow>
-                    <TableCell colSpan={10} className="h-24 text-center text-muted-foreground">
-                      {isRefreshing ? "Loading pour events..." : "No pour events found for this project yet."}
-                    </TableCell>
-                  </TableRow>
+                  <MobileCard>
+                    <p className="text-sm text-muted-foreground">
+                      {isRefreshing
+                        ? "Loading pour events..."
+                        : "No pour events found for this project yet."}
+                    </p>
+                  </MobileCard>
                 )}
-              </TableBody>
-            </Table>
-          </div>
+              </MobileCardList>
+            }
+          />
           <PourEventsPagination
             page={data.page}
             pageCount={data.pageCount}

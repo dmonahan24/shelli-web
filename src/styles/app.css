@@ -184,8 +184,9 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground overflow-x-hidden;
     letter-spacing: var(--tracking-normal);
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
@@ -208,3 +209,4 @@
     animation: navigation-progress-slide 1.2s ease-in-out infinite;
   }
 }
+

@@ -2,6 +2,15 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  MobileActionRow,
+  MobileCard,
+  MobileCardHeader,
+  MobileCardList,
+  MobileMetric,
+  MobileMetricGrid,
+  ResponsiveTableLayout,
+} from "@/components/ui/responsive-layout";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -71,41 +80,86 @@ export function MembersTable({
   }>;
 }) {
   return (
-    <div className="rounded-2xl border border-border/70 bg-background">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Company Role</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Joined</TableHead>
-            <TableHead>Assigned Projects</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+    <ResponsiveTableLayout
+      desktop={
+        <div className="rounded-2xl border border-border/70 bg-background">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Company Role</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Joined</TableHead>
+                <TableHead>Assigned Projects</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((row) => (
+                <TableRow key={row.membershipId}>
+                  <TableCell className="font-medium">{row.fullName}</TableCell>
+                  <TableCell>{row.email}</TableCell>
+                  <TableCell>
+                    <MemberRoleSelect
+                      companyId={companyId}
+                      membershipId={row.membershipId}
+                      value={row.role}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">{row.status}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    {row.joinedAt ? new Date(row.joinedAt).toLocaleDateString() : "Pending"}
+                  </TableCell>
+                  <TableCell>{row.assignedProjectsCount}</TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="outline" size="sm">
+                      View Assignments
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      }
+      mobile={
+        <MobileCardList>
           {rows.map((row) => (
-            <TableRow key={row.membershipId}>
-              <TableCell className="font-medium">{row.fullName}</TableCell>
-              <TableCell>{row.email}</TableCell>
-              <TableCell>
-                <MemberRoleSelect companyId={companyId} membershipId={row.membershipId} value={row.role} />
-              </TableCell>
-              <TableCell>
-                <Badge variant="secondary">{row.status}</Badge>
-              </TableCell>
-              <TableCell>{row.joinedAt ? new Date(row.joinedAt).toLocaleDateString() : "Pending"}</TableCell>
-              <TableCell>{row.assignedProjectsCount}</TableCell>
-              <TableCell className="text-right">
-                <Button variant="outline" size="sm">
+            <MobileCard key={row.membershipId}>
+              <MobileCardHeader
+                title={row.fullName}
+                subtitle={row.email}
+                badge={<Badge variant="secondary">{row.status}</Badge>}
+              />
+              <MobileMetricGrid>
+                <MobileMetric
+                  label="Joined"
+                  value={row.joinedAt ? new Date(row.joinedAt).toLocaleDateString() : "Pending"}
+                />
+                <MobileMetric label="Projects" value={row.assignedProjectsCount} />
+              </MobileMetricGrid>
+              <div className="space-y-2">
+                <p className="text-[11px] font-semibold tracking-[0.18em] text-muted-foreground uppercase">
+                  Company Role
+                </p>
+                <MemberRoleSelect
+                  companyId={companyId}
+                  membershipId={row.membershipId}
+                  value={row.role}
+                />
+              </div>
+              <MobileActionRow>
+                <Button variant="outline" className="flex-1">
                   View Assignments
                 </Button>
-              </TableCell>
-            </TableRow>
+              </MobileActionRow>
+            </MobileCard>
           ))}
-        </TableBody>
-      </Table>
-    </div>
+        </MobileCardList>
+      }
+    />
   );
 }
