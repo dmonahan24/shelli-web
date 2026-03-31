@@ -2,12 +2,12 @@ import { createFileRoute, notFound, redirect, useNavigate, useRouter } from "@ta
 import { BuildingsManagementToolbar } from "@/components/hierarchy/hierarchy-filters";
 import { ProjectBuildingsSection } from "@/components/hierarchy/project-buildings-section";
 import { ListPendingPage } from "@/components/navigation/page-pending";
-import { READ_ROUTE_CACHE_OPTIONS } from "@/lib/router-cache";
+import { HIERARCHY_ROUTE_CACHE_OPTIONS } from "@/lib/router-cache";
 import { hierarchyBuildingsSearchSchema } from "@/lib/validation/hierarchy";
 import { getProjectBuildingsPageDataServerFn } from "@/server/navigation/page-data";
 
 export const Route = createFileRoute("/dashboard/projects/$projectIdentifier/buildings/")({
-  ...READ_ROUTE_CACHE_OPTIONS,
+  ...HIERARCHY_ROUTE_CACHE_OPTIONS,
   validateSearch: hierarchyBuildingsSearchSchema,
   loader: async ({ cause, params }) => {
     const result = await getProjectBuildingsPageDataServerFn({

@@ -73,7 +73,7 @@ export function FloorsTable({
                     <TableCell className="font-medium">
                       <PendingLink
                         className="hover:underline"
-                        preload="viewport"
+                        preload="intent"
                         to="/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier"
                         params={getFloorRouteParams(project, building, floor)}
                       >
@@ -96,7 +96,7 @@ export function FloorsTable({
                       <div className="flex justify-end gap-2">
                         <Button asChild size="sm" variant="outline">
                           <PendingLink
-                            preload="viewport"
+                            preload="intent"
                             to="/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier"
                             params={getFloorRouteParams(project, building, floor)}
                           >

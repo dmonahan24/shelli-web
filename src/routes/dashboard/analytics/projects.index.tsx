@@ -34,7 +34,7 @@ function ProjectAnalyticsIndexPage() {
         {data.rows.map((project) => (
           <PendingLink
             key={project.id}
-            preload="viewport"
+            preload="intent"
             to="/dashboard/analytics/projects/$projectIdentifier"
             params={getProjectRouteParams(project)}
           >

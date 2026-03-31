@@ -30,13 +30,18 @@ type PageDataResult<TData, TParams> =
       data: TData;
     };
 
-function logPageDataDuration(routeId: string, cause: string, startedAt: number) {
+function logPageDataDuration(
+  routeId: string,
+  cause: string,
+  startedAt: number,
+  outcome: "not_found" | "redirect" | "success"
+) {
   if (env.NODE_ENV === "production") {
     return;
   }
 
   const durationMs = Math.round(performance.now() - startedAt);
-  console.info(`[page-data] ${routeId} (${cause}) ${durationMs}ms`);
+  console.info(`[page-data] ${routeId} (${cause}, ${outcome}) ${durationMs}ms`);
 }
 
 const projectPageDataInputSchema = z.object({
@@ -63,12 +68,12 @@ export const getProjectPageDataServerFn = createServerFn({
     const resolved = await resolveProjectRoute(data.params.projectIdentifier, "view");
 
     if (!resolved) {
-      logPageDataDuration("/dashboard/projects/$projectIdentifier", data.cause, startedAt);
+      logPageDataDuration("/dashboard/projects/$projectIdentifier", data.cause, startedAt, "not_found");
       return { status: "not_found" } satisfies PageDataResult<never, typeof data.params>;
     }
 
     if (!resolved.isCanonical) {
-      logPageDataDuration("/dashboard/projects/$projectIdentifier", data.cause, startedAt);
+      logPageDataDuration("/dashboard/projects/$projectIdentifier", data.cause, startedAt, "redirect");
       return {
         status: "redirect",
         canonicalParams: resolved.canonicalParams,
@@ -99,11 +104,11 @@ export const getProjectPageDataServerFn = createServerFn({
     ]);
 
     if (!detail) {
-      logPageDataDuration("/dashboard/projects/$projectIdentifier", data.cause, startedAt);
+      logPageDataDuration("/dashboard/projects/$projectIdentifier", data.cause, startedAt, "not_found");
       return { status: "not_found" } satisfies PageDataResult<never, typeof data.params>;
     }
 
-    logPageDataDuration("/dashboard/projects/$projectIdentifier", data.cause, startedAt);
+    logPageDataDuration("/dashboard/projects/$projectIdentifier", data.cause, startedAt, "success");
     return {
       status: "success",
       data: {
@@ -134,12 +139,22 @@ export const getProjectBuildingsPageDataServerFn = createServerFn({
     const resolved = await resolveProjectRoute(data.params.projectIdentifier, "view");
 
     if (!resolved) {
-      logPageDataDuration("/dashboard/projects/$projectIdentifier/buildings", data.cause, startedAt);
+      logPageDataDuration(
+        "/dashboard/projects/$projectIdentifier/buildings",
+        data.cause,
+        startedAt,
+        "not_found"
+      );
       return { status: "not_found" } satisfies PageDataResult<never, typeof data.params>;
     }
 
     if (!resolved.isCanonical) {
-      logPageDataDuration("/dashboard/projects/$projectIdentifier/buildings", data.cause, startedAt);
+      logPageDataDuration(
+        "/dashboard/projects/$projectIdentifier/buildings",
+        data.cause,
+        startedAt,
+        "redirect"
+      );
       return {
         status: "redirect",
         canonicalParams: resolved.canonicalParams,
@@ -147,7 +162,12 @@ export const getProjectBuildingsPageDataServerFn = createServerFn({
     }
 
     const buildings = await listBuildingsForProjectQuery(resolved.project.id);
-    logPageDataDuration("/dashboard/projects/$projectIdentifier/buildings", data.cause, startedAt);
+    logPageDataDuration(
+      "/dashboard/projects/$projectIdentifier/buildings",
+      data.cause,
+      startedAt,
+      "success"
+    );
 
     return {
       status: "success",
@@ -184,7 +204,8 @@ export const getBuildingPageDataServerFn = createServerFn({
       logPageDataDuration(
         "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier",
         data.cause,
-        startedAt
+        startedAt,
+        "not_found"
       );
       return { status: "not_found" } satisfies PageDataResult<never, typeof data.params>;
     }
@@ -193,7 +214,8 @@ export const getBuildingPageDataServerFn = createServerFn({
       logPageDataDuration(
         "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier",
         data.cause,
-        startedAt
+        startedAt,
+        "redirect"
       );
       return {
         status: "redirect",
@@ -207,7 +229,8 @@ export const getBuildingPageDataServerFn = createServerFn({
       logPageDataDuration(
         "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier",
         data.cause,
-        startedAt
+        startedAt,
+        "not_found"
       );
       return { status: "not_found" } satisfies PageDataResult<never, typeof data.params>;
     }
@@ -215,7 +238,8 @@ export const getBuildingPageDataServerFn = createServerFn({
     logPageDataDuration(
       "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier",
       data.cause,
-      startedAt
+      startedAt,
+      "success"
     );
 
     return {
@@ -239,7 +263,8 @@ export const getFloorPageDataServerFn = createServerFn({
       logPageDataDuration(
         "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier",
         data.cause,
-        startedAt
+        startedAt,
+        "not_found"
       );
       return { status: "not_found" } satisfies PageDataResult<never, typeof data.params>;
     }
@@ -248,7 +273,8 @@ export const getFloorPageDataServerFn = createServerFn({
       logPageDataDuration(
         "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier",
         data.cause,
-        startedAt
+        startedAt,
+        "redirect"
       );
       return {
         status: "redirect",
@@ -262,7 +288,8 @@ export const getFloorPageDataServerFn = createServerFn({
       logPageDataDuration(
         "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier",
         data.cause,
-        startedAt
+        startedAt,
+        "not_found"
       );
       return { status: "not_found" } satisfies PageDataResult<never, typeof data.params>;
     }
@@ -270,7 +297,8 @@ export const getFloorPageDataServerFn = createServerFn({
     logPageDataDuration(
       "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier",
       data.cause,
-      startedAt
+      startedAt,
+      "success"
     );
 
     return {

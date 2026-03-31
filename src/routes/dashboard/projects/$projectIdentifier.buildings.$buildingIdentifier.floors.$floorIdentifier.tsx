@@ -9,7 +9,7 @@ import { PourTypesTable } from "@/components/hierarchy/pour-types-table";
 import { FloorPresetBundleDialog } from "@/components/pour-types/floor-preset-bundle-dialog";
 import { DetailPendingPage } from "@/components/navigation/page-pending";
 import { Button } from "@/components/ui/button";
-import { READ_ROUTE_CACHE_OPTIONS } from "@/lib/router-cache";
+import { HIERARCHY_ROUTE_CACHE_OPTIONS } from "@/lib/router-cache";
 import {
   hierarchyPourTypesSearchSchema,
 } from "@/lib/validation/hierarchy";
@@ -20,7 +20,7 @@ import {
 import { getFloorPageDataServerFn } from "@/server/navigation/page-data";
 
 export const Route = createFileRoute("/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier")({
-  ...READ_ROUTE_CACHE_OPTIONS,
+  ...HIERARCHY_ROUTE_CACHE_OPTIONS,
   validateSearch: hierarchyPourTypesSearchSchema,
   loader: async ({ cause, params }) => {
     const result = await getFloorPageDataServerFn({

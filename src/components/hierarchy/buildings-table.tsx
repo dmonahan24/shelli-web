@@ -67,7 +67,7 @@ export function BuildingsTable({
                     <TableCell className="font-medium">
                       <PendingLink
                         className="hover:underline"
-                        preload="viewport"
+                        preload="intent"
                         to="/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier"
                         params={getBuildingRouteParams(project, building)}
                       >
@@ -89,7 +89,7 @@ export function BuildingsTable({
                       <div className="flex justify-end gap-2">
                         <Button asChild size="sm" variant="outline">
                           <PendingLink
-                            preload="viewport"
+                            preload="intent"
                             to="/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier"
                             params={getBuildingRouteParams(project, building)}
                           >

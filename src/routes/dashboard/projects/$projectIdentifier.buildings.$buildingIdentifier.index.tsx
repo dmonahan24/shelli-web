@@ -10,7 +10,7 @@ import { BuildingSummaryCards } from "@/components/hierarchy/building-summary-ca
 import { FloorsTable } from "@/components/hierarchy/floors-table";
 import { DetailPendingPage } from "@/components/navigation/page-pending";
 import { Button } from "@/components/ui/button";
-import { READ_ROUTE_CACHE_OPTIONS } from "@/lib/router-cache";
+import { HIERARCHY_ROUTE_CACHE_OPTIONS } from "@/lib/router-cache";
 import {
   hierarchyFloorsSearchSchema,
 } from "@/lib/validation/hierarchy";
@@ -21,7 +21,7 @@ import {
 import { getBuildingPageDataServerFn } from "@/server/navigation/page-data";
 
 export const Route = createFileRoute("/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/")({
-  ...READ_ROUTE_CACHE_OPTIONS,
+  ...HIERARCHY_ROUTE_CACHE_OPTIONS,
   validateSearch: hierarchyFloorsSearchSchema,
   loader: async ({ cause, params }) => {
     const result = await getBuildingPageDataServerFn({

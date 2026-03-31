@@ -4,6 +4,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 function HeaderSkeleton({ compact = false }: { compact?: boolean }) {
   return (
     <div className="space-y-3 rounded-[28px] border border-border/70 bg-card/90 p-6 shadow-sm">
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-3 w-16" />
+        <Skeleton className="h-3 w-3 rounded-full" />
+        <Skeleton className="h-3 w-20" />
+      </div>
       <Skeleton className="h-3 w-24" />
       <Skeleton className={compact ? "h-8 w-48" : "h-10 w-64"} />
       <Skeleton className="h-4 w-full max-w-2xl" />
@@ -60,16 +65,23 @@ export function DashboardPendingPage() {
   );
 }
 
-export function ListPendingPage() {
+export function ListPagePending() {
   return (
     <div className="space-y-6">
       <HeaderSkeleton compact />
+      <Card className="rounded-[28px] border-border/80 bg-card/90 shadow-sm">
+        <CardContent className="grid gap-3 p-5 sm:grid-cols-3">
+          <Skeleton className="h-10 w-full rounded-xl" />
+          <Skeleton className="h-10 w-full rounded-xl" />
+          <Skeleton className="h-10 w-full rounded-xl" />
+        </CardContent>
+      </Card>
       <TableCardSkeleton rows={6} titleWidth="w-44" />
     </div>
   );
 }
 
-export function DetailPendingPage() {
+export function DetailPagePending() {
   return (
     <div className="space-y-6">
       <HeaderSkeleton />
@@ -88,7 +100,7 @@ export function DetailPendingPage() {
   );
 }
 
-export function FormPendingPage() {
+export function FormPagePending() {
   return (
     <div className="space-y-6">
       <HeaderSkeleton />
@@ -107,6 +119,11 @@ export function FormPendingPage() {
           ))}
         </CardContent>
       </Card>
+      <div className="sticky bottom-4 flex justify-end">
+        <div className="rounded-2xl border border-border/60 bg-background/90 p-3 shadow-lg backdrop-blur">
+          <Skeleton className="h-10 w-36 rounded-xl" />
+        </div>
+      </div>
     </div>
   );
 }
@@ -152,3 +169,6 @@ export function AdminPendingPage() {
   );
 }
 
+export const ListPendingPage = ListPagePending;
+export const DetailPendingPage = DetailPagePending;
+export const FormPendingPage = FormPagePending;

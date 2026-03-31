@@ -81,7 +81,7 @@ export function ProjectsTableAdvanced({
                   <TableCell className="text-right">
                     <PendingLink
                       to="/dashboard/projects/$projectIdentifier"
-                      preload="viewport"
+                      preload="intent"
                       params={getProjectRouteParams(project)}
                       className="inline-flex items-center gap-2 text-sm font-medium text-primary"
                     >

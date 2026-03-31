@@ -12,12 +12,12 @@ import { PourEventsTable } from "@/components/pours/pour-events-table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getProjectRouteParams } from "@/lib/project-paths";
-import { READ_ROUTE_CACHE_OPTIONS } from "@/lib/router-cache";
+import { HIERARCHY_ROUTE_CACHE_OPTIONS } from "@/lib/router-cache";
 import { formatDateTime } from "@/lib/utils/format";
 import { getProjectPageDataServerFn } from "@/server/navigation/page-data";
 
 export const Route = createFileRoute("/dashboard/projects/$projectIdentifier/")({
-  ...READ_ROUTE_CACHE_OPTIONS,
+  ...HIERARCHY_ROUTE_CACHE_OPTIONS,
   loader: async ({ cause, params }) => {
     const result = await getProjectPageDataServerFn({
       data: {

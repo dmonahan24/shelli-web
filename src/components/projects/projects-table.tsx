@@ -1,5 +1,6 @@
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
+import { acknowledgeNavigation } from "@/components/navigation/navigation-pending-indicator";
 import { getProjectRouteParams } from "@/lib/project-paths";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -60,24 +61,32 @@ export function ProjectsTable({ projects }: { projects: ProjectRow[] }) {
                   title={`Open ${project.name}`}
                   role="link"
                   tabIndex={0}
-                  onClick={() =>
-                    navigate({
+                  onClick={() => {
+                    const params = getProjectRouteParams(project);
+
+                    acknowledgeNavigation({
+                      href: `/dashboard/projects/${params.projectIdentifier}`,
+                    });
+                    void navigate({
                       to: "/dashboard/projects/$projectIdentifier",
-                      params: getProjectRouteParams(project),
-                    })
-                  }
+                      params,
+                    });
+                  }}
                   onFocus={() => preloadProject(project)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter" || event.key === " ") {
                       event.preventDefault();
+                      const params = getProjectRouteParams(project);
+
+                      acknowledgeNavigation({
+                        href: `/dashboard/projects/${params.projectIdentifier}`,
+                      });
                       void navigate({
                         to: "/dashboard/projects/$projectIdentifier",
-                        params: getProjectRouteParams(project),
+                        params,
                       });
                     }
                   }}
-                  onMouseEnter={() => preloadProject(project)}
-                  onTouchStart={() => preloadProject(project)}
                 >
                   <TableCell className="font-medium">
                     <div className="flex items-center justify-between gap-2">
