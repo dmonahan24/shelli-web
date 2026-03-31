@@ -2,16 +2,19 @@ import * as React from "react";
 import { createFileRoute, notFound, redirect, useRouter } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { SubmitButton } from "@/components/auth/submit-button";
+import { FormPendingPage } from "@/components/navigation/page-pending";
 import { ProjectBreadcrumbs } from "@/components/projects/project-breadcrumbs";
 import { PourEventForm } from "@/components/pours/pour-event-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getProjectRouteParams } from "@/lib/project-paths";
+import { READ_ROUTE_CACHE_OPTIONS } from "@/lib/router-cache";
 import { projectRouteParamsSchema } from "@/lib/validation/project-list";
 import { resolveProjectRouteServerFn } from "@/server/navigation/resolve-project-route";
 import { createPourEventServerFn } from "@/server/pours/create-pour-event";
 import { getProjectDetailServerFn } from "@/server/projects/get-project-detail";
 
 export const Route = createFileRoute("/dashboard/projects/$projectIdentifier/pours/new")({
+  ...READ_ROUTE_CACHE_OPTIONS,
   loader: async ({ params }) => {
     const parsedParams = projectRouteParamsSchema.parse(params);
     const resolved = await resolveProjectRouteServerFn({ data: parsedParams });
@@ -35,6 +38,7 @@ export const Route = createFileRoute("/dashboard/projects/$projectIdentifier/pou
 
     return detail;
   },
+  pendingComponent: FormPendingPage,
   component: NewPourEventPage,
 });
 

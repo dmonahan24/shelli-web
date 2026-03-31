@@ -1,6 +1,6 @@
-import { Link } from "@tanstack/react-router";
 import { EditBuildingDialog } from "@/components/buildings/edit-building-dialog";
 import { DeleteBuildingDialog } from "@/components/buildings/delete-building-dialog";
+import { PendingLink } from "@/components/navigation/pending-link";
 import { getBuildingRouteParams } from "@/lib/project-paths";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -65,13 +65,14 @@ export function BuildingsTable({
                 buildings.map((building) => (
                   <TableRow key={building.id}>
                     <TableCell className="font-medium">
-                      <Link
+                      <PendingLink
                         className="hover:underline"
+                        preload="viewport"
                         to="/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier"
                         params={getBuildingRouteParams(project, building)}
                       >
                         {building.name}
-                      </Link>
+                      </PendingLink>
                     </TableCell>
                     <TableCell>{building.code ?? "—"}</TableCell>
                     <TableCell className="text-right">{building.floorCount}</TableCell>
@@ -87,12 +88,13 @@ export function BuildingsTable({
                     <TableCell>
                       <div className="flex justify-end gap-2">
                         <Button asChild size="sm" variant="outline">
-                          <Link
+                          <PendingLink
+                            preload="viewport"
                             to="/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier"
                             params={getBuildingRouteParams(project, building)}
                           >
                             View
-                          </Link>
+                          </PendingLink>
                         </Button>
                         <EditBuildingDialog
                           building={building}

@@ -1,6 +1,10 @@
 import type { ReactNode } from "react";
 import { AppSidebar } from "@/components/app-shell/app-sidebar";
 import {
+  NavigationPendingIndicator,
+  useNavigationPendingState,
+} from "@/components/navigation/navigation-pending-indicator";
+import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
@@ -14,6 +18,8 @@ export function DashboardShell({
   user: TenantUserPrincipal;
   children: ReactNode;
 }) {
+  const { isNavigating, isVisible } = useNavigationPendingState();
+
   return (
     <SidebarProvider>
       <AppSidebar user={user} />
@@ -28,8 +34,25 @@ export function DashboardShell({
               </p>
               <p className="text-sm font-medium">Concrete field operations</p>
             </div>
+            <div className="ml-auto hidden items-center gap-2 text-xs font-medium text-muted-foreground sm:flex">
+              <span
+                className={`size-2 rounded-full bg-primary transition-opacity ${
+                  isVisible ? "opacity-100" : "opacity-0"
+                }`}
+              />
+              <span className={isVisible ? "opacity-100" : "opacity-0"}>
+                Loading page...
+              </span>
+            </div>
+            <NavigationPendingIndicator />
           </header>
-          <main className="flex-1 px-4 py-6 md:px-6">{children}</main>
+          <main
+            className="flex-1 px-4 py-6 transition-opacity md:px-6"
+            aria-busy={isNavigating}
+            aria-live="polite"
+          >
+            {children}
+          </main>
         </div>
       </SidebarInset>
     </SidebarProvider>

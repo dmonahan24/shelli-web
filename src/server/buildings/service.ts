@@ -133,7 +133,10 @@ async function getFloorsForBuilding(buildingId: string) {
 
 export async function listBuildingsForProject(projectId: string) {
   await requireProjectAccess(projectId, "view");
+  return listBuildingsForProjectQuery(projectId);
+}
 
+export async function listBuildingsForProjectQuery(projectId: string) {
   const rows = await db
     .select({
       id: projectBuildings.id,
@@ -192,6 +195,18 @@ export async function getBuildingDetail(buildingId: string) {
   const access = await requireProjectAccess(building.projectId, "view");
   if (access.context.project.companyId !== building.companyId) {
     throw new Error("Project access required.");
+  }
+
+  return getBuildingDetailQuery(building.id);
+}
+
+export async function getBuildingDetailQuery(buildingId: string) {
+  const building = await db.query.projectBuildings.findFirst({
+    where: eq(projectBuildings.id, buildingId),
+  });
+
+  if (!building) {
+    return null;
   }
 
   const project = await db.query.projects.findFirst({

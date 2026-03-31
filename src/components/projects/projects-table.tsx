@@ -1,4 +1,4 @@
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouter } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { getProjectRouteParams } from "@/lib/project-paths";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +25,14 @@ type ProjectRow = {
 
 export function ProjectsTable({ projects }: { projects: ProjectRow[] }) {
   const navigate = useNavigate();
+  const router = useRouter();
+
+  const preloadProject = (project: ProjectRow) => {
+    void router.preloadRoute({
+      to: "/dashboard/projects/$projectIdentifier",
+      params: getProjectRouteParams(project),
+    });
+  };
 
   return (
     <Card className="rounded-[28px] border-border/80 bg-card/90 shadow-sm">
@@ -58,6 +66,7 @@ export function ProjectsTable({ projects }: { projects: ProjectRow[] }) {
                       params: getProjectRouteParams(project),
                     })
                   }
+                  onFocus={() => preloadProject(project)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter" || event.key === " ") {
                       event.preventDefault();
@@ -67,6 +76,8 @@ export function ProjectsTable({ projects }: { projects: ProjectRow[] }) {
                       });
                     }
                   }}
+                  onMouseEnter={() => preloadProject(project)}
+                  onTouchStart={() => preloadProject(project)}
                 >
                   <TableCell className="font-medium">
                     <div className="flex items-center justify-between gap-2">

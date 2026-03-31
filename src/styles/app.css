@@ -188,3 +188,23 @@
     letter-spacing: var(--tracking-normal);
   }
 }
+
+@keyframes navigation-progress-slide {
+  0% {
+    transform: translateX(-110%);
+  }
+
+  50% {
+    transform: translateX(35%);
+  }
+
+  100% {
+    transform: translateX(220%);
+  }
+}
+
+@layer utilities {
+  .navigation-progress-bar {
+    animation: navigation-progress-slide 1.2s ease-in-out infinite;
+  }
+}

@@ -1,10 +1,13 @@
 // @ts-nocheck
 import { createFileRoute, redirect } from "@tanstack/react-router";
+import { ListPendingPage } from "@/components/navigation/page-pending";
 import { InviteMemberDialog } from "@/components/company/invite-member-dialog";
 import { MembersTable } from "@/components/company/members-table";
+import { READ_ROUTE_CACHE_OPTIONS } from "@/lib/router-cache";
 import { getCompanyOverviewServerFn, listMembersServerFn } from "@/server/company/list-members";
 
 export const Route = createFileRoute("/dashboard/company/members")({
+  ...READ_ROUTE_CACHE_OPTIONS,
   beforeLoad: ({ context }) => {
     if (context.user.role !== "owner" && context.user.role !== "admin") {
       throw redirect({ to: "/dashboard" });
@@ -14,6 +17,7 @@ export const Route = createFileRoute("/dashboard/company/members")({
     const [overview, members] = await Promise.all([getCompanyOverviewServerFn(), listMembersServerFn()]);
     return { overview, members };
   },
+  pendingComponent: ListPendingPage,
   component: CompanyMembersPage,
 });
 

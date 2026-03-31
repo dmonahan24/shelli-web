@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Link } from "@tanstack/react-router";
 import { BarChart3, BriefcaseBusiness, ClipboardList, LayoutDashboard, Smartphone, Users } from "lucide-react";
+import { PendingLink } from "@/components/navigation/pending-link";
 import {
   SidebarMenu,
   SidebarMenuButton,
@@ -61,8 +61,9 @@ export function SidebarNavLinks({ user }: { user: TenantUserPrincipal }) {
       {navigationItems.filter((item) => item.visible).map((item) => (
         <SidebarMenuItem key={item.to}>
           <SidebarMenuButton asChild>
-            <Link
+            <PendingLink
               to={item.to}
+              preload="intent"
               activeOptions={{ exact: item.to === "/dashboard" }}
               activeProps={{
                 "data-active": true,
@@ -71,7 +72,7 @@ export function SidebarNavLinks({ user }: { user: TenantUserPrincipal }) {
             >
               <item.icon className="size-4" />
               <span>{item.label}</span>
-            </Link>
+            </PendingLink>
           </SidebarMenuButton>
         </SidebarMenuItem>
       ))}

@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -7,6 +6,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { PendingLink } from "@/components/navigation/pending-link";
 import {
   getBuildingRouteParams,
   getProjectRouteParams,
@@ -36,21 +36,25 @@ export function HierarchyBreadcrumbs({
       <BreadcrumbList>
         <BreadcrumbItem>
           <BreadcrumbLink asChild>
-            <Link to="/dashboard">Dashboard</Link>
+            <PendingLink to="/dashboard" preload="intent">Dashboard</PendingLink>
           </BreadcrumbLink>
         </BreadcrumbItem>
         <BreadcrumbSeparator />
         <BreadcrumbItem>
           <BreadcrumbLink asChild>
-            <Link to="/dashboard/projects">Projects</Link>
+            <PendingLink to="/dashboard/projects" preload="intent">Projects</PendingLink>
           </BreadcrumbLink>
         </BreadcrumbItem>
         <BreadcrumbSeparator />
         <BreadcrumbItem>
           <BreadcrumbLink asChild>
-            <Link to="/dashboard/projects/$projectIdentifier" params={getProjectRouteParams(project)}>
+            <PendingLink
+              to="/dashboard/projects/$projectIdentifier"
+              preload="intent"
+              params={getProjectRouteParams(project)}
+            >
               {project.name}
-            </Link>
+            </PendingLink>
           </BreadcrumbLink>
         </BreadcrumbItem>
         {building ? (
@@ -59,12 +63,13 @@ export function HierarchyBreadcrumbs({
             <BreadcrumbItem>
               {floor ? (
                 <BreadcrumbLink asChild>
-                  <Link
+                  <PendingLink
+                    preload="intent"
                     to="/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier"
                     params={getBuildingRouteParams(project, building)}
                   >
                     {building.name}
-                  </Link>
+                  </PendingLink>
                 </BreadcrumbLink>
               ) : (
                 <BreadcrumbPage>{building.name}</BreadcrumbPage>

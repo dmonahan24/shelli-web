@@ -181,10 +181,14 @@ export async function listProjects(rawInput?: unknown) {
 export async function getProjectDetail(rawInput: unknown): Promise<any> {
   const { projectId } = projectDetailParamsSchema.parse(rawInput);
   const access = await requireProjectAccess(projectId, "view");
+  return getProjectDetailQuery(projectId, access.context.project.companyId);
+}
+
+export async function getProjectDetailQuery(projectId: string, companyId: string): Promise<any> {
   await ensureHumanFriendlyUrlSchema();
 
   const project = await db.query.projects.findFirst({
-    where: eq(projects.id, projectId),
+    where: and(eq(projects.id, projectId), eq(projects.companyId, companyId)),
   });
 
   if (!project) {
@@ -205,7 +209,7 @@ export async function getProjectDetail(rawInput: unknown): Promise<any> {
       .from(projectBuildings)
       .where(eq(projectBuildings.projectId, projectId)),
     listRecentActivity({
-      companyId: access.context.project.companyId,
+      companyId,
       projectId,
       limit: 6,
     }),
@@ -581,7 +585,7 @@ function getProjectOrderBy(input: ProjectListQuery) {
   return [direction(sortColumn), direction(projects.id)] as const;
 }
 
-function summarizeActivity(
+export function summarizeActivity(
   summary: string,
   actionType: string,
   detailsJson: Record<string, unknown> | null

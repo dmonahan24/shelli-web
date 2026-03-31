@@ -1,5 +1,5 @@
-import { Link } from "@tanstack/react-router";
 import { Building2, ShieldCheck, Users } from "lucide-react";
+import { PendingLink } from "@/components/navigation/pending-link";
 import {
   SidebarMenu,
   SidebarMenuButton,
@@ -35,8 +35,9 @@ export function AdminSidebarNavLinks() {
       {navigationItems.map((item) => (
         <SidebarMenuItem key={item.to}>
           <SidebarMenuButton asChild>
-            <Link
+            <PendingLink
               to={item.to}
+              preload="intent"
               activeOptions={{ exact: item.to === "/admin" }}
               activeProps={{
                 "data-active": true,
@@ -45,7 +46,7 @@ export function AdminSidebarNavLinks() {
             >
               <item.icon className="size-4" />
               <span>{item.label}</span>
-            </Link>
+            </PendingLink>
           </SidebarMenuButton>
         </SidebarMenuItem>
       ))}

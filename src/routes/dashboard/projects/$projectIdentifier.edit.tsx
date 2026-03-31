@@ -1,11 +1,14 @@
 import type { ProjectStatus } from "@/lib/validation/project";
 import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
+import { FormPendingPage } from "@/components/navigation/page-pending";
 import { EditProjectForm } from "@/components/projects/edit-project-form";
+import { READ_ROUTE_CACHE_OPTIONS } from "@/lib/router-cache";
 import { projectRouteParamsSchema } from "@/lib/validation/project-list";
 import { resolveProjectRouteServerFn } from "@/server/navigation/resolve-project-route";
 import { getProjectDetailServerFn } from "@/server/projects/get-project-detail";
 
 export const Route = createFileRoute("/dashboard/projects/$projectIdentifier/edit")({
+  ...READ_ROUTE_CACHE_OPTIONS,
   loader: async ({ params }) => {
     const parsedParams = projectRouteParamsSchema.parse(params);
     const resolved = await resolveProjectRouteServerFn({ data: parsedParams });
@@ -29,6 +32,7 @@ export const Route = createFileRoute("/dashboard/projects/$projectIdentifier/edi
 
     return detail;
   },
+  pendingComponent: FormPendingPage,
   component: EditProjectPage,
 });
 

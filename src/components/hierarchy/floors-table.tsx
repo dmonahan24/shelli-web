@@ -1,6 +1,6 @@
-import { Link } from "@tanstack/react-router";
 import { DeleteFloorDialog } from "@/components/floors/delete-floor-dialog";
 import { EditFloorDialog } from "@/components/floors/edit-floor-dialog";
+import { PendingLink } from "@/components/navigation/pending-link";
 import { getFloorRouteParams } from "@/lib/project-paths";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,13 +71,14 @@ export function FloorsTable({
                 floors.map((floor) => (
                   <TableRow key={floor.id}>
                     <TableCell className="font-medium">
-                      <Link
+                      <PendingLink
                         className="hover:underline"
+                        preload="viewport"
                         to="/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier"
                         params={getFloorRouteParams(project, building, floor)}
                       >
                         {floor.name}
-                      </Link>
+                      </PendingLink>
                     </TableCell>
                     <TableCell>{floor.floorType.replaceAll("_", " ")}</TableCell>
                     <TableCell className="text-right">{floor.levelNumber ?? "—"}</TableCell>
@@ -94,12 +95,13 @@ export function FloorsTable({
                     <TableCell>
                       <div className="flex justify-end gap-2">
                         <Button asChild size="sm" variant="outline">
-                          <Link
+                          <PendingLink
+                            preload="viewport"
                             to="/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier"
                             params={getFloorRouteParams(project, building, floor)}
                           >
                             View
-                          </Link>
+                          </PendingLink>
                         </Button>
                         <EditFloorDialog
                           floor={floor}

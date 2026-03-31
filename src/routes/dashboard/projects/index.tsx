@@ -1,16 +1,18 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { ListPendingPage } from "@/components/navigation/page-pending";
 import { ProjectsPagination, ResultsSummary } from "@/components/projects/projects-pagination";
 import { ProjectsTableAdvanced } from "@/components/projects/projects-table-advanced";
 import { ProjectsToolbar } from "@/components/projects/projects-toolbar";
-import { ProjectsTableSkeleton } from "@/components/projects/projects-table-skeleton";
+import { READ_ROUTE_CACHE_OPTIONS } from "@/lib/router-cache";
 import { projectListQuerySchema } from "@/lib/validation/project-list";
 import { listProjectsServerFn } from "@/server/projects/list-projects";
 
 export const Route = createFileRoute("/dashboard/projects/")({
+  ...READ_ROUTE_CACHE_OPTIONS,
   validateSearch: projectListQuerySchema,
   loaderDeps: ({ search }) => search,
   loader: async ({ deps }) => listProjectsServerFn({ data: deps }),
-  pendingComponent: ProjectsTableSkeleton,
+  pendingComponent: ListPendingPage,
   component: ProjectsPage,
 });
 

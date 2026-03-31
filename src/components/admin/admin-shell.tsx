@@ -1,6 +1,10 @@
 import type { ReactNode } from "react";
 import { ShieldCheck } from "lucide-react";
 import { UserProfileCard } from "@/components/app-shell/user-profile-card";
+import {
+  NavigationPendingIndicator,
+  useNavigationPendingState,
+} from "@/components/navigation/navigation-pending-indicator";
 import { AdminSidebarFooterActions } from "@/components/admin/admin-sidebar-footer-actions";
 import { AdminSidebarNavLinks } from "@/components/admin/admin-sidebar-nav-links";
 import {
@@ -24,6 +28,8 @@ export function AdminShell({
   };
   children: ReactNode;
 }) {
+  const { isNavigating, isVisible } = useNavigationPendingState();
+
   return (
     <SidebarProvider>
       <Sidebar collapsible="offcanvas" className="border-r border-sidebar-border">
@@ -58,8 +64,21 @@ export function AdminShell({
               </p>
               <p className="text-sm font-medium">Admin provisioning console</p>
             </div>
+            <div className="ml-auto hidden items-center gap-2 text-xs font-medium text-muted-foreground sm:flex">
+              <span
+                className={`size-2 rounded-full bg-primary transition-opacity ${
+                  isVisible ? "opacity-100" : "opacity-0"
+                }`}
+              />
+              <span className={isVisible ? "opacity-100" : "opacity-0"}>
+                Loading page...
+              </span>
+            </div>
+            <NavigationPendingIndicator />
           </header>
-          <main className="flex-1 px-4 py-6 md:px-6">{children}</main>
+          <main className="flex-1 px-4 py-6 md:px-6" aria-busy={isNavigating} aria-live="polite">
+            {children}
+          </main>
         </div>
       </SidebarInset>
     </SidebarProvider>

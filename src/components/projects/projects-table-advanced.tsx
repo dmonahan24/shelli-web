@@ -1,5 +1,5 @@
-import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
+import { PendingLink } from "@/components/navigation/pending-link";
 import { getProjectRouteParams } from "@/lib/project-paths";
 import { ProjectStatusBadge } from "@/components/projects/project-status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -79,13 +79,14 @@ export function ProjectsTableAdvanced({
                     {project.lastPourDate ? formatDate(project.lastPourDate) : "No pours"}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Link
+                    <PendingLink
                       to="/dashboard/projects/$projectIdentifier"
+                      preload="viewport"
                       params={getProjectRouteParams(project)}
                       className="inline-flex items-center gap-2 text-sm font-medium text-primary"
                     >
                       View <ArrowRight className="size-4" />
-                    </Link>
+                    </PendingLink>
                   </TableCell>
                 </TableRow>
               ))}

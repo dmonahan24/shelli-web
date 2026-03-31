@@ -7,6 +7,8 @@ export function createRouter() {
   return createTanStackRouter({
     routeTree,
     defaultPreload: "intent",
+    defaultPendingMs: 150,
+    defaultPendingMinMs: 300,
     defaultErrorComponent: DefaultCatchBoundary,
     defaultNotFoundComponent: () => <NotFound />,
   });

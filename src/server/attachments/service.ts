@@ -37,6 +37,10 @@ function normalizeOptionalText(value?: string | null) {
 
 export async function listProjectAttachments(projectId: string, rawInput?: unknown) {
   await requireProjectAccess(projectId, "view");
+  return listProjectAttachmentsQuery(projectId, rawInput);
+}
+
+export async function listProjectAttachmentsQuery(projectId: string, rawInput?: unknown) {
   await ensureHumanFriendlyUrlSchema();
 
   const input = attachmentListSchema.parse({

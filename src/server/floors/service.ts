@@ -209,6 +209,18 @@ export async function getFloorDetail(floorId: string) {
   const access = await requireProjectAccess(floor.projectId, "view");
   await requireOwnedFloor(access.context.project.companyId, floorId);
 
+  return getFloorDetailQuery(floor.id);
+}
+
+export async function getFloorDetailQuery(floorId: string) {
+  const floor = await db.query.buildingFloors.findFirst({
+    where: eq(buildingFloors.id, floorId),
+  });
+
+  if (!floor) {
+    return null;
+  }
+
   const [project, building, pourTypes] = await Promise.all([
     db.query.projects.findFirst({
       where: eq(projects.id, floor.projectId),
