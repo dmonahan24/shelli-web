@@ -14,8 +14,8 @@ export function AuthPageShell({
 }) {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(230,190,138,0.18),_transparent_40%),linear-gradient(180deg,_rgba(246,242,235,1)_0%,_rgba(255,255,255,1)_100%)]">
-      <div className="mx-auto grid min-h-screen max-w-7xl gap-8 px-6 py-10 lg:grid-cols-[1.1fr_0.9fr] lg:px-10">
-        <div className="flex flex-col justify-between rounded-[32px] border border-border/70 bg-stone-950 p-8 text-stone-50 shadow-2xl lg:p-10">
+      <div className="mx-auto grid min-h-screen max-w-7xl gap-6 px-4 py-6 sm:px-6 sm:py-8 lg:grid-cols-[1.1fr_0.9fr] lg:px-10 lg:py-10">
+        <div className="flex flex-col justify-between rounded-[32px] border border-border/70 bg-stone-950 p-6 text-stone-50 shadow-2xl sm:p-8 lg:p-10">
           <div className="space-y-8">
             <Link
               to="/"
@@ -30,7 +30,7 @@ export function AuthPageShell({
               <p className="text-sm font-semibold tracking-[0.3em] text-stone-400 uppercase">
                 Field-ready operations
               </p>
-              <h1 className="text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
+              <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-5xl">
                 Keep every pour, project, and crew update in one place.
               </h1>
               <p className="text-base leading-7 text-stone-300">
@@ -60,9 +60,9 @@ export function AuthPageShell({
 
         <div className="flex items-center justify-center">
           <Card className="w-full max-w-lg border-border/80 bg-card/95 shadow-xl backdrop-blur">
-            <CardContent className="space-y-6 p-8">
+            <CardContent className="space-y-6 p-5 sm:p-8">
               <div className="space-y-2">
-                <h2 className="text-3xl font-semibold tracking-tight">{title}</h2>
+                <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h2>
                 <p className="text-sm leading-6 text-muted-foreground">
                   {description}
                 </p>

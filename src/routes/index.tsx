@@ -11,18 +11,18 @@ export const Route = createFileRoute("/")({
 function LandingPage() {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(230,190,138,0.16),_transparent_35%),linear-gradient(180deg,_rgba(246,242,235,1)_0%,_rgba(255,255,255,1)_100%)]">
-      <div className="mx-auto flex min-h-screen max-w-7xl flex-col px-6 py-8 lg:px-10">
-        <header className="flex items-center justify-between py-4">
+      <div className="mx-auto flex min-h-screen max-w-7xl flex-col px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
+        <header className="flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <div className="flex size-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg">
               <HardHat className="size-5" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-sm font-semibold">Shelli Concrete Tracker</p>
               <p className="text-xs text-muted-foreground">Construction operations for field teams</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <Button asChild variant="ghost">
               <Link to="/auth/sign-in">Sign In</Link>
             </Button>
@@ -38,15 +38,15 @@ function LandingPage() {
               <p className="text-sm font-semibold tracking-[0.28em] text-muted-foreground uppercase">
                 Production-ready construction tracking
               </p>
-              <h1 className="max-w-3xl text-5xl font-semibold tracking-tight text-balance sm:text-6xl">
+              <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-balance sm:text-6xl">
                 Track every project, pour milestone, and concrete total with clarity.
               </h1>
-              <p className="max-w-2xl text-lg leading-8 text-muted-foreground">
+              <p className="max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
                 Give supers, PMs, QC teams, and operations staff a shared source of truth for schedules,
                 progress, and project records.
               </p>
             </div>
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
               <Button asChild size="lg">
                 <Link to="/auth/create-account">
                   Create Account

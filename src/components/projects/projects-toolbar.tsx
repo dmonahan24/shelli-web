@@ -1,6 +1,7 @@
 import { AddProjectDialog } from "@/components/projects/add-project-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ResponsiveFiltersDrawer } from "@/components/ui/responsive-layout";
 import {
   Select,
   SelectContent,
@@ -8,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { summarizeActiveFilters } from "@/lib/responsive";
 import {
   projectProgressValues,
   projectSortByValues,
@@ -49,54 +51,73 @@ export function ProjectsToolbar({
     status: string;
   };
 }) {
+  const activeFilters = [
+    search.q ? `Search: ${search.q}` : null,
+    search.status !== "all" ? `Status: ${search.status.replaceAll("_", " ")}` : null,
+    search.progress !== "all" ? `Progress: ${search.progress.replaceAll("_", " ")}` : null,
+    search.startDateFrom ? `Start >= ${search.startDateFrom}` : null,
+    search.startDateTo ? `Start <= ${search.startDateTo}` : null,
+    search.estimatedDateFrom ? `Finish >= ${search.estimatedDateFrom}` : null,
+    search.estimatedDateTo ? `Finish <= ${search.estimatedDateTo}` : null,
+    `Sort: ${search.sortBy} ${search.sortDir}`,
+  ];
+
   return (
-    <div className="space-y-4 rounded-[28px] border border-border/70 bg-card/90 p-6 shadow-sm">
+    <div className="space-y-4 rounded-[28px] border border-border/70 bg-card/90 p-4 shadow-sm sm:p-6">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl font-semibold tracking-tight">Projects</h1>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Projects</h1>
           <p className="max-w-3xl text-sm text-muted-foreground">
             Search and sort jobsite work, track concrete progress, and deep-link the exact list
             state your team needs to review.
           </p>
         </div>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <Button variant="outline" onClick={onReset}>
             Reset Filters
           </Button>
           <AddProjectDialog />
         </div>
       </div>
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
-        <ProjectsSearchInput value={search.q ?? ""} onChange={onSearchChange} />
-        <ProjectStatusFilter value={search.status} onChange={onStatusChange} />
-        <ProjectProgressFilter value={search.progress} onChange={onProgressChange} />
-        <ProjectSortSelect value={search.sortBy} onChange={onSortByChange} />
-        <ProjectSortDirectionSelect value={search.sortDir} onChange={onSortDirChange} />
-        <ProjectPageSizeSelect value={String(search.pageSize)} onChange={onPageSizeChange} />
-      </div>
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <ProjectDateFilter
-          label="Start Date From"
-          value={search.startDateFrom ?? ""}
-          onChange={(value) => onDateChange("startDateFrom", value)}
-        />
-        <ProjectDateFilter
-          label="Start Date To"
-          value={search.startDateTo ?? ""}
-          onChange={(value) => onDateChange("startDateTo", value)}
-        />
-        <ProjectDateFilter
-          label="Estimated Finish From"
-          value={search.estimatedDateFrom ?? ""}
-          onChange={(value) => onDateChange("estimatedDateFrom", value)}
-        />
-        <ProjectDateFilter
-          label="Estimated Finish To"
-          value={search.estimatedDateTo ?? ""}
-          onChange={(value) => onDateChange("estimatedDateTo", value)}
-        />
-      </div>
-      <ProjectFilterChips search={search} onReset={onReset} />
+      <ResponsiveFiltersDrawer
+        title="Project filters"
+        description="Refine the list by status, progress, sort order, date, and page size."
+        summary={summarizeActiveFilters(activeFilters, "Search, sort, and date filters")}
+      >
+        <div className="space-y-4">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
+            <ProjectsSearchInput value={search.q ?? ""} onChange={onSearchChange} />
+            <ProjectStatusFilter value={search.status} onChange={onStatusChange} />
+            <ProjectProgressFilter value={search.progress} onChange={onProgressChange} />
+            <ProjectSortSelect value={search.sortBy} onChange={onSortByChange} />
+            <ProjectSortDirectionSelect value={search.sortDir} onChange={onSortDirChange} />
+            <ProjectPageSizeSelect value={String(search.pageSize)} onChange={onPageSizeChange} />
+          </div>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <ProjectDateFilter
+              label="Start Date From"
+              value={search.startDateFrom ?? ""}
+              onChange={(value) => onDateChange("startDateFrom", value)}
+            />
+            <ProjectDateFilter
+              label="Start Date To"
+              value={search.startDateTo ?? ""}
+              onChange={(value) => onDateChange("startDateTo", value)}
+            />
+            <ProjectDateFilter
+              label="Estimated Finish From"
+              value={search.estimatedDateFrom ?? ""}
+              onChange={(value) => onDateChange("estimatedDateFrom", value)}
+            />
+            <ProjectDateFilter
+              label="Estimated Finish To"
+              value={search.estimatedDateTo ?? ""}
+              onChange={(value) => onDateChange("estimatedDateTo", value)}
+            />
+          </div>
+          <ProjectFilterChips search={search} onReset={onReset} />
+        </div>
+      </ResponsiveFiltersDrawer>
     </div>
   );
 }

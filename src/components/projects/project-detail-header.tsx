@@ -17,12 +17,14 @@ export function ProjectDetailHeader({
   actions: ReactNode;
 }) {
   return (
-    <div className="space-y-4 rounded-[28px] border border-border/70 bg-card/90 p-6 shadow-sm">
+    <div className="space-y-4 rounded-[28px] border border-border/70 bg-card/90 p-4 shadow-sm sm:p-6">
       <ProjectBreadcrumbs project={project} />
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-        <div className="space-y-3">
+        <div className="min-w-0 space-y-3">
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-3xl font-semibold tracking-tight">{project.name}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
+              {project.name}
+            </h1>
             <ProjectStatusBadge status={project.status} />
           </div>
           <div className="space-y-1 text-sm text-muted-foreground">
@@ -32,7 +34,9 @@ export function ProjectDetailHeader({
             ) : null}
           </div>
         </div>
-        <div className="flex flex-wrap gap-3">{actions}</div>
+        <div className="flex flex-wrap gap-2 sm:gap-3 max-sm:w-full max-sm:[&>*]:flex-1">
+          {actions}
+        </div>
       </div>
     </div>
   );

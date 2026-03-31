@@ -18,13 +18,13 @@ export function AppSidebar({
 }) {
   return (
     <Sidebar collapsible="offcanvas" className="border-r border-sidebar-border">
-      <SidebarHeader className="gap-5 p-4">
+      <SidebarHeader className="gap-4 p-4">
         <div className="flex items-center gap-3">
           <div className="flex size-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
             <HardHat className="size-5" />
           </div>
-          <div>
-            <p className="text-sm font-semibold">Shelli Concrete Tracker</p>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold">Shelli Concrete Tracker</p>
             <p className="text-xs text-muted-foreground">Construction operations</p>
           </div>
         </div>
@@ -33,7 +33,7 @@ export function AppSidebar({
           <p className="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase">
             Company
           </p>
-          <p className="mt-1 text-sm font-semibold">{user.companyName}</p>
+          <p className="mt-1 text-sm font-semibold text-balance">{user.companyName}</p>
           <p className="text-xs text-muted-foreground">{user.role.replaceAll("_", " ")}</p>
         </div>
       </SidebarHeader>

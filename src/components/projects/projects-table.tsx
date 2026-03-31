@@ -4,6 +4,14 @@ import { acknowledgeNavigation } from "@/components/navigation/navigation-pendin
 import { getProjectRouteParams } from "@/lib/project-paths";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  MobileCard,
+  MobileCardHeader,
+  MobileCardList,
+  MobileMetric,
+  MobileMetricGrid,
+  ResponsiveTableLayout,
+} from "@/components/ui/responsive-layout";
+import {
   Table,
   TableBody,
   TableCell,
@@ -41,73 +49,117 @@ export function ProjectsTable({ projects }: { projects: ProjectRow[] }) {
         <CardTitle className="text-lg">Project production snapshot</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="overflow-hidden rounded-2xl border border-border/70">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Project Name</TableHead>
-                <TableHead>Project Address</TableHead>
-                <TableHead>Date Started</TableHead>
-                <TableHead>Estimated Completion Date</TableHead>
-                <TableHead className="text-right">Total Concrete Poured</TableHead>
-                <TableHead className="text-right">Estimated Total Concrete</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {projects.map((project) => (
-                <TableRow
-                  key={project.id}
-                  className="cursor-pointer transition-colors hover:bg-muted/40"
-                  title={`Open ${project.name}`}
-                  role="link"
-                  tabIndex={0}
-                  onClick={() => {
+        <ResponsiveTableLayout
+          desktop={
+            <div className="overflow-hidden rounded-2xl border border-border/70">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Project Name</TableHead>
+                    <TableHead>Project Address</TableHead>
+                    <TableHead>Date Started</TableHead>
+                    <TableHead>Estimated Completion Date</TableHead>
+                    <TableHead className="text-right">Total Concrete Poured</TableHead>
+                    <TableHead className="text-right">Estimated Total Concrete</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {projects.map((project) => (
+                    <TableRow
+                      key={project.id}
+                      className="cursor-pointer transition-colors hover:bg-muted/40"
+                      title={`Open ${project.name}`}
+                      role="link"
+                      tabIndex={0}
+                      onClick={() => {
                     const params = getProjectRouteParams(project);
 
                     acknowledgeNavigation({
                       href: `/dashboard/projects/${params.projectIdentifier}`,
                     });
-                    void navigate({
-                      to: "/dashboard/projects/$projectIdentifier",
-                      params,
-                    });
-                  }}
+                        void navigate({
+                          to: "/dashboard/projects/$projectIdentifier",
+                          params,
+                        });
+                      }}
                   onFocus={() => preloadProject(project)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
                       const params = getProjectRouteParams(project);
 
                       acknowledgeNavigation({
                         href: `/dashboard/projects/${params.projectIdentifier}`,
                       });
-                      void navigate({
-                        to: "/dashboard/projects/$projectIdentifier",
-                        params,
-                      });
-                    }
-                  }}
+                          void navigate({
+                            to: "/dashboard/projects/$projectIdentifier",
+                            params,
+                          });
+                        }
+                      }}
+                    >
+                      <TableCell className="font-medium">
+                        <div className="flex items-center justify-between gap-2">
+                          <span>{project.name}</span>
+                          <ChevronRight className="size-4 text-muted-foreground" />
+                        </div>
+                      </TableCell>
+                      <TableCell>{project.address}</TableCell>
+                      <TableCell>{formatDate(project.dateStarted)}</TableCell>
+                      <TableCell>{formatDate(project.estimatedCompletionDate)}</TableCell>
+                      <TableCell className="text-right">
+                        {formatConcreteVolume(project.totalConcretePoured)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {formatConcreteVolume(project.estimatedTotalConcrete)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          }
+          mobile={
+            <MobileCardList>
+              {projects.map((project) => (
+                <button
+                  key={project.id}
+                  type="button"
+                  className="w-full text-left"
+                  onClick={() =>
+                    navigate({
+                      to: "/dashboard/projects/$projectIdentifier",
+                      params: getProjectRouteParams(project),
+                    })
+                  }
                 >
-                  <TableCell className="font-medium">
-                    <div className="flex items-center justify-between gap-2">
-                      <span>{project.name}</span>
-                      <ChevronRight className="size-4 text-muted-foreground" />
-                    </div>
-                  </TableCell>
-                  <TableCell>{project.address}</TableCell>
-                  <TableCell>{formatDate(project.dateStarted)}</TableCell>
-                  <TableCell>{formatDate(project.estimatedCompletionDate)}</TableCell>
-                  <TableCell className="text-right">
-                    {formatConcreteVolume(project.totalConcretePoured)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatConcreteVolume(project.estimatedTotalConcrete)}
-                  </TableCell>
-                </TableRow>
+                  <MobileCard className="transition-colors hover:bg-muted/20">
+                    <MobileCardHeader
+                      title={project.name}
+                      subtitle={project.address}
+                      badge={<ChevronRight className="size-4 text-muted-foreground" />}
+                    />
+                    <MobileMetricGrid>
+                      <MobileMetric label="Started" value={formatDate(project.dateStarted)} />
+                      <MobileMetric
+                        label="Finish"
+                        value={formatDate(project.estimatedCompletionDate)}
+                      />
+                      <MobileMetric
+                        label="Poured"
+                        value={formatConcreteVolume(project.totalConcretePoured)}
+                      />
+                      <MobileMetric
+                        label="Estimated"
+                        value={formatConcreteVolume(project.estimatedTotalConcrete)}
+                      />
+                    </MobileMetricGrid>
+                  </MobileCard>
+                </button>
               ))}
-            </TableBody>
-          </Table>
-        </div>
+            </MobileCardList>
+          }
+        />
       </CardContent>
     </Card>
   );
