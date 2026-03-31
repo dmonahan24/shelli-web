@@ -21,6 +21,7 @@ import {
 } from "@/lib/validation/project-list";
 import { failure, success, type ActionResult } from "@/lib/utils/action-result";
 import { listRecentActivity, recordActivityEvent } from "@/server/activity/service";
+import { ensureHumanFriendlyUrlSchema } from "@/server/navigation/schema-compat";
 import { generateProjectSlug } from "@/server/navigation/service";
 import { deleteStoredFile } from "@/server/attachments/storage";
 
@@ -110,6 +111,7 @@ function toNumber(value: string | number | null | undefined) {
 
 export async function listProjects(rawInput?: unknown) {
   const user = await requireTenantUser();
+  await ensureHumanFriendlyUrlSchema();
   const input = projectListQuerySchema.parse(rawInput ?? {});
   const accessibleProjectIds = await listAccessibleProjectIds(user, user.companyId);
 
@@ -179,6 +181,7 @@ export async function listProjects(rawInput?: unknown) {
 export async function getProjectDetail(rawInput: unknown): Promise<any> {
   const { projectId } = projectDetailParamsSchema.parse(rawInput);
   const access = await requireProjectAccess(projectId, "view");
+  await ensureHumanFriendlyUrlSchema();
 
   const project = await db.query.projects.findFirst({
     where: eq(projects.id, projectId),

@@ -11,6 +11,7 @@ import {
   type ProjectAnalyticsQueryInput,
 } from "@/lib/validation/analytics";
 import { listRecentActivity } from "@/server/activity/service";
+import { ensureHumanFriendlyUrlSchema } from "@/server/navigation/schema-compat";
 import {
   buildDocumentationTasks,
   calculateAveragePourSize,
@@ -163,6 +164,7 @@ export async function getProjectStatusBreakdown(input: CompanyAnalyticsQueryInpu
 export async function getTopProjectsByConcrete(input: CompanyAnalyticsQueryInput) {
   const query = companyAnalyticsQuerySchema.parse(input);
   const user = await requireTenantUser();
+  await ensureHumanFriendlyUrlSchema();
   const companyId = query.companyId ?? user.companyId;
   const projectIds = await getScopedProjectIds({
     companyId,
@@ -209,6 +211,7 @@ export async function getRecentFieldActivity(input: CompanyAnalyticsQueryInput) 
 export async function getCompanyAnalyticsOverview(rawInput: CompanyAnalyticsQueryInput) {
   const input = companyAnalyticsQuerySchema.parse(rawInput);
   const user = await requireTenantUser();
+  await ensureHumanFriendlyUrlSchema();
   const companyId = input.companyId ?? user.companyId;
   const projectIds = await getScopedProjectIds({
     companyId,
@@ -367,6 +370,7 @@ export async function getCompanyAnalyticsOverview(rawInput: CompanyAnalyticsQuer
 export async function getProjectAnalytics(rawInput: ProjectAnalyticsQueryInput) {
   const input = projectAnalyticsQuerySchema.parse(rawInput);
   const access = await requireProjectAccess(input.projectId, "analytics");
+  await ensureHumanFriendlyUrlSchema();
   const project = await db.query.projects.findFirst({
     where: eq(projects.id, input.projectId),
   });

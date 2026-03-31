@@ -4,6 +4,7 @@ import { buildingFloors, projectBuildings, projects } from "@/db/schema";
 import { generateScopedSlug, isUuid } from "@/lib/slug";
 import { requireProjectAccess } from "@/lib/auth/project-access";
 import { requireTenantUser } from "@/lib/auth/session";
+import { ensureHumanFriendlyUrlSchema } from "@/server/navigation/schema-compat";
 
 type ProjectPermission = "view" | "edit" | "upload" | "manage" | "delete";
 
@@ -59,6 +60,7 @@ async function findFloorForBuilding(
 }
 
 export async function resolveProjectRoute(projectIdentifier: string, permission: ProjectPermission) {
+  await ensureHumanFriendlyUrlSchema();
   const user = await requireTenantUser();
   const project = await findProjectForCompany(user.companyId, projectIdentifier);
 
@@ -207,6 +209,7 @@ export async function generateProjectSlug(
   excludeProjectId?: string,
   database: AppDatabase | AppTransaction = db
 ) {
+  await ensureHumanFriendlyUrlSchema();
   return generateScopedSlug(name, (slug) =>
     slugExistsForProject(companyId, slug, excludeProjectId, database)
   );
@@ -218,6 +221,7 @@ export async function generateBuildingSlug(
   excludeBuildingId?: string,
   database: AppDatabase | AppTransaction = db
 ) {
+  await ensureHumanFriendlyUrlSchema();
   return generateScopedSlug(name, (slug) =>
     slugExistsForBuilding(projectId, slug, excludeBuildingId, database)
   );
@@ -229,6 +233,7 @@ export async function generateFloorSlug(
   excludeFloorId?: string,
   database: AppDatabase | AppTransaction = db
 ) {
+  await ensureHumanFriendlyUrlSchema();
   return generateScopedSlug(name, (slug) =>
     slugExistsForFloor(buildingId, slug, excludeFloorId, database)
   );

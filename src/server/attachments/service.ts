@@ -21,6 +21,7 @@ import {
   storageFileName,
   writeStoredFile,
 } from "@/server/attachments/storage";
+import { ensureHumanFriendlyUrlSchema } from "@/server/navigation/schema-compat";
 import { recordProjectActivity } from "@/server/projects/service";
 
 const attachmentListSchema = z.object({
@@ -36,6 +37,7 @@ function normalizeOptionalText(value?: string | null) {
 
 export async function listProjectAttachments(projectId: string, rawInput?: unknown) {
   await requireProjectAccess(projectId, "view");
+  await ensureHumanFriendlyUrlSchema();
 
   const input = attachmentListSchema.parse({
     projectId,
