@@ -21,7 +21,7 @@ export function DashboardHeader({
         ) : null}
       </div>
       {action ? (
-        <div className="flex flex-wrap gap-3 max-sm:w-full max-sm:[&>*]:flex-1">
+        <div className="flex w-full flex-wrap gap-3 sm:w-auto max-sm:[&>*]:flex-1">
           {action}
         </div>
       ) : null}

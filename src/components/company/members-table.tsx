@@ -50,7 +50,7 @@ export function MemberRoleSelect({
         toast.success(result.message ?? "Role updated.");
       }}
     >
-      <SelectTrigger className="w-[170px]">
+      <SelectTrigger className="w-full min-w-0 lg:w-[170px]">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -90,15 +90,15 @@ export function MembersTable({
                 <TableHead>Email</TableHead>
                 <TableHead>Company Role</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Joined</TableHead>
-                <TableHead>Assigned Projects</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="whitespace-nowrap">Joined</TableHead>
+                <TableHead className="whitespace-nowrap text-right">Assigned Projects</TableHead>
+                <TableHead className="whitespace-nowrap text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.map((row) => (
                 <TableRow key={row.membershipId}>
-                  <TableCell className="font-medium">{row.fullName}</TableCell>
+                  <TableCell className="font-medium whitespace-nowrap">{row.fullName}</TableCell>
                   <TableCell>{row.email}</TableCell>
                   <TableCell>
                     <MemberRoleSelect
@@ -110,11 +110,13 @@ export function MembersTable({
                   <TableCell>
                     <Badge variant="secondary">{row.status}</Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="whitespace-nowrap">
                     {row.joinedAt ? new Date(row.joinedAt).toLocaleDateString() : "Pending"}
                   </TableCell>
-                  <TableCell>{row.assignedProjectsCount}</TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="whitespace-nowrap text-right">
+                    {row.assignedProjectsCount}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-right">
                     <Button variant="outline" size="sm">
                       View Assignments
                     </Button>

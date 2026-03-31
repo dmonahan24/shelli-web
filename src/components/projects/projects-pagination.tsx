@@ -31,9 +31,9 @@ export function ProjectsPagination({
   return (
     <div className="rounded-[24px] border border-border/70 bg-card/90 p-4 shadow-sm">
       <DesktopOnly>
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <RowsPerPageSelect value={String(pageSize)} onChange={onPageSizeChange} />
-          <Pagination className="mx-0 w-auto justify-start md:justify-center">
+          <Pagination className="mx-0 w-auto justify-start lg:justify-center">
             <PaginationContent>
               <PaginationItem>
                 <Button variant="outline" onClick={onPrevious} disabled={page <= 1}>

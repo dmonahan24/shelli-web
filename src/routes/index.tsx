@@ -60,7 +60,7 @@ function LandingPage() {
                 <Link to="/auth/sign-in">Sign In</Link>
               </Button>
             </div>
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 lg:grid-cols-3">
               <FeatureCard
                 icon={<ClipboardList className="size-5" />}
                 title="Project visibility"

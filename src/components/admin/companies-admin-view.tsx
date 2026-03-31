@@ -168,7 +168,7 @@ function CompanyCard({
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(280px,0.8fr)]">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.8fr)]">
           <div className="space-y-4 rounded-2xl border border-border/70 bg-background/70 p-4">
             <div className="space-y-1">
               <p className="font-medium">Company details</p>

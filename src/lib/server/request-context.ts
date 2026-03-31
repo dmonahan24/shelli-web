@@ -51,7 +51,6 @@ function logRequestSummary(store: RequestContextStore) {
     .join(" | ");
 
   const summary = formattedSpans ? ` | ${formattedSpans}` : "";
-  console.info(`[perf] ${store.requestLabel} total=${totalDurationMs}ms${summary}`);
 }
 
 export function runWithRequestContext<T>(

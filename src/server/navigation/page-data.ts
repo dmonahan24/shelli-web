@@ -43,7 +43,6 @@ function logPageDataDuration(
   }
 
   const durationMs = Math.round(performance.now() - startedAt);
-  console.info(`[page-data] ${routeId} (${cause}, ${outcome}) ${durationMs}ms`);
 }
 
 const projectPageDataInputSchema = z.object({

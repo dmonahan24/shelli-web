@@ -99,7 +99,7 @@ export function AdminUsersView({
       />
 
       <Card className="rounded-[24px] border-border/80 bg-card/90 shadow-sm">
-        <CardContent className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
+        <CardContent className="grid gap-4 p-5 lg:grid-cols-2 xl:grid-cols-4">
           <Input
             placeholder="Search by name or email"
             value={searchValue}

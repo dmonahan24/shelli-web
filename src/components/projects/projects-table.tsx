@@ -64,16 +64,16 @@ export function ProjectsTable({ projects }: { projects: ProjectRow[] }) {
       <CardContent>
         <ResponsiveTableLayout
           desktop={
-            <div className="overflow-hidden rounded-2xl border border-border/70">
+            <div className="desktop-table">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Project Name</TableHead>
                     <TableHead>Project Address</TableHead>
-                    <TableHead>Date Started</TableHead>
-                    <TableHead>Estimated Completion Date</TableHead>
-                    <TableHead className="text-right">Total Concrete Poured</TableHead>
-                    <TableHead className="text-right">Estimated Total Concrete</TableHead>
+                    <TableHead className="whitespace-nowrap">Date Started</TableHead>
+                    <TableHead className="whitespace-nowrap">Estimated Completion Date</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Total Concrete Poured</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Estimated Total Concrete</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -100,12 +100,16 @@ export function ProjectsTable({ projects }: { projects: ProjectRow[] }) {
                         </div>
                       </TableCell>
                       <TableCell>{project.address}</TableCell>
-                      <TableCell>{formatDate(project.dateStarted)}</TableCell>
-                      <TableCell>{formatDate(project.estimatedCompletionDate)}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="whitespace-nowrap">
+                        {formatDate(project.dateStarted)}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {formatDate(project.estimatedCompletionDate)}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-right">
                         {formatConcreteVolume(project.totalConcretePoured)}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="whitespace-nowrap text-right">
                         {formatConcreteVolume(project.estimatedTotalConcrete)}
                       </TableCell>
                     </TableRow>

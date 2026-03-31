@@ -30,7 +30,7 @@ function ProjectAnalyticsIndexPage() {
         <p className="text-sm font-medium text-muted-foreground">Analytics</p>
         <h1 className="text-2xl font-semibold tracking-tight">Projects</h1>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
         {data.rows.map((project) => (
           <PendingLink
             key={project.id}

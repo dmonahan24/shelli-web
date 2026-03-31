@@ -99,8 +99,8 @@ export function PourEventsTable({
     <>
       <Card className="rounded-[28px] border-border/70 bg-card/90 shadow-sm">
         <CardHeader className="gap-4">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div>
+          <div className="tablet-stack">
+            <div className="min-w-0">
               <CardTitle>Concrete Pour Event Log</CardTitle>
               <p className="text-sm text-muted-foreground">
                 Track delivered volume, location, supplier, and notes for the project’s operational
@@ -135,38 +135,46 @@ export function PourEventsTable({
         <CardContent className="space-y-4">
           <ResponsiveTableLayout
             desktop={
-              <div className="overflow-hidden rounded-2xl border border-border/70">
+              <div className="desktop-table">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Pour Date</TableHead>
-                      <TableHead>Concrete Amount</TableHead>
-                      <TableHead>Unit</TableHead>
+                      <TableHead className="whitespace-nowrap">Pour Date</TableHead>
+                      <TableHead className="whitespace-nowrap text-right">Concrete Amount</TableHead>
+                      <TableHead className="whitespace-nowrap">Unit</TableHead>
                       <TableHead>Location Description</TableHead>
                       <TableHead>Mix Type</TableHead>
                       <TableHead>Supplier</TableHead>
-                      <TableHead>Ticket Number</TableHead>
+                      <TableHead className="whitespace-nowrap">Ticket Number</TableHead>
                       <TableHead>Notes Summary</TableHead>
-                      <TableHead>Created By</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead className="whitespace-nowrap">Created By</TableHead>
+                      <TableHead className="whitespace-nowrap text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {data.rows.length > 0 ? (
                       data.rows.map((pourEvent) => (
                         <TableRow key={pourEvent.id}>
-                          <TableCell>{formatDate(pourEvent.pourDate)}</TableCell>
-                          <TableCell>{formatConcreteVolume(pourEvent.concreteAmount)}</TableCell>
-                          <TableCell>{pourEvent.unit.replaceAll("_", " ")}</TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            {formatDate(pourEvent.pourDate)}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-right">
+                            {formatConcreteVolume(pourEvent.concreteAmount)}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            {pourEvent.unit.replaceAll("_", " ")}
+                          </TableCell>
                           <TableCell>{pourEvent.locationDescription}</TableCell>
                           <TableCell>{pourEvent.mixType ?? "Not recorded"}</TableCell>
                           <TableCell>{pourEvent.supplierName ?? "Not recorded"}</TableCell>
-                          <TableCell>{pourEvent.ticketNumber ?? "Not recorded"}</TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            {pourEvent.ticketNumber ?? "Not recorded"}
+                          </TableCell>
                           <TableCell className="max-w-52 truncate text-muted-foreground">
                             {pourEvent.crewNotes ?? pourEvent.weatherNotes ?? "No notes"}
                           </TableCell>
-                          <TableCell>{pourEvent.createdBy}</TableCell>
-                          <TableCell className="text-right">
+                          <TableCell className="whitespace-nowrap">{pourEvent.createdBy}</TableCell>
+                          <TableCell className="whitespace-nowrap text-right">
                             <PourEventRowActions
                               onDelete={async () => {
                                 await refresh();

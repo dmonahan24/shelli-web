@@ -64,8 +64,8 @@ export function ProjectMembersCard({
 
   return (
     <Card className="border-border/70">
-      <CardHeader className="flex flex-row items-center justify-between gap-4">
-        <div>
+      <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
           <CardTitle className="text-base">Project Access</CardTitle>
           <p className="mt-1 text-sm text-muted-foreground">
             Active team members and pending invites for this project.
@@ -84,7 +84,7 @@ export function ProjectMembersCard({
         />
       </CardHeader>
       <CardContent className="space-y-5">
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid gap-3 lg:grid-cols-2">
           <div className="rounded-xl border border-border/60 p-4">
             <div className="flex items-center justify-between">
               <div>

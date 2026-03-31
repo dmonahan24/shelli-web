@@ -48,18 +48,18 @@ export function ProjectsTableAdvanced({
       <CardContent>
         <ResponsiveTableLayout
           desktop={
-            <div className="overflow-hidden rounded-2xl border border-border/70">
+            <div className="desktop-table">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Project</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Start</TableHead>
-                    <TableHead>Estimated Finish</TableHead>
-                    <TableHead className="text-right">Poured</TableHead>
-                    <TableHead className="text-right">Estimated</TableHead>
-                    <TableHead>Last Pour</TableHead>
-                    <TableHead className="text-right">Open</TableHead>
+                    <TableHead className="whitespace-nowrap">Start</TableHead>
+                    <TableHead className="whitespace-nowrap">Estimated Finish</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Poured</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Estimated</TableHead>
+                    <TableHead className="whitespace-nowrap">Last Pour</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Open</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -79,21 +79,25 @@ export function ProjectsTableAdvanced({
                       <TableCell>
                         <ProjectStatusBadge status={project.status} />
                       </TableCell>
-                      <TableCell>{formatDate(project.dateStarted)}</TableCell>
-                      <TableCell>{formatDate(project.estimatedCompletionDate)}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="whitespace-nowrap">
+                        {formatDate(project.dateStarted)}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {formatDate(project.estimatedCompletionDate)}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-right">
                         {formatConcreteVolume(project.totalConcretePoured)}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="whitespace-nowrap text-right">
                         {formatConcreteVolume(project.estimatedTotalConcrete)}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="whitespace-nowrap">
                         {project.lastPourDate ? formatDate(project.lastPourDate) : "No pours"}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="whitespace-nowrap text-right">
                         <PendingLink
                           to="/dashboard/projects/$projectIdentifier"
-                      preload="intent"
+                          preload="intent"
                           params={getProjectRouteParams(project)}
                           className="inline-flex items-center gap-2 text-sm font-medium text-primary"
                         >

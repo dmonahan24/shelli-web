@@ -64,8 +64,8 @@ export function ProjectsToolbar({
 
   return (
     <div className="space-y-4 rounded-[28px] border border-border/70 bg-card/90 p-4 shadow-sm sm:p-6">
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <div className="space-y-1">
+      <div className="tablet-stack xl:items-center xl:justify-between">
+        <div className="min-w-0 space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Projects</h1>
           <p className="max-w-3xl text-sm text-muted-foreground">
             Search and sort jobsite work, track concrete progress, and deep-link the exact list
@@ -80,12 +80,13 @@ export function ProjectsToolbar({
         </div>
       </div>
       <ResponsiveFiltersDrawer
+        desktopFrom="lg"
         title="Project filters"
         description="Refine the list by status, progress, sort order, date, and page size."
         summary={summarizeActiveFilters(activeFilters, "Search, sort, and date filters")}
       >
         <div className="space-y-4">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
+          <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-6">
             <ProjectsSearchInput value={search.q ?? ""} onChange={onSearchChange} />
             <ProjectStatusFilter value={search.status} onChange={onStatusChange} />
             <ProjectProgressFilter value={search.progress} onChange={onProgressChange} />
@@ -93,7 +94,7 @@ export function ProjectsToolbar({
             <ProjectSortDirectionSelect value={search.sortDir} onChange={onSortDirChange} />
             <ProjectPageSizeSelect value={String(search.pageSize)} onChange={onPageSizeChange} />
           </div>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-4">
             <ProjectDateFilter
               label="Start Date From"
               value={search.startDateFrom ?? ""}

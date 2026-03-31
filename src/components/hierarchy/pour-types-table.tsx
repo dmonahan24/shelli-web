@@ -51,18 +51,18 @@ export function PourTypesTable({
       <CardContent>
         <ResponsiveTableLayout
           desktop={
-            <div className="overflow-hidden rounded-2xl border border-border/70">
+            <div className="desktop-table">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Estimated</TableHead>
-                    <TableHead className="text-right">Actual</TableHead>
-                    <TableHead className="text-right">Remaining</TableHead>
-                    <TableHead>Updated</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Estimated</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Actual</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Remaining</TableHead>
+                    <TableHead className="whitespace-nowrap">Updated</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -74,17 +74,19 @@ export function PourTypesTable({
                         <TableCell>
                           <PourTypeStatusBadge status={pourType.status} />
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="whitespace-nowrap text-right">
                           {formatConcreteVolume(pourType.estimatedConcrete)}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="whitespace-nowrap text-right">
                           {formatConcreteVolume(pourType.actualConcrete)}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="whitespace-nowrap text-right">
                           {formatConcreteVolume(pourType.remainingConcrete)}
                         </TableCell>
-                        <TableCell>{formatDateTime(pourType.updatedAt)}</TableCell>
-                        <TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          {formatDateTime(pourType.updatedAt)}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
                           <div className="flex justify-end gap-2">
                             <EditPourTypeDialog
                               onUpdated={onMutationComplete}

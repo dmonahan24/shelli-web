@@ -11,37 +11,61 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
+type ResponsiveBreakpoint = "md" | "lg" | "xl";
+
+const desktopVisibilityClassNames: Record<ResponsiveBreakpoint, string> = {
+  md: "hidden md:block",
+  lg: "hidden lg:block",
+  xl: "hidden xl:block",
+};
+
+const mobileVisibilityClassNames: Record<ResponsiveBreakpoint, string> = {
+  md: "md:hidden",
+  lg: "lg:hidden",
+  xl: "xl:hidden",
+};
+
 export function DesktopOnly({
   children,
   className,
+  desktopFrom = "lg",
 }: {
   children: React.ReactNode;
   className?: string;
+  desktopFrom?: ResponsiveBreakpoint;
 }) {
-  return <div className={cn("hidden md:block", className)}>{children}</div>;
+  return (
+    <div className={cn(desktopVisibilityClassNames[desktopFrom], className)}>{children}</div>
+  );
 }
 
 export function MobileOnly({
   children,
   className,
+  desktopFrom = "lg",
 }: {
   children: React.ReactNode;
   className?: string;
+  desktopFrom?: ResponsiveBreakpoint;
 }) {
-  return <div className={cn("md:hidden", className)}>{children}</div>;
+  return (
+    <div className={cn(mobileVisibilityClassNames[desktopFrom], className)}>{children}</div>
+  );
 }
 
 export function ResponsiveTableLayout({
   desktop,
   mobile,
+  desktopFrom = "lg",
 }: {
   desktop: React.ReactNode;
   mobile: React.ReactNode;
+  desktopFrom?: ResponsiveBreakpoint;
 }) {
   return (
     <>
-      <DesktopOnly>{desktop}</DesktopOnly>
-      <MobileOnly>{mobile}</MobileOnly>
+      <DesktopOnly desktopFrom={desktopFrom}>{desktop}</DesktopOnly>
+      <MobileOnly desktopFrom={desktopFrom}>{mobile}</MobileOnly>
     </>
   );
 }
@@ -130,12 +154,14 @@ export function MobileActionRow({
 export function ResponsiveFiltersDrawer({
   children,
   description,
+  desktopFrom = "lg",
   summary,
   title = "Filters",
   triggerLabel = "Filters",
 }: {
   children: React.ReactNode;
   description?: string;
+  desktopFrom?: ResponsiveBreakpoint;
   summary: string;
   title?: string;
   triggerLabel?: string;
@@ -144,8 +170,8 @@ export function ResponsiveFiltersDrawer({
 
   return (
     <>
-      <DesktopOnly>{children}</DesktopOnly>
-      <MobileOnly>
+      <DesktopOnly desktopFrom={desktopFrom}>{children}</DesktopOnly>
+      <MobileOnly desktopFrom={desktopFrom}>
         <Card className="rounded-[24px] border-border/70 bg-card/90 shadow-sm">
           <CardHeader className="gap-3 p-4">
             <div className="flex items-start justify-between gap-3">

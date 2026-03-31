@@ -285,7 +285,6 @@ export function useShellNavigationFeedback() {
     const durationMs = Math.round(performance.now() - session.startedAt);
     const target = session.href ?? routerState.pendingPath ?? "unknown";
 
-    console.info(`[navigation-feedback] ${debugState} ${target} ${durationMs}ms`);
     navigationSessionRef.current = null;
   }, [hasMounted, isAcknowledgingNavigation, routerState.pendingPath]);
 

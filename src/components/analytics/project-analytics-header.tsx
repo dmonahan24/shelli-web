@@ -25,8 +25,8 @@ export function ProjectAnalyticsHeader({
 }) {
   return (
     <Card className="border-border/70">
-      <CardContent className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
-        <div>
+      <CardContent className="flex flex-col gap-4 p-6 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0">
           <p className="text-sm font-medium text-muted-foreground">Project analytics</p>
           <h1 className="text-2xl font-semibold tracking-tight">{name}</h1>
         </div>

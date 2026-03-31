@@ -58,17 +58,17 @@ export function BuildingsTable({
       <CardContent>
         <ResponsiveTableLayout
           desktop={
-            <div className="overflow-hidden rounded-2xl border border-border/70">
+            <div className="desktop-table">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Building</TableHead>
-                    <TableHead>Code</TableHead>
-                    <TableHead className="text-right">Floors</TableHead>
-                    <TableHead className="text-right">Estimated</TableHead>
-                    <TableHead className="text-right">Actual</TableHead>
-                    <TableHead className="text-right">Remaining</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="whitespace-nowrap">Code</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Floors</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Estimated</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Actual</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Remaining</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -85,22 +85,22 @@ export function BuildingsTable({
                             {building.name}
                           </PendingLink>
                         </TableCell>
-                        <TableCell>{building.code ?? "—"}</TableCell>
-                        <TableCell className="text-right">{building.floorCount}</TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="whitespace-nowrap">{building.code ?? "—"}</TableCell>
+                        <TableCell className="whitespace-nowrap text-right">{building.floorCount}</TableCell>
+                        <TableCell className="whitespace-nowrap text-right">
                           {formatConcreteVolume(building.estimatedConcreteTotal)}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="whitespace-nowrap text-right">
                           {formatConcreteVolume(building.actualConcreteTotal)}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="whitespace-nowrap text-right">
                           {formatConcreteVolume(building.remainingConcrete)}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="whitespace-nowrap">
                           <div className="flex justify-end gap-2">
                             <Button asChild size="sm" variant="outline">
                               <PendingLink
-                            preload="intent"
+                                preload="intent"
                                 to="/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier"
                                 params={getBuildingRouteParams(project, building)}
                               >

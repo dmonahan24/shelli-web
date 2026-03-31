@@ -349,8 +349,8 @@ export function AssignProjectMemberDialog({
                   {inviteRows.length > 0 ? (
                     inviteRows.map((row) => (
                       <div key={row.id} className="rounded-xl border border-border/60 p-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="grid flex-1 gap-3 md:grid-cols-3">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="grid flex-1 gap-3 lg:grid-cols-3">
                             <Input
                               type="email"
                               placeholder="teammate@company.com"

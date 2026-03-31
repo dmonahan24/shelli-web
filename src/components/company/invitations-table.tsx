@@ -71,10 +71,10 @@ export function InvitationsTable({
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Invited By</TableHead>
-                <TableHead>Sent</TableHead>
-                <TableHead>Expires</TableHead>
+                <TableHead className="whitespace-nowrap">Sent</TableHead>
+                <TableHead className="whitespace-nowrap">Expires</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="whitespace-nowrap text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -86,31 +86,37 @@ export function InvitationsTable({
                     <TableCell className="font-medium">{row.email}</TableCell>
                     <TableCell>{row.role.replaceAll("_", " ")}</TableCell>
                     <TableCell>{row.invitedByName}</TableCell>
-                    <TableCell>{new Date(row.createdAt).toLocaleDateString()}</TableCell>
-                    <TableCell>{new Date(row.expiresAt).toLocaleDateString()}</TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {new Date(row.createdAt).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {new Date(row.expiresAt).toLocaleDateString()}
+                    </TableCell>
                     <TableCell>
                       <Badge variant="secondary">{status}</Badge>
                     </TableCell>
-                    <TableCell className="flex justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={async () => {
-                          const result = await resendInvitationServerFn({
-                            data: { companyId, invitationId: row.id },
-                          });
+                    <TableCell className="whitespace-nowrap">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            const result = await resendInvitationServerFn({
+                              data: { companyId, invitationId: row.id },
+                            });
 
-                          if (!result.ok) {
-                            toast.error(result.formError ?? "Unable to resend invitation.");
-                            return;
-                          }
+                            if (!result.ok) {
+                              toast.error(result.formError ?? "Unable to resend invitation.");
+                              return;
+                            }
 
-                          toast.success(result.message ?? "Invitation resent.");
-                        }}
-                      >
-                        Resend
-                      </Button>
-                      <RevokeInvitationDialog companyId={companyId} invitationId={row.id} />
+                            toast.success(result.message ?? "Invitation resent.");
+                          }}
+                        >
+                          Resend
+                        </Button>
+                        <RevokeInvitationDialog companyId={companyId} invitationId={row.id} />
+                      </div>
                     </TableCell>
                   </TableRow>
                 );

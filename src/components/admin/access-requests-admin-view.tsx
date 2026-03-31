@@ -174,7 +174,7 @@ function AccessRequestCard({
                   Attach this auth user to an existing company or create one now.
                 </p>
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 lg:grid-cols-2">
                 <div className="space-y-2">
                   <p className="text-sm font-medium">Company mode</p>
                   <Select
@@ -229,7 +229,7 @@ function AccessRequestCard({
                   <FieldError message={fieldErrors.companyId} />
                 </div>
               ) : (
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 lg:grid-cols-2">
                   <div className="space-y-2">
                     <p className="text-sm font-medium">New company name</p>
                     <Input

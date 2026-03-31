@@ -184,7 +184,7 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground overflow-x-hidden;
+    @apply bg-background text-foreground;
     letter-spacing: var(--tracking-normal);
     -webkit-tap-highlight-color: transparent;
   }
@@ -205,8 +205,23 @@
 }
 
 @layer utilities {
+  .tablet-stack {
+    @apply flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between;
+  }
+
+  .tablet-grid-2 {
+    @apply grid gap-4 lg:grid-cols-2;
+  }
+
+  .desktop-table {
+    @apply overflow-hidden rounded-2xl border border-border/70;
+  }
+
+  .local-scroll-only {
+    @apply overflow-x-auto overscroll-x-contain;
+  }
+
   .navigation-progress-bar {
     animation: navigation-progress-slide 1.2s ease-in-out infinite;
   }
 }
-

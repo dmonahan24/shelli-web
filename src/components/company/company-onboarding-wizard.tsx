@@ -16,7 +16,7 @@ import { completeCompanyOnboardingServerFn } from "@/server/company/create-compa
 
 export function CreateCompanyForm({ control }: { control: Control<CompanyOnboardingInput> }) {
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid gap-4 lg:grid-cols-2">
       <FormField
         control={control}
         name="companyName"
@@ -49,7 +49,7 @@ export function CreateCompanyForm({ control }: { control: Control<CompanyOnboard
 
 export function InviteTeammatesStep({ control }: { control: Control<CompanyOnboardingInput> }) {
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid gap-4 lg:grid-cols-2">
       <FormField
         control={control}
         name="teammateEmail"
@@ -107,7 +107,7 @@ export function CreateFirstProjectStep({ control }: { control: Control<CompanyOn
           </FormItem>
         )}
       />
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2">
         <FormField
           control={control}
           name="projectName"

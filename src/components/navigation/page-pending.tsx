@@ -18,7 +18,7 @@ function HeaderSkeleton({ compact = false }: { compact?: boolean }) {
 
 function SummaryGridSkeleton({ count = 4 }: { count?: number }) {
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {Array.from({ length: count }).map((_, index) => (
         <Card key={index} className="rounded-[24px] border-border/80 bg-card/90 shadow-sm">
           <CardContent className="space-y-3 p-5">
@@ -70,7 +70,7 @@ export function ListPagePending() {
     <div className="space-y-6">
       <HeaderSkeleton compact />
       <Card className="rounded-[28px] border-border/80 bg-card/90 shadow-sm">
-        <CardContent className="grid gap-3 p-5 sm:grid-cols-3">
+        <CardContent className="grid gap-3 p-5 lg:grid-cols-3">
           <Skeleton className="h-10 w-full rounded-xl" />
           <Skeleton className="h-10 w-full rounded-xl" />
           <Skeleton className="h-10 w-full rounded-xl" />

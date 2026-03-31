@@ -63,18 +63,18 @@ export function FloorsTable({
       <CardContent>
         <ResponsiveTableLayout
           desktop={
-            <div className="overflow-hidden rounded-2xl border border-border/70">
+            <div className="desktop-table">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Floor</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead className="text-right">Level</TableHead>
-                    <TableHead className="text-right">Pour Types</TableHead>
-                    <TableHead className="text-right">Estimated</TableHead>
-                    <TableHead className="text-right">Actual</TableHead>
-                    <TableHead className="text-right">Remaining</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="whitespace-nowrap">Type</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Level</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Pour Types</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Estimated</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Actual</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Remaining</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -84,30 +84,36 @@ export function FloorsTable({
                         <TableCell className="font-medium">
                           <PendingLink
                             className="hover:underline"
-                        preload="intent"
+                            preload="intent"
                             to="/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier"
                             params={getFloorRouteParams(project, building, floor)}
                           >
                             {floor.name}
                           </PendingLink>
                         </TableCell>
-                        <TableCell>{floor.floorType.replaceAll("_", " ")}</TableCell>
-                        <TableCell className="text-right">{floor.levelNumber ?? "—"}</TableCell>
-                        <TableCell className="text-right">{floor.pourTypeCount}</TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="whitespace-nowrap">
+                          {floor.floorType.replaceAll("_", " ")}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-right">
+                          {floor.levelNumber ?? "—"}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-right">
+                          {floor.pourTypeCount}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-right">
                           {formatConcreteVolume(floor.estimatedConcreteTotal)}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="whitespace-nowrap text-right">
                           {formatConcreteVolume(floor.actualConcreteTotal)}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="whitespace-nowrap text-right">
                           {formatConcreteVolume(floor.remainingConcrete)}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="whitespace-nowrap">
                           <div className="flex justify-end gap-2">
                             <Button asChild size="sm" variant="outline">
                               <PendingLink
-                            preload="intent"
+                                preload="intent"
                                 to="/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier"
                                 params={getFloorRouteParams(project, building, floor)}
                               >

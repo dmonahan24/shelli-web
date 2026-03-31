@@ -73,7 +73,7 @@ export function AuthPageShell({
                 </p>
               </div>
             </div>
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 xl:grid-cols-3">
               <FeatureCard
                 icon={<LayoutGrid className="size-5" />}
                 title="Daily visibility"

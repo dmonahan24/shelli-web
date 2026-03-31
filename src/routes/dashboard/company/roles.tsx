@@ -41,7 +41,7 @@ function CompanyRolesPage() {
         <p className="text-sm font-medium text-muted-foreground">Company</p>
         <h1 className="text-2xl font-semibold tracking-tight">Roles</h1>
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2">
         {roleMatrix.map((item) => (
           <Card key={item.role} className="border-border/70">
             <CardHeader>
