@@ -8,48 +8,42 @@ import { BuildingDetailHeader } from "@/components/hierarchy/building-detail-hea
 import { FloorsManagementToolbar } from "@/components/hierarchy/hierarchy-filters";
 import { BuildingSummaryCards } from "@/components/hierarchy/building-summary-cards";
 import { FloorsTable } from "@/components/hierarchy/floors-table";
+import { DetailPendingPage } from "@/components/navigation/page-pending";
 import { Button } from "@/components/ui/button";
+import { HIERARCHY_ROUTE_CACHE_OPTIONS } from "@/lib/router-cache";
 import {
-  hierarchyBuildingRouteParamsSchema,
   hierarchyFloorsSearchSchema,
 } from "@/lib/validation/hierarchy";
 import {
   getBuildingRouteParams,
   getProjectRouteParams,
 } from "@/lib/project-paths";
-import { getBuildingDetailServerFn } from "@/server/buildings/get-building-detail";
-import { resolveBuildingRouteServerFn } from "@/server/navigation/resolve-building-route";
+import { getBuildingPageDataServerFn } from "@/server/navigation/page-data";
 
 export const Route = createFileRoute("/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/")({
+  ...HIERARCHY_ROUTE_CACHE_OPTIONS,
   validateSearch: hierarchyFloorsSearchSchema,
-  loader: async ({ params }) => {
-    const parsedParams = hierarchyBuildingRouteParamsSchema.parse(params);
-    const resolved = await resolveBuildingRouteServerFn({ data: parsedParams });
-
-    if (!resolved) {
-      throw notFound();
-    }
-
-    if (!resolved.isCanonical) {
-      throw redirect({
-        to: "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier",
-        params: resolved.canonicalParams,
-      });
-    }
-
-    const detail = await getBuildingDetailServerFn({
+  loader: async ({ cause, params }) => {
+    const result = await getBuildingPageDataServerFn({
       data: {
-        buildingId: resolved.building.id,
-        projectId: resolved.project.id,
+        cause,
+        params,
       },
     });
 
-    if (!detail) {
+    if (result.status === "not_found") {
       throw notFound();
     }
 
-    return detail;
+    if (result.status === "redirect") {
+      throw redirect({
+        to: "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier",
+        params: result.canonicalParams,
+      });
+    }
+    return result.data;
   },
+  pendingComponent: DetailPendingPage,
   component: BuildingDetailPage,
 });
 

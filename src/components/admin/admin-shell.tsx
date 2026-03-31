@@ -1,6 +1,10 @@
 import type { ReactNode } from "react";
 import { ShieldCheck } from "lucide-react";
 import { UserProfileCard } from "@/components/app-shell/user-profile-card";
+import {
+  ShellNavigationFeedbackIndicator,
+  useShellNavigationFeedback,
+} from "@/components/navigation/navigation-pending-indicator";
 import { AdminSidebarFooterActions } from "@/components/admin/admin-sidebar-footer-actions";
 import { AdminSidebarNavLinks } from "@/components/admin/admin-sidebar-nav-links";
 import {
@@ -24,6 +28,8 @@ export function AdminShell({
   };
   children: ReactNode;
 }) {
+  const navigationFeedback = useShellNavigationFeedback();
+
   return (
     <SidebarProvider>
       <Sidebar collapsible="offcanvas" className="border-r border-sidebar-border">
@@ -58,8 +64,20 @@ export function AdminShell({
               </p>
               <p className="text-sm font-medium">Admin provisioning console</p>
             </div>
+            <ShellNavigationFeedbackIndicator
+              debugState={navigationFeedback.debugState}
+              isAcknowledgingNavigation={navigationFeedback.isAcknowledgingNavigation}
+              isSlowNavigation={navigationFeedback.isSlowNavigation}
+              liveText={navigationFeedback.liveText}
+            />
           </header>
-          <main className="flex-1 px-4 py-6 md:px-6">{children}</main>
+          <main
+            className="flex-1 px-4 py-6 md:px-6"
+            aria-busy={navigationFeedback.isSlowNavigation}
+            aria-live="polite"
+          >
+            {children}
+          </main>
         </div>
       </SidebarInset>
     </SidebarProvider>

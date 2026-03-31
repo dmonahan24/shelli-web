@@ -1,11 +1,15 @@
 // @ts-nocheck
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { BarChart3 } from "lucide-react";
+import { PendingLink } from "@/components/navigation/pending-link";
+import { AnalyticsPendingPage } from "@/components/navigation/page-pending";
 import { getProjectRouteParams } from "@/lib/project-paths";
+import { READ_ROUTE_CACHE_OPTIONS } from "@/lib/router-cache";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { listProjectsServerFn } from "@/server/projects/list-projects";
 
 export const Route = createFileRoute("/dashboard/analytics/projects/")({
+  ...READ_ROUTE_CACHE_OPTIONS,
   loader: async () =>
     listProjectsServerFn({
       data: {
@@ -13,6 +17,7 @@ export const Route = createFileRoute("/dashboard/analytics/projects/")({
         pageSize: 50,
       },
     }),
+  pendingComponent: AnalyticsPendingPage,
   component: ProjectAnalyticsIndexPage,
 });
 
@@ -27,8 +32,9 @@ function ProjectAnalyticsIndexPage() {
       </div>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {data.rows.map((project) => (
-          <Link
+          <PendingLink
             key={project.id}
+            preload="intent"
             to="/dashboard/analytics/projects/$projectIdentifier"
             params={getProjectRouteParams(project)}
           >
@@ -46,7 +52,7 @@ function ProjectAnalyticsIndexPage() {
                 </p>
               </CardContent>
             </Card>
-          </Link>
+          </PendingLink>
         ))}
       </div>
     </div>

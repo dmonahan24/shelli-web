@@ -3,6 +3,7 @@ import { AttachmentUploadDialog } from "@/components/attachments/attachment-uplo
 import { ProjectAttachmentsCard } from "@/components/attachments/project-attachments-card";
 import { ProjectMembersCard } from "@/components/company/project-members-card";
 import { ProjectBuildingsSection } from "@/components/hierarchy/project-buildings-section";
+import { DetailPendingPage } from "@/components/navigation/page-pending";
 import { DeleteProjectDialog, DangerZoneCard } from "@/components/projects/delete-project-dialog";
 import { ProjectDetailHeader } from "@/components/projects/project-detail-header";
 import { ProjectInfoCard } from "@/components/projects/project-info-card";
@@ -11,75 +12,33 @@ import { PourEventsTable } from "@/components/pours/pour-events-table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getProjectRouteParams } from "@/lib/project-paths";
+import { HIERARCHY_ROUTE_CACHE_OPTIONS } from "@/lib/router-cache";
 import { formatDateTime } from "@/lib/utils/format";
-import { projectRouteParamsSchema } from "@/lib/validation/project-list";
-import { listProjectAttachmentsServerFn } from "@/server/attachments/list-project-attachments";
-import { listBuildingsForProjectServerFn } from "@/server/buildings/list-buildings-for-project";
-import { getProjectAccessRosterServerFn } from "@/server/company/get-project-access-roster";
-import { resolveProjectRouteServerFn } from "@/server/navigation/resolve-project-route";
-import { listProjectPoursServerFn } from "@/server/pours/list-pour-events";
-import { getProjectDetailServerFn } from "@/server/projects/get-project-detail";
+import { getProjectPageDataServerFn } from "@/server/navigation/page-data";
 
 export const Route = createFileRoute("/dashboard/projects/$projectIdentifier/")({
-  loader: async ({ params }) => {
-    const parsedParams = projectRouteParamsSchema.parse(params);
-    const resolved = await resolveProjectRouteServerFn({ data: parsedParams });
+  ...HIERARCHY_ROUTE_CACHE_OPTIONS,
+  loader: async ({ cause, params }) => {
+    const result = await getProjectPageDataServerFn({
+      data: {
+        cause,
+        params,
+      },
+    });
 
-    if (!resolved) {
+    if (result.status === "not_found") {
       throw notFound();
     }
 
-    if (!resolved.isCanonical) {
+    if (result.status === "redirect") {
       throw redirect({
         to: "/dashboard/projects/$projectIdentifier",
-        params: resolved.canonicalParams,
+        params: result.canonicalParams,
       });
     }
-
-    const [detail, pours, attachments, buildings, accessRoster] = await Promise.all([
-      getProjectDetailServerFn({ data: { projectId: resolved.project.id } }),
-      listProjectPoursServerFn({
-        data: {
-          projectId: resolved.project.id,
-          query: {
-            page: 1,
-            pageSize: 10,
-          },
-        },
-      }),
-      listProjectAttachmentsServerFn({
-        data: {
-          projectId: resolved.project.id,
-          query: {
-            page: 1,
-            pageSize: 8,
-          },
-        },
-      }),
-      listBuildingsForProjectServerFn({
-        data: {
-          projectId: resolved.project.id,
-        },
-      }),
-      getProjectAccessRosterServerFn({
-        data: {
-          projectId: resolved.project.id,
-        },
-      }),
-    ]);
-
-    if (!detail) {
-      throw notFound();
-    }
-
-    return {
-      attachments,
-      accessRoster,
-      buildings,
-      detail,
-      pours,
-    };
+    return result.data;
   },
+  pendingComponent: DetailPendingPage,
   component: ProjectDetailPage,
 });
 

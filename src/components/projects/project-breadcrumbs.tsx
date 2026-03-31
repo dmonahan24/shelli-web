@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -7,6 +6,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { PendingLink } from "@/components/navigation/pending-link";
 import { getProjectRouteParams } from "@/lib/project-paths";
 
 export function ProjectBreadcrumbs({
@@ -23,21 +23,25 @@ export function ProjectBreadcrumbs({
       <BreadcrumbList>
         <BreadcrumbItem>
           <BreadcrumbLink asChild>
-            <Link to="/dashboard">Dashboard</Link>
+            <PendingLink to="/dashboard" preload="intent">Dashboard</PendingLink>
           </BreadcrumbLink>
         </BreadcrumbItem>
         <BreadcrumbSeparator />
         <BreadcrumbItem>
           <BreadcrumbLink asChild>
-            <Link to="/dashboard/projects">Projects</Link>
+            <PendingLink to="/dashboard/projects" preload="intent">Projects</PendingLink>
           </BreadcrumbLink>
         </BreadcrumbItem>
         <BreadcrumbSeparator />
         <BreadcrumbItem>
           <BreadcrumbLink asChild>
-            <Link to="/dashboard/projects/$projectIdentifier" params={getProjectRouteParams(project)}>
+            <PendingLink
+              to="/dashboard/projects/$projectIdentifier"
+              preload="intent"
+              params={getProjectRouteParams(project)}
+            >
               {project.name}
-            </Link>
+            </PendingLink>
           </BreadcrumbLink>
         </BreadcrumbItem>
       </BreadcrumbList>

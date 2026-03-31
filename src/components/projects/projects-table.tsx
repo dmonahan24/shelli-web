@@ -1,5 +1,6 @@
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouter } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
+import { acknowledgeNavigation } from "@/components/navigation/navigation-pending-indicator";
 import { getProjectRouteParams } from "@/lib/project-paths";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -25,6 +26,14 @@ type ProjectRow = {
 
 export function ProjectsTable({ projects }: { projects: ProjectRow[] }) {
   const navigate = useNavigate();
+  const router = useRouter();
+
+  const preloadProject = (project: ProjectRow) => {
+    void router.preloadRoute({
+      to: "/dashboard/projects/$projectIdentifier",
+      params: getProjectRouteParams(project),
+    });
+  };
 
   return (
     <Card className="rounded-[28px] border-border/80 bg-card/90 shadow-sm">
@@ -52,18 +61,29 @@ export function ProjectsTable({ projects }: { projects: ProjectRow[] }) {
                   title={`Open ${project.name}`}
                   role="link"
                   tabIndex={0}
-                  onClick={() =>
-                    navigate({
+                  onClick={() => {
+                    const params = getProjectRouteParams(project);
+
+                    acknowledgeNavigation({
+                      href: `/dashboard/projects/${params.projectIdentifier}`,
+                    });
+                    void navigate({
                       to: "/dashboard/projects/$projectIdentifier",
-                      params: getProjectRouteParams(project),
-                    })
-                  }
+                      params,
+                    });
+                  }}
+                  onFocus={() => preloadProject(project)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter" || event.key === " ") {
                       event.preventDefault();
+                      const params = getProjectRouteParams(project);
+
+                      acknowledgeNavigation({
+                        href: `/dashboard/projects/${params.projectIdentifier}`,
+                      });
                       void navigate({
                         to: "/dashboard/projects/$projectIdentifier",
-                        params: getProjectRouteParams(project),
+                        params,
                       });
                     }
                   }}

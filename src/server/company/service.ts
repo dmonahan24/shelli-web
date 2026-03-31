@@ -262,6 +262,25 @@ export async function getProjectAccessRoster(rawInput: unknown): Promise<Project
     throw new Error("Project not found.");
   }
 
+  return getProjectAccessRosterQuery({
+    hasExplicitAssignments: access.context.hasExplicitAssignments,
+    project,
+  });
+}
+
+export async function getProjectAccessRosterQuery(input: {
+  hasExplicitAssignments: boolean;
+  project: {
+    id: string;
+    name: string;
+    companyId: string;
+    projectManagerUserId: string | null;
+    superintendentUserId: string | null;
+  };
+}): Promise<ProjectAccessRoster> {
+  const { project } = input;
+  const projectId = project.id;
+
   const activeMemberRows = await db
     .select({
       userId: users.id,
@@ -407,7 +426,7 @@ export async function getProjectAccessRoster(rawInput: unknown): Promise<Project
   return {
     projectId: project.id,
     projectName: project.name,
-    hasExplicitAssignments: access.context.hasExplicitAssignments,
+    hasExplicitAssignments: input.hasExplicitAssignments,
     projectManagerUserId: project.projectManagerUserId ?? null,
     superintendentUserId: project.superintendentUserId ?? null,
     activeMembers: normalizedActiveMembers.map((row) => ({

@@ -1,6 +1,10 @@
 import type { ReactNode } from "react";
 import { AppSidebar } from "@/components/app-shell/app-sidebar";
 import {
+  ShellNavigationFeedbackIndicator,
+  useShellNavigationFeedback,
+} from "@/components/navigation/navigation-pending-indicator";
+import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
@@ -14,6 +18,8 @@ export function DashboardShell({
   user: TenantUserPrincipal;
   children: ReactNode;
 }) {
+  const navigationFeedback = useShellNavigationFeedback();
+
   return (
     <SidebarProvider>
       <AppSidebar user={user} />
@@ -28,8 +34,20 @@ export function DashboardShell({
               </p>
               <p className="text-sm font-medium">Concrete field operations</p>
             </div>
+            <ShellNavigationFeedbackIndicator
+              debugState={navigationFeedback.debugState}
+              isAcknowledgingNavigation={navigationFeedback.isAcknowledgingNavigation}
+              isSlowNavigation={navigationFeedback.isSlowNavigation}
+              liveText={navigationFeedback.liveText}
+            />
           </header>
-          <main className="flex-1 px-4 py-6 md:px-6">{children}</main>
+          <main
+            className="flex-1 px-4 py-6 transition-opacity md:px-6"
+            aria-busy={navigationFeedback.isSlowNavigation}
+            aria-live="polite"
+          >
+            {children}
+          </main>
         </div>
       </SidebarInset>
     </SidebarProvider>

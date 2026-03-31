@@ -55,6 +55,10 @@ function toNumber(value: string | number | null | undefined) {
 
 export async function listProjectPours(projectId: string, rawInput?: unknown) {
   await requireProjectAccess(projectId, "view");
+  return listProjectPoursQuery(projectId, rawInput);
+}
+
+export async function listProjectPoursQuery(projectId: string, rawInput?: unknown) {
 
   const input = pourEventListQuerySchema.parse(rawInput ?? {});
   const filters = buildPourFilters(projectId, input);

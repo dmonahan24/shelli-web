@@ -1,6 +1,7 @@
 import * as React from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { LogOut, Settings } from "lucide-react";
+import { PendingLink } from "@/components/navigation/pending-link";
 import { toast } from "sonner";
 import {
   SidebarMenu,
@@ -17,10 +18,10 @@ export function SidebarFooterActions() {
     <SidebarMenu>
       <SidebarMenuItem>
         <SidebarMenuButton asChild>
-          <Link to="/dashboard/settings">
+          <PendingLink to="/dashboard/settings" preload="intent">
             <Settings className="size-4" />
             <span>Settings</span>
-          </Link>
+          </PendingLink>
         </SidebarMenuButton>
       </SidebarMenuItem>
       <SidebarMenuItem>

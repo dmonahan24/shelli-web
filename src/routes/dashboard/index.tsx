@@ -1,16 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AnalyticsKpiCards } from "@/components/analytics/analytics-kpi-cards";
+import { DashboardPendingPage } from "@/components/navigation/page-pending";
 import { RecentActivityFeed } from "@/components/analytics/recent-activity-feed";
 import { DocumentationTaskCard } from "@/components/field/documentation-task-card";
 import { FieldActionGrid } from "@/components/field/field-action-grid";
 import { ProjectsDashboardView } from "@/components/dashboard/projects-dashboard-view";
-import { ProjectsTableSkeleton } from "@/components/projects/projects-table-skeleton";
+import { READ_ROUTE_CACHE_OPTIONS } from "@/lib/router-cache";
 import { getCurrentPrincipalServerFn } from "@/server/auth/get-current-user";
 import { getCompanyAnalyticsOverviewServerFn } from "@/server/analytics/get-company-analytics-overview";
 import { getFieldHomeDataServerFn } from "@/server/field/get-field-home-data";
 import { listProjectsServerFn } from "@/server/projects/list-projects";
 
 export const Route = createFileRoute("/dashboard/")({
+  ...READ_ROUTE_CACHE_OPTIONS,
   loader: async () => {
     const principal = await getCurrentPrincipalServerFn();
     const projects = await listProjectsServerFn({
@@ -38,7 +40,7 @@ export const Route = createFileRoute("/dashboard/")({
 
     return { principal, projects, fieldHome, analytics };
   },
-  pendingComponent: ProjectsTableSkeleton,
+  pendingComponent: DashboardPendingPage,
   component: DashboardHomePage,
 });
 

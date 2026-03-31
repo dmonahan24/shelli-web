@@ -1,11 +1,14 @@
 // @ts-nocheck
 import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
+import { DetailPendingPage } from "@/components/navigation/page-pending";
 import { ProjectMembersCard } from "@/components/company/project-members-card";
+import { READ_ROUTE_CACHE_OPTIONS } from "@/lib/router-cache";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { listProjectAccessRostersServerFn } from "@/server/company/get-project-access-roster";
 import { listProjectsServerFn } from "@/server/projects/list-projects";
 
 export const Route = createFileRoute("/dashboard/company/projects")({
+  ...READ_ROUTE_CACHE_OPTIONS,
   beforeLoad: ({ context }) => {
     if (context.user.role !== "owner" && context.user.role !== "admin") {
       throw redirect({ to: "/dashboard" });
@@ -29,6 +32,7 @@ export const Route = createFileRoute("/dashboard/company/projects")({
 
     return { projects, rosters };
   },
+  pendingComponent: DetailPendingPage,
   component: CompanyProjectsPage,
 });
 

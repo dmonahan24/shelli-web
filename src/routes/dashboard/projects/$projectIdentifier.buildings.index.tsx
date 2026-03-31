@@ -1,43 +1,35 @@
 import { createFileRoute, notFound, redirect, useNavigate, useRouter } from "@tanstack/react-router";
 import { BuildingsManagementToolbar } from "@/components/hierarchy/hierarchy-filters";
 import { ProjectBuildingsSection } from "@/components/hierarchy/project-buildings-section";
-import { projectRouteParamsSchema } from "@/lib/validation/project-list";
+import { ListPendingPage } from "@/components/navigation/page-pending";
+import { HIERARCHY_ROUTE_CACHE_OPTIONS } from "@/lib/router-cache";
 import { hierarchyBuildingsSearchSchema } from "@/lib/validation/hierarchy";
-import { resolveProjectRouteServerFn } from "@/server/navigation/resolve-project-route";
-import { getProjectDetailServerFn } from "@/server/projects/get-project-detail";
-import { listBuildingsForProjectServerFn } from "@/server/buildings/list-buildings-for-project";
+import { getProjectBuildingsPageDataServerFn } from "@/server/navigation/page-data";
 
 export const Route = createFileRoute("/dashboard/projects/$projectIdentifier/buildings/")({
+  ...HIERARCHY_ROUTE_CACHE_OPTIONS,
   validateSearch: hierarchyBuildingsSearchSchema,
-  loader: async ({ params }) => {
-    const parsedParams = projectRouteParamsSchema.parse(params);
-    const resolved = await resolveProjectRouteServerFn({ data: parsedParams });
+  loader: async ({ cause, params }) => {
+    const result = await getProjectBuildingsPageDataServerFn({
+      data: {
+        cause,
+        params,
+      },
+    });
 
-    if (!resolved) {
+    if (result.status === "not_found") {
       throw notFound();
     }
 
-    if (!resolved.isCanonical) {
+    if (result.status === "redirect") {
       throw redirect({
         to: "/dashboard/projects/$projectIdentifier/buildings",
-        params: resolved.canonicalParams,
+        params: result.canonicalParams,
       });
     }
-
-    const [detail, buildings] = await Promise.all([
-      getProjectDetailServerFn({ data: { projectId: resolved.project.id } }),
-      listBuildingsForProjectServerFn({ data: { projectId: resolved.project.id } }),
-    ]);
-
-    if (!detail) {
-      throw notFound();
-    }
-
-    return {
-      buildings,
-      project: detail.project,
-    };
+    return result.data;
   },
+  pendingComponent: ListPendingPage,
   component: ProjectBuildingsPage,
 });
 

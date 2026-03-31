@@ -5,6 +5,8 @@ import { ConcretePouredOverTimeChart } from "@/components/analytics/concrete-pou
 import { ProjectStatusBreakdownChart } from "@/components/analytics/project-status-breakdown-chart";
 import { RecentActivityFeed } from "@/components/analytics/recent-activity-feed";
 import { TopProjectsChart } from "@/components/analytics/top-projects-chart";
+import { AnalyticsPendingPage } from "@/components/navigation/page-pending";
+import { READ_ROUTE_CACHE_OPTIONS } from "@/lib/router-cache";
 import { getCompanyAnalyticsOverviewServerFn } from "@/server/analytics/get-company-analytics-overview";
 
 function defaultDateRange() {
@@ -18,6 +20,7 @@ function defaultDateRange() {
 }
 
 export const Route = createFileRoute("/dashboard/analytics/")({
+  ...READ_ROUTE_CACHE_OPTIONS,
   loader: async () =>
     getCompanyAnalyticsOverviewServerFn({
       data: {
@@ -26,6 +29,7 @@ export const Route = createFileRoute("/dashboard/analytics/")({
         status: "all",
       },
     }),
+  pendingComponent: AnalyticsPendingPage,
   component: AnalyticsOverviewPage,
 });
 

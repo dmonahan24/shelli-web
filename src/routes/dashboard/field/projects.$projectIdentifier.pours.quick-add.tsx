@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
+import { FormPendingPage } from "@/components/navigation/page-pending";
 import { QuickPourForm } from "@/components/field/quick-pour-form";
 import { projectRouteParamsSchema } from "@/lib/validation/project-list";
 import { resolveProjectRouteServerFn } from "@/server/navigation/resolve-project-route";
@@ -22,6 +23,7 @@ export const Route = createFileRoute("/dashboard/field/projects/$projectIdentifi
 
     return resolved.project;
   },
+  pendingComponent: FormPendingPage,
   component: QuickAddPourPage,
 });
 

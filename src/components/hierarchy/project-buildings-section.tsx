@@ -1,6 +1,6 @@
-import { Link } from "@tanstack/react-router";
 import { AddBuildingDialog } from "@/components/buildings/add-building-dialog";
 import { BuildingsTable } from "@/components/hierarchy/buildings-table";
+import { PendingLink } from "@/components/navigation/pending-link";
 import { getProjectRouteParams } from "@/lib/project-paths";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,9 +30,13 @@ export function ProjectBuildingsSection({
         </div>
         <div className="flex flex-wrap gap-3">
           <Button asChild variant="outline">
-            <Link to="/dashboard/projects/$projectIdentifier/buildings" params={getProjectRouteParams(project)}>
+            <PendingLink
+              to="/dashboard/projects/$projectIdentifier/buildings"
+              preload="intent"
+              params={getProjectRouteParams(project)}
+            >
               Manage Buildings
-            </Link>
+            </PendingLink>
           </Button>
           <AddBuildingDialog
             onCreated={onMutationComplete}

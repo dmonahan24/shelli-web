@@ -3,10 +3,12 @@ import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 import { AnalyticsKpiCards } from "@/components/analytics/analytics-kpi-cards";
 import { AttachmentTimelineChart } from "@/components/analytics/attachment-timeline-chart";
 import { MixTypeDistributionChart } from "@/components/analytics/mix-type-distribution-chart";
+import { AnalyticsPendingPage } from "@/components/navigation/page-pending";
 import { ProjectAnalyticsHeader } from "@/components/analytics/project-analytics-header";
 import { ProjectProgressChart } from "@/components/analytics/project-progress-chart";
 import { RecentActivityFeed } from "@/components/analytics/recent-activity-feed";
 import { WeeklyPoursChart } from "@/components/analytics/weekly-pours-chart";
+import { READ_ROUTE_CACHE_OPTIONS } from "@/lib/router-cache";
 import { projectRouteParamsSchema } from "@/lib/validation/project-list";
 import { resolveProjectRouteServerFn } from "@/server/navigation/resolve-project-route";
 import { getProjectAnalyticsServerFn } from "@/server/analytics/get-project-analytics";
@@ -22,6 +24,7 @@ function defaultDateRange() {
 }
 
 export const Route = createFileRoute("/dashboard/analytics/projects/$projectIdentifier")({
+  ...READ_ROUTE_CACHE_OPTIONS,
   loader: async ({ params }) => {
     const parsedParams = projectRouteParamsSchema.parse(params);
     const resolved = await resolveProjectRouteServerFn({ data: parsedParams });
@@ -44,6 +47,7 @@ export const Route = createFileRoute("/dashboard/analytics/projects/$projectIden
       },
     });
   },
+  pendingComponent: AnalyticsPendingPage,
   component: ProjectAnalyticsPage,
 });
 
