@@ -17,6 +17,7 @@ import { failure, success, type ActionResult } from "@/lib/utils/action-result";
 import { recalculateHierarchyFromFloor } from "@/server/hierarchy/recalculate-from-floor";
 import { requireOwnedBuilding, requireOwnedFloor, toNumber, zodFieldErrors } from "@/server/hierarchy/shared";
 import { recordActivityEvent } from "@/server/activity/service";
+import { generateFloorSlug } from "@/server/navigation/service";
 import { requireProjectAccess } from "@/lib/auth/project-access";
 
 function getFloorWriteFailure(error: unknown) {
@@ -27,6 +28,17 @@ function getFloorWriteFailure(error: unknown) {
 
   const constraintName = databaseError?.constraint_name ?? databaseError?.constraint ?? "";
   const message = databaseError?.message ?? "";
+
+  if (
+    databaseError?.code === "23505" &&
+    (constraintName === "building_floors_building_slug_idx" ||
+      message.includes("building_floors_building_slug_idx") ||
+      message.includes("(building_id, slug)"))
+  ) {
+    return failure("validation_error", "Please fix the highlighted fields.", {
+      customName: "A floor with that name already exists in this building.",
+    });
+  }
 
   if (
     databaseError?.code === "23505" &&
@@ -129,6 +141,7 @@ async function getFloorRowsForBuilding(buildingId: string) {
       projectId: buildingFloors.projectId,
       buildingId: buildingFloors.buildingId,
       name: buildingFloors.name,
+      slug: buildingFloors.slug,
       floorType: buildingFloors.floorType,
       levelNumber: buildingFloors.levelNumber,
       displayOrder: buildingFloors.displayOrder,
@@ -147,6 +160,7 @@ async function getFloorRowsForBuilding(buildingId: string) {
       buildingFloors.projectId,
       buildingFloors.buildingId,
       buildingFloors.name,
+      buildingFloors.slug,
       buildingFloors.floorType,
       buildingFloors.levelNumber,
       buildingFloors.displayOrder,
@@ -236,10 +250,12 @@ export async function getFloorDetail(floorId: string) {
     building: {
       id: building.id,
       name: building.name,
+      slug: building.slug,
     },
     project: {
       id: project.id,
       name: project.name,
+      slug: project.slug,
     },
     pourTypes: pourTypeRows,
     summary: {
@@ -255,7 +271,16 @@ export async function getFloorDetail(floorId: string) {
 
 export async function createFloor(
   rawInput: CreateFloorInput
-): Promise<ActionResult<{ id: string; buildingId: string; projectId: string }>> {
+): Promise<
+  ActionResult<{
+    id: string;
+    slug: string;
+    buildingId: string;
+    buildingSlug: string;
+    projectId: string;
+    projectSlug: string;
+  }>
+> {
   try {
     assertSameOrigin();
     const input = createFloorSchema.parse(rawInput);
@@ -286,6 +311,7 @@ export async function createFloor(
       input.displayOrder ?? getDefaultFloorDisplayOrder(input.floorType, input.levelNumber);
 
     const createdFloor = await db.transaction(async (tx) => {
+      const slug = await generateFloorSlug(building.id, name, undefined, tx);
       const [floor] = await tx
         .insert(buildingFloors)
         .values({
@@ -293,13 +319,14 @@ export async function createFloor(
           buildingId: building.id,
           companyId: building.companyId,
           name,
+          slug,
           floorType: input.floorType,
           levelNumber: input.floorType === "standard" ? input.levelNumber ?? null : null,
           displayOrder,
           estimatedConcreteTotal: "0",
           actualConcreteTotal: "0",
         })
-        .returning({ id: buildingFloors.id });
+        .returning({ id: buildingFloors.id, slug: buildingFloors.slug });
 
       if (!floor) {
         throw new Error("Unable to create the floor right now.");
@@ -333,11 +360,18 @@ export async function createFloor(
       return floor;
     });
 
+    const project = await db.query.projects.findFirst({
+      where: eq(projects.id, building.projectId),
+    });
+
     return success(
       {
         id: createdFloor.id,
+        slug: createdFloor.slug,
         buildingId: building.id,
+        buildingSlug: building.slug,
         projectId: building.projectId,
+        projectSlug: project?.slug ?? building.projectId,
       },
       "Floor created."
     );
@@ -366,7 +400,16 @@ export async function createFloor(
 
 export async function updateFloor(
   rawInput: UpdateFloorInput
-): Promise<ActionResult<{ id: string; buildingId: string; projectId: string }>> {
+): Promise<
+  ActionResult<{
+    id: string;
+    slug: string;
+    buildingId: string;
+    buildingSlug: string;
+    projectId: string;
+    projectSlug: string;
+  }>
+> {
   try {
     assertSameOrigin();
     const input = updateFloorSchema.parse(rawInput);
@@ -394,10 +437,21 @@ export async function updateFloor(
       return failure("validation_error", "Please fix the highlighted fields.", uniquenessErrors);
     }
 
+    const slug = await generateFloorSlug(floor.buildingId, name, floor.id);
+    const [project, building] = await Promise.all([
+      db.query.projects.findFirst({
+        where: eq(projects.id, floor.projectId),
+      }),
+      db.query.projectBuildings.findFirst({
+        where: eq(projectBuildings.id, floor.buildingId),
+      }),
+    ]);
+
     await db
       .update(buildingFloors)
       .set({
         name,
+        slug,
         floorType: input.floorType,
         levelNumber: input.floorType === "standard" ? input.levelNumber ?? null : null,
         displayOrder:
@@ -425,8 +479,11 @@ export async function updateFloor(
     return success(
       {
         id: floor.id,
+        slug,
         buildingId: floor.buildingId,
+        buildingSlug: building?.slug ?? floor.buildingId,
         projectId: floor.projectId,
+        projectSlug: project?.slug ?? floor.projectId,
       },
       "Floor updated."
     );
@@ -597,12 +654,22 @@ export async function bulkCreateFloors(
     }
 
     await db.transaction(async (tx) => {
+      const pendingFloorsWithSlugs: Array<(typeof pendingFloors)[number] & { slug: string }> = [];
+
+      for (const floor of pendingFloors) {
+        pendingFloorsWithSlugs.push({
+          ...floor,
+          slug: await generateFloorSlug(building.id, floor.name, undefined, tx),
+        });
+      }
+
       await tx.insert(buildingFloors).values(
-        pendingFloors.map((floor) => ({
+        pendingFloorsWithSlugs.map((floor) => ({
           projectId: building.projectId,
           buildingId: building.id,
           companyId: building.companyId,
           name: floor.name,
+          slug: floor.slug,
           floorType: floor.floorType,
           levelNumber: floor.levelNumber,
           displayOrder: floor.displayOrder,

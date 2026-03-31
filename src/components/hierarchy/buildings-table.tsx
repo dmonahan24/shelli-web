@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { EditBuildingDialog } from "@/components/buildings/edit-building-dialog";
 import { DeleteBuildingDialog } from "@/components/buildings/delete-building-dialog";
+import { getBuildingRouteParams } from "@/lib/project-paths";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -24,17 +25,21 @@ type BuildingRow = {
   name: string;
   pourTypeCount: number;
   projectId: string;
+  slug?: string | null;
   remainingConcrete: number;
 };
 
 export function BuildingsTable({
   buildings,
   onMutationComplete,
-  projectId,
+  project,
 }: {
   buildings: BuildingRow[];
   onMutationComplete: () => Promise<void> | void;
-  projectId: string;
+  project: {
+    id: string;
+    slug?: string | null;
+  };
 }) {
   return (
     <Card className="rounded-[28px] border-border/80 bg-card/90 shadow-sm">
@@ -62,8 +67,8 @@ export function BuildingsTable({
                     <TableCell className="font-medium">
                       <Link
                         className="hover:underline"
-                        to="/dashboard/projects/$projectId/buildings/$buildingId"
-                        params={{ buildingId: building.id, projectId }}
+                        to="/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier"
+                        params={getBuildingRouteParams(project, building)}
                       >
                         {building.name}
                       </Link>
@@ -83,15 +88,17 @@ export function BuildingsTable({
                       <div className="flex justify-end gap-2">
                         <Button asChild size="sm" variant="outline">
                           <Link
-                            to="/dashboard/projects/$projectId/buildings/$buildingId"
-                            params={{ buildingId: building.id, projectId }}
+                            to="/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier"
+                            params={getBuildingRouteParams(project, building)}
                           >
                             View
                           </Link>
                         </Button>
                         <EditBuildingDialog
                           building={building}
-                          onUpdated={onMutationComplete}
+                          onUpdated={async () => {
+                            await onMutationComplete();
+                          }}
                           trigger={
                             <Button size="sm" variant="outline">
                               Edit

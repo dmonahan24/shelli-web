@@ -1,5 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
+import { getProjectRouteParams } from "@/lib/project-paths";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -13,6 +14,7 @@ import { formatConcreteVolume, formatDate } from "@/lib/utils/format";
 
 type ProjectRow = {
   id: string;
+  slug?: string | null;
   name: string;
   address: string;
   dateStarted: string;
@@ -52,16 +54,16 @@ export function ProjectsTable({ projects }: { projects: ProjectRow[] }) {
                   tabIndex={0}
                   onClick={() =>
                     navigate({
-                      to: "/dashboard/projects/$projectId",
-                      params: { projectId: project.id },
+                      to: "/dashboard/projects/$projectIdentifier",
+                      params: getProjectRouteParams(project),
                     })
                   }
                   onKeyDown={(event) => {
                     if (event.key === "Enter" || event.key === " ") {
                       event.preventDefault();
                       void navigate({
-                        to: "/dashboard/projects/$projectId",
-                        params: { projectId: project.id },
+                        to: "/dashboard/projects/$projectIdentifier",
+                        params: getProjectRouteParams(project),
                       });
                     }
                   }}

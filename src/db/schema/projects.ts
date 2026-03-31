@@ -34,6 +34,7 @@ export const projects = pgTable(
       onDelete: "set null",
     }),
     name: text("name").notNull(),
+    slug: text("slug").notNull(),
     address: text("address").notNull(),
     status: projectStatusEnum("status").notNull().default("active"),
     description: notesColumn("description"),
@@ -62,6 +63,10 @@ export const projects = pgTable(
     companyStartDateIndex: index("projects_company_start_date_idx").on(
       table.companyId,
       table.dateStarted
+    ),
+    companySlugIndex: uniqueIndex("projects_company_slug_idx").on(
+      table.companyId,
+      table.slug
     ),
     companyProjectCodeIndex: uniqueIndex("projects_company_project_code_idx").on(
       table.companyId,

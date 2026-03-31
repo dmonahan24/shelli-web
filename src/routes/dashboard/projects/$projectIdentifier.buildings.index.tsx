@@ -1,18 +1,32 @@
-import { createFileRoute, notFound, useNavigate, useRouter } from "@tanstack/react-router";
+import { createFileRoute, notFound, redirect, useNavigate, useRouter } from "@tanstack/react-router";
 import { BuildingsManagementToolbar } from "@/components/hierarchy/hierarchy-filters";
 import { ProjectBuildingsSection } from "@/components/hierarchy/project-buildings-section";
+import { projectRouteParamsSchema } from "@/lib/validation/project-list";
 import { hierarchyBuildingsSearchSchema } from "@/lib/validation/hierarchy";
-import { projectDetailParamsSchema } from "@/lib/validation/project-list";
+import { resolveProjectRouteServerFn } from "@/server/navigation/resolve-project-route";
 import { getProjectDetailServerFn } from "@/server/projects/get-project-detail";
 import { listBuildingsForProjectServerFn } from "@/server/buildings/list-buildings-for-project";
 
-export const Route = createFileRoute("/dashboard/projects/$projectId/buildings/")({
+export const Route = createFileRoute("/dashboard/projects/$projectIdentifier/buildings/")({
   validateSearch: hierarchyBuildingsSearchSchema,
   loader: async ({ params }) => {
-    const parsedParams = projectDetailParamsSchema.parse(params);
+    const parsedParams = projectRouteParamsSchema.parse(params);
+    const resolved = await resolveProjectRouteServerFn({ data: parsedParams });
+
+    if (!resolved) {
+      throw notFound();
+    }
+
+    if (!resolved.isCanonical) {
+      throw redirect({
+        to: "/dashboard/projects/$projectIdentifier/buildings",
+        params: resolved.canonicalParams,
+      });
+    }
+
     const [detail, buildings] = await Promise.all([
-      getProjectDetailServerFn({ data: parsedParams }),
-      listBuildingsForProjectServerFn({ data: parsedParams }),
+      getProjectDetailServerFn({ data: { projectId: resolved.project.id } }),
+      listBuildingsForProjectServerFn({ data: { projectId: resolved.project.id } }),
     ]);
 
     if (!detail) {
@@ -28,10 +42,9 @@ export const Route = createFileRoute("/dashboard/projects/$projectId/buildings/"
 });
 
 function ProjectBuildingsPage() {
-  const navigate = useNavigate({ from: "/dashboard/projects/$projectId/buildings" });
+  const navigate = useNavigate({ from: "/dashboard/projects/$projectIdentifier/buildings" });
   const router = useRouter();
   const { buildings, project } = Route.useLoaderData();
-  const { projectId } = Route.useParams();
   const search = Route.useSearch();
 
   const updateSearch = (partial: Partial<typeof search>) =>
@@ -94,7 +107,7 @@ function ProjectBuildingsPage() {
       <ProjectBuildingsSection
         buildings={filteredBuildings}
         onMutationComplete={() => router.invalidate()}
-        projectId={projectId}
+        project={project}
       />
     </div>
   );

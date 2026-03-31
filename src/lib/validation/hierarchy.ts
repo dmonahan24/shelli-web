@@ -4,9 +4,14 @@ import {
   pourCategoryValues,
   pourTypeStatusValues,
 } from "@/lib/hierarchy";
+import { routeIdentifierSchema } from "@/lib/slug";
 
 export const hierarchyProjectParamsSchema = z.object({
   projectId: z.string().uuid("Invalid project id"),
+});
+
+export const hierarchyProjectRouteParamsSchema = z.object({
+  projectIdentifier: routeIdentifierSchema,
 });
 
 export const hierarchyBuildingParamsSchema = z.object({
@@ -14,10 +19,21 @@ export const hierarchyBuildingParamsSchema = z.object({
   buildingId: z.string().uuid("Invalid building id"),
 });
 
+export const hierarchyBuildingRouteParamsSchema = z.object({
+  projectIdentifier: routeIdentifierSchema,
+  buildingIdentifier: routeIdentifierSchema,
+});
+
 export const hierarchyFloorParamsSchema = z.object({
   projectId: z.string().uuid("Invalid project id"),
   buildingId: z.string().uuid("Invalid building id"),
   floorId: z.string().uuid("Invalid floor id"),
+});
+
+export const hierarchyFloorRouteParamsSchema = z.object({
+  projectIdentifier: routeIdentifierSchema,
+  buildingIdentifier: routeIdentifierSchema,
+  floorIdentifier: routeIdentifierSchema,
 });
 
 export const hierarchySortDirectionSchema = z.enum(["asc", "desc"]);

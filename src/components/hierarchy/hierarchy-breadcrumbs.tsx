@@ -7,19 +7,29 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import {
+  getBuildingRouteParams,
+  getProjectRouteParams,
+} from "@/lib/project-paths";
 
 export function HierarchyBreadcrumbs({
-  buildingId,
-  buildingName,
-  floorName,
-  projectId,
-  projectName,
+  building,
+  floor,
+  project,
 }: {
-  buildingId?: string;
-  buildingName?: string;
-  floorName?: string;
-  projectId: string;
-  projectName: string;
+  building?: {
+    id: string;
+    slug?: string | null;
+    name: string;
+  };
+  floor?: {
+    name: string;
+  };
+  project: {
+    id: string;
+    slug?: string | null;
+    name: string;
+  };
 }) {
   return (
     <Breadcrumb>
@@ -38,35 +48,35 @@ export function HierarchyBreadcrumbs({
         <BreadcrumbSeparator />
         <BreadcrumbItem>
           <BreadcrumbLink asChild>
-            <Link to="/dashboard/projects/$projectId" params={{ projectId }}>
-              {projectName}
+            <Link to="/dashboard/projects/$projectIdentifier" params={getProjectRouteParams(project)}>
+              {project.name}
             </Link>
           </BreadcrumbLink>
         </BreadcrumbItem>
-        {buildingName ? (
+        {building ? (
           <>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              {floorName && buildingId ? (
+              {floor ? (
                 <BreadcrumbLink asChild>
                   <Link
-                    to="/dashboard/projects/$projectId/buildings/$buildingId"
-                    params={{ buildingId, projectId }}
+                    to="/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier"
+                    params={getBuildingRouteParams(project, building)}
                   >
-                    {buildingName}
+                    {building.name}
                   </Link>
                 </BreadcrumbLink>
               ) : (
-                <BreadcrumbPage>{buildingName}</BreadcrumbPage>
+                <BreadcrumbPage>{building.name}</BreadcrumbPage>
               )}
             </BreadcrumbItem>
           </>
         ) : null}
-        {floorName ? (
+        {floor ? (
           <>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>{floorName}</BreadcrumbPage>
+              <BreadcrumbPage>{floor.name}</BreadcrumbPage>
             </BreadcrumbItem>
           </>
         ) : null}

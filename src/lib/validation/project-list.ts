@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { routeIdentifierSchema } from "@/lib/slug";
 import { projectStatusSchema } from "@/lib/validation/project";
 
 export const projectSortByValues = [
@@ -36,6 +37,10 @@ export const projectListQuerySchema = z.object({
 
 export const projectDetailParamsSchema = z.object({
   projectId: z.string().uuid("Invalid project id"),
+});
+
+export const projectRouteParamsSchema = z.object({
+  projectIdentifier: routeIdentifierSchema,
 });
 
 export type ProjectListQuery = z.infer<typeof projectListQuerySchema>;

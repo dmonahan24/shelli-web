@@ -55,6 +55,7 @@ export async function getFieldHomeData() {
       .select({
         id: projects.id,
         name: projects.name,
+        slug: projects.slug,
         status: projects.status,
         estimatedTotalConcrete: projects.estimatedTotalConcrete,
         totalConcretePoured: projects.totalConcretePoured,

@@ -178,6 +178,7 @@ export async function getTopProjectsByConcrete(input: CompanyAnalyticsQueryInput
   const rows = await db
     .select({
       projectId: projects.id,
+      projectSlug: projects.slug,
       projectName: projects.name,
       totalConcretePoured: projects.totalConcretePoured,
     })
@@ -188,6 +189,7 @@ export async function getTopProjectsByConcrete(input: CompanyAnalyticsQueryInput
 
   return rows.map((row) => ({
     projectId: row.projectId,
+    projectSlug: row.projectSlug,
     projectName: row.projectName,
     value: toNumber(row.totalConcretePoured),
   }));
@@ -448,6 +450,7 @@ export async function getProjectAnalytics(rawInput: ProjectAnalyticsQueryInput) 
   return {
     project: {
       id: project.id,
+      slug: project.slug,
       name: project.name,
       status: project.status,
       percentComplete,

@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
+import { getProjectRouteParams } from "@/lib/project-paths";
 import { ProjectStatusBadge } from "@/components/projects/project-status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -24,6 +25,7 @@ export function ProjectsTableAdvanced({
     lastPourDate: string | null;
     name: string;
     projectCode: string | null;
+    slug?: string | null;
     status: string;
     totalConcretePoured: number;
   }>;
@@ -78,8 +80,8 @@ export function ProjectsTableAdvanced({
                   </TableCell>
                   <TableCell className="text-right">
                     <Link
-                      to="/dashboard/projects/$projectId"
-                      params={{ projectId: project.id }}
+                      to="/dashboard/projects/$projectIdentifier"
+                      params={getProjectRouteParams(project)}
                       className="inline-flex items-center gap-2 text-sm font-medium text-primary"
                     >
                       View <ArrowRight className="size-4" />

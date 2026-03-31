@@ -20,6 +20,7 @@ export const projectBuildings = pgTable(
       .references(() => projects.id, { onDelete: "cascade" }),
     companyId: companyIdColumn().references(() => companies.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
+    slug: text("slug").notNull(),
     code: text("code"),
     description: notesColumn("description"),
     displayOrder: integer("display_order").notNull().default(0),
@@ -39,6 +40,10 @@ export const projectBuildings = pgTable(
       table.projectId,
       table.name
     ),
+    projectSlugIndex: uniqueIndex("project_buildings_project_slug_idx").on(
+      table.projectId,
+      table.slug
+    ),
   })
 );
 
@@ -54,6 +59,7 @@ export const buildingFloors = pgTable(
       .references(() => projectBuildings.id, { onDelete: "cascade" }),
     companyId: companyIdColumn().references(() => companies.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
+    slug: text("slug").notNull(),
     floorType: floorTypeEnum("floor_type").notNull(),
     levelNumber: integer("level_number"),
     displayOrder: integer("display_order").notNull().default(0),
@@ -75,6 +81,10 @@ export const buildingFloors = pgTable(
     buildingNameIndex: uniqueIndex("building_floors_building_name_idx").on(
       table.buildingId,
       table.name
+    ),
+    buildingSlugIndex: uniqueIndex("building_floors_building_slug_idx").on(
+      table.buildingId,
+      table.slug
     ),
   })
 );

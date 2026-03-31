@@ -1,13 +1,27 @@
 import type { ProjectStatus } from "@/lib/validation/project";
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 import { EditProjectForm } from "@/components/projects/edit-project-form";
-import { projectDetailParamsSchema } from "@/lib/validation/project-list";
+import { projectRouteParamsSchema } from "@/lib/validation/project-list";
+import { resolveProjectRouteServerFn } from "@/server/navigation/resolve-project-route";
 import { getProjectDetailServerFn } from "@/server/projects/get-project-detail";
 
-export const Route = createFileRoute("/dashboard/projects/$projectId/edit")({
+export const Route = createFileRoute("/dashboard/projects/$projectIdentifier/edit")({
   loader: async ({ params }) => {
-    const parsedParams = projectDetailParamsSchema.parse(params);
-    const detail = await getProjectDetailServerFn({ data: parsedParams });
+    const parsedParams = projectRouteParamsSchema.parse(params);
+    const resolved = await resolveProjectRouteServerFn({ data: parsedParams });
+
+    if (!resolved) {
+      throw notFound();
+    }
+
+    if (!resolved.isCanonical) {
+      throw redirect({
+        to: "/dashboard/projects/$projectIdentifier/edit",
+        params: resolved.canonicalParams,
+      });
+    }
+
+    const detail = await getProjectDetailServerFn({ data: { projectId: resolved.project.id } });
 
     if (!detail) {
       throw notFound();
@@ -20,11 +34,10 @@ export const Route = createFileRoute("/dashboard/projects/$projectId/edit")({
 
 function EditProjectPage() {
   const detail = Route.useLoaderData();
-  const { projectId } = Route.useParams();
 
   return (
     <EditProjectForm
-      projectId={projectId}
+      projectId={detail.project.id}
       currentTotalConcretePoured={detail.project.totalConcretePoured}
       isHierarchyManaged={detail.summary.totalBuildings > 0}
       defaultValues={{

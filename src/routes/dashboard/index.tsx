@@ -56,7 +56,7 @@ function DashboardHomePage() {
           <p className="text-sm font-medium text-muted-foreground">Dashboard</p>
           <h1 className="text-2xl font-semibold tracking-tight">Field supervisor view</h1>
         </div>
-        <FieldActionGrid projectId={fieldHome.projects[0]?.id} />
+        <FieldActionGrid project={fieldHome.projects[0]} />
         <div className="space-y-3">
           {fieldHome.documentationTasks.map((task: any) => (
             <DocumentationTaskCard key={`${task.title}-${task.description}`} {...task} />

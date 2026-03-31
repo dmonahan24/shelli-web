@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { SubmitButton } from "@/components/auth/submit-button";
 import { ProjectForm } from "@/components/projects/project-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getProjectRouteParams } from "@/lib/project-paths";
 import { updateProjectServerFn } from "@/server/projects/update-project";
 import type { ProjectInput } from "@/lib/validation/project";
 
@@ -67,7 +68,13 @@ export function EditProjectForm({
                 }
 
                 toast.success(result.message ?? "Project updated.");
-                await router.navigate({ to: "/dashboard/projects/$projectId", params: { projectId } });
+                await router.navigate({
+                  to: "/dashboard/projects/$projectIdentifier",
+                  params: getProjectRouteParams({
+                    id: projectId,
+                    slug: result.data?.slug,
+                  }),
+                });
               })
             }
             submitButton={

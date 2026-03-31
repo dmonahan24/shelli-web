@@ -21,6 +21,7 @@ import {
 } from "@/lib/validation/project-list";
 import { failure, success, type ActionResult } from "@/lib/utils/action-result";
 import { listRecentActivity, recordActivityEvent } from "@/server/activity/service";
+import { generateProjectSlug } from "@/server/navigation/service";
 import { deleteStoredFile } from "@/server/attachments/storage";
 
 function zodFieldErrors(error: ZodError) {
@@ -56,6 +57,21 @@ function getProjectWriteFailure(
 
   const constraintName = databaseError?.constraint_name ?? databaseError?.constraint ?? "";
   const message = databaseError?.message ?? "";
+
+  if (
+    databaseError?.code === "23505" &&
+    (constraintName === "projects_company_slug_idx" ||
+      message.includes("projects_company_slug_idx") ||
+      message.includes("(company_id, slug)"))
+  ) {
+    return failure(
+      "validation_error",
+      "Please fix the highlighted fields.",
+      {
+        name: "A project with that name already exists for this company.",
+      }
+    );
+  }
 
   if (
     databaseError?.code === "23505" &&
@@ -118,6 +134,7 @@ export async function listProjects(rawInput?: unknown) {
       .select({
         id: projects.id,
         name: projects.name,
+        slug: projects.slug,
         address: projects.address,
         status: projects.status,
         projectCode: projects.projectCode,
@@ -211,7 +228,7 @@ export async function getProjectDetail(rawInput: unknown): Promise<any> {
 
 export async function createProject(
   rawInput: CreateProjectInput
-): Promise<ActionResult<{ id: string }>> {
+): Promise<ActionResult<{ id: string; slug: string }>> {
   try {
     assertSameOrigin();
     const user = await requireTenantUser();
@@ -223,6 +240,7 @@ export async function createProject(
     }
 
     const createdProject = await db.transaction(async (tx) => {
+      const slug = await generateProjectSlug(user.companyId, input.name, undefined, tx);
       const [project] = await tx
         .insert(projects)
         .values({
@@ -230,6 +248,7 @@ export async function createProject(
           createdByUserId: user.id,
           updatedByUserId: user.id,
           name: input.name.trim(),
+          slug,
           address: input.address.trim(),
           status: input.status,
           description: normalizeOptionalText(input.description),
@@ -239,7 +258,7 @@ export async function createProject(
           totalConcretePoured: "0",
           estimatedTotalConcrete: String(input.estimatedTotalConcrete),
         })
-        .returning({ id: projects.id });
+        .returning({ id: projects.id, slug: projects.slug });
 
       if (!project) {
         throw new Error("Unable to create the project right now.");
@@ -265,7 +284,7 @@ export async function createProject(
       return project;
     });
 
-    return success({ id: createdProject.id }, "Project created.");
+    return success({ id: createdProject.id, slug: createdProject.slug }, "Project created.");
   } catch (error) {
     if (error instanceof ZodError) {
       return failure("validation_error", "Please fix the highlighted fields.", zodFieldErrors(error));
@@ -291,7 +310,7 @@ export async function createProject(
 export async function updateProject(
   projectId: string,
   rawInput: UpdateProjectInput
-): Promise<ActionResult<{ id: string }>> {
+): Promise<ActionResult<{ id: string; slug: string }>> {
   try {
     assertSameOrigin();
     const input = updateProjectSchema.parse(rawInput);
@@ -312,11 +331,18 @@ export async function updateProject(
     }
 
     await db.transaction(async (tx) => {
+      const slug = await generateProjectSlug(
+        project.companyId,
+        input.name,
+        project.id,
+        tx
+      );
       await tx
         .update(projects)
         .set({
           updatedByUserId: user.id,
           name: input.name.trim(),
+          slug,
           address: input.address.trim(),
           status: input.status,
           description: normalizeOptionalText(input.description),
@@ -341,7 +367,17 @@ export async function updateProject(
       });
     });
 
-    return success({ id: projectId }, "Project updated.");
+    const updatedProject = await db.query.projects.findFirst({
+      where: eq(projects.id, projectId),
+    });
+
+    return success(
+      {
+        id: projectId,
+        slug: updatedProject?.slug ?? project.slug,
+      },
+      "Project updated."
+    );
   } catch (error) {
     if (error instanceof ZodError) {
       return failure("validation_error", "Please fix the highlighted fields.", zodFieldErrors(error));

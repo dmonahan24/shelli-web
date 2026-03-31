@@ -15,6 +15,7 @@ import { failure, success, type ActionResult } from "@/lib/utils/action-result";
 import { recalculateProjectTotals } from "@/server/hierarchy/recalculate-project-totals";
 import { normalizeOptionalText, requireOwnedBuilding, toNumber, zodFieldErrors } from "@/server/hierarchy/shared";
 import { recordActivityEvent } from "@/server/activity/service";
+import { generateBuildingSlug } from "@/server/navigation/service";
 import { requireOwnedProject } from "@/server/projects/service";
 import { requireProjectAccess } from "@/lib/auth/project-access";
 
@@ -26,6 +27,17 @@ function getBuildingWriteFailure(error: unknown) {
 
   const constraintName = databaseError?.constraint_name ?? databaseError?.constraint ?? "";
   const message = databaseError?.message ?? "";
+
+  if (
+    databaseError?.code === "23505" &&
+    (constraintName === "project_buildings_project_slug_idx" ||
+      message.includes("project_buildings_project_slug_idx") ||
+      message.includes("(project_id, slug)"))
+  ) {
+    return failure("validation_error", "Please fix the highlighted fields.", {
+      name: "A building with that name already exists in this project.",
+    });
+  }
 
   if (
     databaseError?.code === "23505" &&
@@ -127,6 +139,7 @@ export async function listBuildingsForProject(projectId: string) {
       id: projectBuildings.id,
       projectId: projectBuildings.projectId,
       name: projectBuildings.name,
+      slug: projectBuildings.slug,
       code: projectBuildings.code,
       description: projectBuildings.description,
       displayOrder: projectBuildings.displayOrder,
@@ -144,6 +157,7 @@ export async function listBuildingsForProject(projectId: string) {
       projectBuildings.id,
       projectBuildings.projectId,
       projectBuildings.name,
+      projectBuildings.slug,
       projectBuildings.code,
       projectBuildings.description,
       projectBuildings.displayOrder,
@@ -205,6 +219,7 @@ export async function getBuildingDetail(buildingId: string) {
     project: {
       id: project.id,
       name: project.name,
+      slug: project.slug,
     },
     summary: {
       totalFloors: floors.length,
@@ -216,7 +231,7 @@ export async function getBuildingDetail(buildingId: string) {
 
 export async function createBuilding(
   rawInput: CreateBuildingInput
-): Promise<ActionResult<{ id: string; projectId: string }>> {
+): Promise<ActionResult<{ id: string; slug: string; projectId: string; projectSlug: string }>> {
   try {
     assertSameOrigin();
     const input = createBuildingSchema.parse(rawInput);
@@ -225,19 +240,21 @@ export async function createBuilding(
     const displayOrder = input.displayOrder ?? (await getNextBuildingDisplayOrder(project.id));
 
     const createdBuilding = await db.transaction(async (tx) => {
+      const slug = await generateBuildingSlug(project.id, input.name, undefined, tx);
       const [building] = await tx
         .insert(projectBuildings)
         .values({
           projectId: project.id,
           companyId: project.companyId,
           name: input.name.trim(),
+          slug,
           code: normalizeOptionalText(input.code),
           description: normalizeOptionalText(input.description),
           displayOrder,
           estimatedConcreteTotal: "0",
           actualConcreteTotal: "0",
         })
-        .returning({ id: projectBuildings.id });
+        .returning({ id: projectBuildings.id, slug: projectBuildings.slug });
 
       if (!building) {
         throw new Error("Unable to create the building right now.");
@@ -261,7 +278,15 @@ export async function createBuilding(
       return building;
     });
 
-    return success({ id: createdBuilding.id, projectId: project.id }, "Building created.");
+    return success(
+      {
+        id: createdBuilding.id,
+        slug: createdBuilding.slug,
+        projectId: project.id,
+        projectSlug: project.slug,
+      },
+      "Building created."
+    );
   } catch (error) {
     if (error instanceof ZodError) {
       return failure("validation_error", "Please fix the highlighted fields.", zodFieldErrors(error));
@@ -287,7 +312,7 @@ export async function createBuilding(
 
 export async function updateBuilding(
   rawInput: UpdateBuildingInput
-): Promise<ActionResult<{ id: string; projectId: string }>> {
+): Promise<ActionResult<{ id: string; slug: string; projectId: string; projectSlug: string }>> {
   try {
     assertSameOrigin();
     const input = updateBuildingSchema.parse(rawInput);
@@ -301,11 +326,20 @@ export async function updateBuilding(
 
     const access = await requireProjectAccess(building.projectId, "edit");
     await requireOwnedBuilding(access.context.project.companyId, input.buildingId);
+    const slug = await generateBuildingSlug(
+      building.projectId,
+      input.name,
+      building.id
+    );
+    const project = await db.query.projects.findFirst({
+      where: eq(projects.id, building.projectId),
+    });
 
     await db
       .update(projectBuildings)
       .set({
         name: input.name.trim(),
+        slug,
         code: normalizeOptionalText(input.code),
         description: normalizeOptionalText(input.description),
         displayOrder: input.displayOrder ?? building.displayOrder,
@@ -326,7 +360,15 @@ export async function updateBuilding(
       },
     });
 
-    return success({ id: building.id, projectId: building.projectId }, "Building updated.");
+    return success(
+      {
+        id: building.id,
+        slug,
+        projectId: building.projectId,
+        projectSlug: project?.slug ?? building.projectId,
+      },
+      "Building updated."
+    );
   } catch (error) {
     if (error instanceof ZodError) {
       return failure("validation_error", "Please fix the highlighted fields.", zodFieldErrors(error));

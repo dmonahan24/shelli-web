@@ -16,8 +16,16 @@ export function EditFloorDialog({
     id: string;
     levelNumber: number | null;
     name: string;
+    slug?: string | null;
   };
-  onUpdated: () => Promise<void> | void;
+  onUpdated: (result: {
+    id: string;
+    slug: string;
+    buildingId: string;
+    buildingSlug: string;
+    projectId: string;
+    projectSlug: string;
+  }) => Promise<void> | void;
   trigger: React.ReactNode;
 }) {
   const [open, setOpen] = React.useState(false);
@@ -62,7 +70,7 @@ export function EditFloorDialog({
 
               toast.success(result.message ?? "Floor updated.");
               setOpen(false);
-              await onUpdated();
+              await onUpdated(result.data);
             })
           }
           submitButton={

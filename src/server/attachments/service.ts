@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { attachments, projects, users } from "@/db/schema";
 import { assertSameOrigin } from "@/lib/auth/csrf";
 import { requireProjectAccess } from "@/lib/auth/project-access";
+import { buildProjectAttachmentFilePath } from "@/lib/project-paths";
 import {
   attachmentUploadSchema,
   deleteProjectAttachmentSchema,
@@ -48,6 +49,7 @@ export async function listProjectAttachments(projectId: string, rawInput?: unkno
       .select({
         id: attachments.id,
         projectId: attachments.projectId,
+        projectSlug: projects.slug,
         fileName: attachments.storedFileName,
         originalFileName: attachments.originalFileName,
         mimeType: attachments.mimeType,
@@ -58,6 +60,7 @@ export async function listProjectAttachments(projectId: string, rawInput?: unkno
         uploadedBy: users.fullName,
       })
       .from(attachments)
+      .innerJoin(projects, eq(attachments.projectId, projects.id))
       .leftJoin(users, eq(attachments.uploadedByUserId, users.id))
       .where(whereClause)
       .orderBy(desc(attachments.createdAt), desc(attachments.id))
@@ -75,7 +78,13 @@ export async function listProjectAttachments(projectId: string, rawInput?: unkno
     rows: rows.map((row) => ({
       ...row,
       uploadedBy: row.uploadedBy ?? "System",
-      fileUrl: `/api/projects/${row.projectId}/attachments/${row.id}/file`,
+      fileUrl: buildProjectAttachmentFilePath(
+        {
+          id: row.projectId,
+          slug: row.projectSlug,
+        },
+        row.id
+      ),
       isPreviewable:
         row.mimeType.startsWith("image/") || row.mimeType === "application/pdf",
     })),
