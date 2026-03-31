@@ -7,7 +7,7 @@ import {
 import * as React from "react";
 import { DefaultCatchBoundary } from "@/components/default-catch-boundary";
 import { NotFound } from "@/components/not-found";
-import "@/styles/app.css";
+import appCss from "@/styles/app.css?url";
 import { seo } from "@/utils/seo";
 import { Providers } from "@/components/providers";
 
@@ -172,6 +172,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     <html suppressHydrationWarning>
       <head>
         <style dangerouslySetInnerHTML={{ __html: criticalShellStyles }} />
+        <link rel="preload" href={appCss} as="style" suppressHydrationWarning />
+        <link rel="stylesheet" href={appCss} suppressHydrationWarning />
         <HeadContent />
       </head>
       <body suppressHydrationWarning>
