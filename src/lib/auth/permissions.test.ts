@@ -13,6 +13,13 @@ describe("permission matrix", () => {
     expect(hasCompanyPermission("viewer", "manage_members")).toBe(false);
   });
 
+  it("normalizes legacy company roles safely", () => {
+    expect(hasCompanyPermission("dispatcher_admin", "manage_members")).toBe(true);
+    expect(hasCompanyPermission("field_superintendent", "edit_pours")).toBe(true);
+    expect(hasCompanyPermission("qc_technician", "manage_members")).toBe(false);
+    expect(hasCompanyPermission(undefined, "manage_members")).toBe(false);
+  });
+
   it("grants project roles scoped access", () => {
     expect(hasProjectPermission("project_admin", "manage")).toBe(true);
     expect(hasProjectPermission("editor", "analytics")).toBe(true);

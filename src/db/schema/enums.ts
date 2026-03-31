@@ -33,6 +33,34 @@ export const projectStatusEnum = pgEnum("project_status", [
   "on_hold",
 ]);
 
+export const floorTypeEnum = pgEnum("floor_type", [
+  "foundation",
+  "ground",
+  "standard",
+  "basement",
+  "roof",
+  "other",
+]);
+
+export const pourCategoryEnum = pgEnum("pour_category", [
+  "footings",
+  "grade_beams",
+  "slab",
+  "columns",
+  "shear_walls",
+  "core_walls",
+  "stairs",
+  "elevator_pit",
+  "deck",
+  "other",
+]);
+
+export const pourTypeStatusEnum = pgEnum("pour_type_status", [
+  "not_started",
+  "in_progress",
+  "completed",
+]);
+
 export const pourStatusEnum = pgEnum("pour_status", [
   "planned",
   "ready",

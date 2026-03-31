@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { companies, platformAdmins, users } from "@/db/schema";
+import { companies, companyMemberships, platformAdmins, users } from "@/db/schema";
 import { type AppUserRole } from "@/lib/auth/principal";
 import { env } from "@/lib/env/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
@@ -49,6 +49,12 @@ export async function ensureBootstrapData() {
       fullName: bootstrapConfig.platformAdminFullName,
       role: bootstrapConfig.platformAdminCompanyRole,
     });
+    await ensureCompanyMembership({
+      companyId: platformAdminCompany.id,
+      userId: platformAdminTenantUser.id,
+      role: bootstrapConfig.platformAdminCompanyRole,
+      joinedAt: platformAdminTenantUser.createdAt,
+    });
 
     platformAdminCompanyId = platformAdminCompany.id;
     platformAdminTenantUserId = platformAdminTenantUser.id;
@@ -69,6 +75,12 @@ export async function ensureBootstrapData() {
     email: bootstrapConfig.adminEmail,
     fullName: bootstrapConfig.adminFullName,
     role: bootstrapConfig.role,
+  });
+  await ensureCompanyMembership({
+    companyId: company.id,
+    userId: user.id,
+    role: bootstrapConfig.role,
+    joinedAt: user.createdAt,
   });
 
   return {
@@ -247,6 +259,41 @@ async function ensurePlatformAdmin(input: {
   }
 
   return createdPlatformAdmin;
+}
+
+async function ensureCompanyMembership(input: {
+  companyId: string;
+  userId: string;
+  role: AppUserRole;
+  joinedAt: Date;
+}) {
+  const existingMembership = await db.query.companyMemberships.findFirst({
+    where: and(
+      eq(companyMemberships.companyId, input.companyId),
+      eq(companyMemberships.userId, input.userId)
+    ),
+  });
+
+  if (existingMembership) {
+    return existingMembership;
+  }
+
+  const [createdMembership] = await db
+    .insert(companyMemberships)
+    .values({
+      companyId: input.companyId,
+      userId: input.userId,
+      role: input.role,
+      status: "active",
+      joinedAt: input.joinedAt,
+    })
+    .returning();
+
+  if (!createdMembership) {
+    throw new Error("Unable to create bootstrap company membership.");
+  }
+
+  return createdMembership;
 }
 
 if (import.meta.main) {

@@ -277,9 +277,23 @@ export async function signIn(
       return failure("invalid_credentials", "Invalid email or password.");
     }
 
-    persistSession(data.session, input.rememberMe);
+    let principal;
 
-    const principal = await resolvePrincipalFromAuthUser(data.session.user);
+    try {
+      principal = await resolvePrincipalFromAuthUser(data.session.user);
+    } catch (principalError) {
+      console.error("Unable to resolve Shelli access profile during sign-in.", {
+        authUserId: data.session.user.id,
+        email,
+        error: principalError,
+      });
+
+      return failure(
+        "profile_unavailable",
+        "Your account was authenticated, but your Shelli access profile could not be loaded. Run bootstrap or contact an administrator."
+      );
+    }
+
     if (principal.kind === "inactive_tenant_user") {
       await deleteSession();
       return failure(
@@ -288,17 +302,35 @@ export async function signIn(
       );
     }
 
-    if (!principal) {
-      await deleteSession();
-      return failure("sign_in_failed", "Unable to sign in right now.");
+    if (isPendingAccessPrincipal(principal)) {
+      try {
+        await ensureAccessRequestForAuthUser({
+          authUserId: principal.id,
+          email: principal.email,
+          fullName: principal.fullName,
+        });
+      } catch (accessRequestError) {
+        console.error("Unable to upsert pending access request during sign-in.", {
+          authUserId: principal.id,
+          email: principal.email,
+          error: accessRequestError,
+        });
+      }
     }
 
-    if (isPendingAccessPrincipal(principal)) {
-      await ensureAccessRequestForAuthUser({
-        authUserId: principal.id,
-        email: principal.email,
-        fullName: principal.fullName,
+    try {
+      persistSession(data.session, input.rememberMe);
+    } catch (sessionError) {
+      console.error("Unable to persist session cookie during sign-in.", {
+        authUserId: data.session.user.id,
+        email,
+        error: sessionError,
       });
+
+      return failure(
+        "session_unavailable",
+        "Your account was authenticated, but the session could not be saved in this browser. Refresh and try again."
+      );
     }
 
     return success({ redirectTo: getPrincipalHomePath(principal) }, "Signed in.");
@@ -310,6 +342,15 @@ export async function signIn(
     if (error instanceof Error && error.message.includes("Too many attempts")) {
       return failure("rate_limited", error.message);
     }
+
+    if (error instanceof Error && error.message === "Invalid request origin.") {
+      return failure(
+        "invalid_origin",
+        "Sign-in was blocked because this browser origin does not match the app configuration. Make sure APP_URL matches the URL you opened and restart the dev server."
+      );
+    }
+
+    console.error("Unexpected sign-in failure.", error);
 
     return failure("sign_in_failed", "Unable to sign in right now.");
   }
@@ -371,16 +412,32 @@ export async function resetPassword(
 
     const input = resetPasswordSchema.parse(rawInput);
     const supabase = createSupabaseServerClient();
-    const verifyResult = await supabase.auth.verifyOtp({
-      token_hash: input.token,
-      type: "recovery",
-    });
+    const hasRecoverySession = Boolean(input.accessToken && input.refreshToken);
 
-    if (verifyResult.error || !verifyResult.data.session) {
-      return failure(
-        "invalid_token",
-        "This reset link is invalid, expired, or already used."
-      );
+    if (hasRecoverySession) {
+      const recoveryResult = await supabase.auth.setSession({
+        access_token: input.accessToken!,
+        refresh_token: input.refreshToken!,
+      });
+
+      if (recoveryResult.error || !recoveryResult.data.session) {
+        return failure(
+          "invalid_token",
+          "This reset link is invalid, expired, or already used."
+        );
+      }
+    } else {
+      const verifyResult = await supabase.auth.verifyOtp({
+        token_hash: input.token!,
+        type: "recovery",
+      });
+
+      if (verifyResult.error || !verifyResult.data.session) {
+        return failure(
+          "invalid_token",
+          "This reset link is invalid, expired, or already used."
+        );
+      }
     }
 
     const updateResult = await supabase.auth.updateUser({

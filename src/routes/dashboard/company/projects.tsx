@@ -1,8 +1,8 @@
 // @ts-nocheck
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { ProjectMembersCard } from "@/components/company/project-members-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { listMembersServerFn } from "@/server/company/list-members";
+import { listProjectAccessRostersServerFn } from "@/server/company/get-project-access-roster";
 import { listProjectsServerFn } from "@/server/projects/list-projects";
 
 export const Route = createFileRoute("/dashboard/company/projects")({
@@ -12,27 +12,29 @@ export const Route = createFileRoute("/dashboard/company/projects")({
     }
   },
   loader: async () => {
-    const [members, projects] = await Promise.all([
-      listMembersServerFn(),
-      listProjectsServerFn({
-        data: {
-          page: 1,
-          pageSize: 20,
-        },
-      }),
-    ]);
+    const projects = await listProjectsServerFn({
+      data: {
+        page: 1,
+        pageSize: 20,
+      },
+    });
+    const rosters =
+      projects.rows.length > 0
+        ? await listProjectAccessRostersServerFn({
+            data: {
+              projectIds: projects.rows.map((project) => project.id),
+            },
+          })
+        : {};
 
-    return { members, projects };
+    return { projects, rosters };
   },
   component: CompanyProjectsPage,
 });
 
 function CompanyProjectsPage() {
+  const router = useRouter();
   const data = Route.useLoaderData();
-  const memberOptions = data.members.map((member) => ({
-    userId: member.userId,
-    label: `${member.fullName} (${member.email})`,
-  }));
 
   return (
     <div className="space-y-6">
@@ -50,7 +52,12 @@ function CompanyProjectsPage() {
               <p className="text-sm text-muted-foreground">{project.address}</p>
             </CardContent>
           </Card>
-          <ProjectMembersCard projectId={project.id} members={[]} companyMembers={memberOptions} />
+          <ProjectMembersCard
+            projectId={project.id}
+            projectName={project.name}
+            roster={data.rosters[project.id]}
+            onMutationComplete={() => router.invalidate()}
+          />
         </div>
       ))}
     </div>

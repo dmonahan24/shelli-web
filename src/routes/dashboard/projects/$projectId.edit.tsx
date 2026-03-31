@@ -26,6 +26,7 @@ function EditProjectPage() {
     <EditProjectForm
       projectId={projectId}
       currentTotalConcretePoured={detail.project.totalConcretePoured}
+      isHierarchyManaged={detail.summary.totalBuildings > 0}
       defaultValues={{
         name: detail.project.name,
         address: detail.project.address,

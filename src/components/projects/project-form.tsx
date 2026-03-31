@@ -28,10 +28,12 @@ import {
 
 export function ProjectForm({
   defaultValues,
+  disableEstimatedTotalConcrete = false,
   onSubmit,
   submitButton,
 }: {
   defaultValues?: Partial<ProjectInput>;
+  disableEstimatedTotalConcrete?: boolean;
   onSubmit: (
     values: ProjectInput,
     setFieldError: (field: keyof ProjectInput, message: string) => void
@@ -160,8 +162,13 @@ export function ProjectForm({
             <FormItem>
               <FormLabel>Estimated Total Concrete</FormLabel>
               <FormControl>
-                <NumericInputField step="0.01" {...field} />
+                <NumericInputField step="0.01" {...field} disabled={disableEstimatedTotalConcrete} />
               </FormControl>
+              {disableEstimatedTotalConcrete ? (
+                <p className="text-sm text-muted-foreground">
+                  This value is managed by the building, floor, and pour-type hierarchy.
+                </p>
+              ) : null}
               <FormMessage />
             </FormItem>
           )}

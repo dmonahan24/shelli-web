@@ -20,7 +20,7 @@ export function buildPasswordResetEmail({
   resetUrl,
 }: PasswordResetEmailInput) {
   return {
-    subject: "Reset your Concrete Pour Tracker password",
+    subject: "Reset your Shelli Concrete Tracker password",
     text: `Hi ${fullName},
 
 We received a request to reset your password.
@@ -34,7 +34,7 @@ If you did not request this reset, you can ignore this email.
       <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #1f2937;">
         <h2 style="margin-bottom: 12px;">Reset your password</h2>
         <p>Hi ${fullName},</p>
-        <p>We received a request to reset your Concrete Pour Tracker password.</p>
+        <p>We received a request to reset your Shelli Concrete Tracker password.</p>
         <p>
           <a href="${resetUrl}" style="display: inline-block; padding: 10px 16px; background: #8b5e34; color: white; text-decoration: none; border-radius: 8px;">
             Reset Password
@@ -83,7 +83,7 @@ export async function sendPasswordResetEmail(input: PasswordResetEmailInput) {
 
 export function buildCompanyInvitationEmail(input: CompanyInvitationEmailInput) {
   return {
-    subject: `Join ${input.companyName} in Concrete Pour Tracker`,
+    subject: `Join ${input.companyName} in Shelli Concrete Tracker`,
     text: `Hi,
 
 ${input.inviterName} invited you to join ${input.companyName} as ${input.role.replaceAll("_", " ")}.

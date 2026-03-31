@@ -1,0 +1,131 @@
+import { Link } from "@tanstack/react-router";
+import { DeleteFloorDialog } from "@/components/floors/delete-floor-dialog";
+import { EditFloorDialog } from "@/components/floors/edit-floor-dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { formatConcreteVolume } from "@/lib/utils/format";
+
+type FloorRow = {
+  actualConcreteTotal: number;
+  buildingId: string;
+  displayOrder: number;
+  estimatedConcreteTotal: number;
+  floorType: "foundation" | "ground" | "standard" | "basement" | "roof" | "other";
+  id: string;
+  levelNumber: number | null;
+  name: string;
+  pourTypeCount: number;
+  projectId: string;
+  remainingConcrete: number;
+};
+
+export function FloorsTable({
+  buildingId,
+  floors,
+  onMutationComplete,
+  projectId,
+}: {
+  buildingId: string;
+  floors: FloorRow[];
+  onMutationComplete: () => Promise<void> | void;
+  projectId: string;
+}) {
+  return (
+    <Card className="rounded-[28px] border-border/80 bg-card/90 shadow-sm">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-lg">Floors</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-hidden rounded-2xl border border-border/70">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Floor</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead className="text-right">Level</TableHead>
+                <TableHead className="text-right">Pour Types</TableHead>
+                <TableHead className="text-right">Estimated</TableHead>
+                <TableHead className="text-right">Actual</TableHead>
+                <TableHead className="text-right">Remaining</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {floors.length > 0 ? (
+                floors.map((floor) => (
+                  <TableRow key={floor.id}>
+                    <TableCell className="font-medium">
+                      <Link
+                        className="hover:underline"
+                        to="/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId"
+                        params={{ buildingId, floorId: floor.id, projectId }}
+                      >
+                        {floor.name}
+                      </Link>
+                    </TableCell>
+                    <TableCell>{floor.floorType.replaceAll("_", " ")}</TableCell>
+                    <TableCell className="text-right">{floor.levelNumber ?? "—"}</TableCell>
+                    <TableCell className="text-right">{floor.pourTypeCount}</TableCell>
+                    <TableCell className="text-right">
+                      {formatConcreteVolume(floor.estimatedConcreteTotal)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatConcreteVolume(floor.actualConcreteTotal)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatConcreteVolume(floor.remainingConcrete)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex justify-end gap-2">
+                        <Button asChild size="sm" variant="outline">
+                          <Link
+                            to="/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId"
+                            params={{ buildingId, floorId: floor.id, projectId }}
+                          >
+                            View
+                          </Link>
+                        </Button>
+                        <EditFloorDialog
+                          floor={floor}
+                          onUpdated={onMutationComplete}
+                          trigger={
+                            <Button size="sm" variant="outline">
+                              Edit
+                            </Button>
+                          }
+                        />
+                        <DeleteFloorDialog
+                          floor={floor}
+                          onDeleted={onMutationComplete}
+                          trigger={
+                            <Button size="sm" variant="destructive">
+                              Delete
+                            </Button>
+                          }
+                        />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell className="h-24 text-center" colSpan={8}>
+                    No floors yet.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

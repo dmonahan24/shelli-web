@@ -22,7 +22,7 @@ export const Route = createRootRouteWithContext<Record<string, never>>()({
         content: "width=device-width, initial-scale=1",
       },
       ...seo({
-        title: "Concrete Pour Tracker",
+        title: "Shelli Concrete Tracker",
         description:
           "Construction project tracking for concrete pours, schedules, and field-ready records.",
       }),
@@ -71,11 +71,11 @@ function RootComponent() {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html>
+    <html suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <Providers>{children}</Providers>
         <Scripts />
       </body>

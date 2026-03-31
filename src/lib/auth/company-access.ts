@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { companies, companyMemberships, users } from "@/db/schema";
-import type { AppUserRole, TenantUserPrincipal } from "@/lib/auth/principal";
+import { normalizeAppUserRole, type AppUserRole, type TenantUserPrincipal } from "@/lib/auth/principal";
 import { hasCompanyPermission } from "@/lib/auth/permissions";
 import { requireTenantUser } from "@/lib/auth/session";
 
@@ -83,7 +83,7 @@ export async function getCompanyMembershipForUser(userId: string, companyId: str
 
       return {
         membershipId: membership.id,
-        role: membership.role,
+        role: normalizeAppUserRole(membership.role),
         status: membership.status,
         joinedAt: membership.joinedAt,
         companyId: company.id,
@@ -108,7 +108,7 @@ export async function requireCompanyMembership(companyId: string): Promise<Compa
       companyId: membership.companyId,
       companyName: membership.companyName,
       companySlug: membership.companySlug,
-      role: membership.role,
+      role: normalizeAppUserRole(membership.role),
     },
     company: {
       id: membership.companyId,
@@ -117,7 +117,7 @@ export async function requireCompanyMembership(companyId: string): Promise<Compa
     },
     membership: {
       id: membership.membershipId,
-      role: membership.role,
+      role: normalizeAppUserRole(membership.role),
       status: membership.status,
       joinedAt: membership.joinedAt,
     },

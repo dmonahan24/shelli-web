@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, gte, inArray, like, lte, or, sql } from "drizzle-orm";
 import { ZodError } from "zod";
 import { db, type AppDatabase, type AppTransaction } from "@/db";
-import { attachments, projectMembers, projects, pours } from "@/db/schema";
+import { attachments, projectBuildings, projectMembers, projects, pours } from "@/db/schema";
 import { assertSameOrigin } from "@/lib/auth/csrf";
 import { requireCompanyMembership } from "@/lib/auth/company-access";
 import { hasCompanyPermission } from "@/lib/auth/permissions";
@@ -171,7 +171,7 @@ export async function getProjectDetail(rawInput: unknown): Promise<any> {
     return null;
   }
 
-  const [attachmentCountRows, pourCountRows, recentActivity] = await Promise.all([
+  const [attachmentCountRows, pourCountRows, buildingCountRows, recentActivity] = await Promise.all([
     db
       .select({ count: sql<number>`count(*)` })
       .from(attachments)
@@ -180,6 +180,10 @@ export async function getProjectDetail(rawInput: unknown): Promise<any> {
       .select({ count: sql<number>`count(*)` })
       .from(pours)
       .where(eq(pours.projectId, projectId)),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(projectBuildings)
+      .where(eq(projectBuildings.projectId, projectId)),
     listRecentActivity({
       companyId: access.context.project.companyId,
       projectId,
@@ -194,6 +198,7 @@ export async function getProjectDetail(rawInput: unknown): Promise<any> {
       estimatedTotalConcrete: toNumber(project.estimatedTotalConcrete),
     },
     summary: {
+      totalBuildings: buildingCountRows[0]?.count ?? 0,
       totalAttachments: attachmentCountRows[0]?.count ?? 0,
       totalPourEvents: pourCountRows[0]?.count ?? 0,
     },
@@ -293,8 +298,13 @@ export async function updateProject(
     const access = await requireProjectAccess(projectId, "edit");
     const { user } = access;
     const project = await requireOwnedProject(access.context.project.companyId, projectId);
+    const [buildingCountRow] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(projectBuildings)
+      .where(eq(projectBuildings.projectId, projectId));
+    const isHierarchyManaged = (buildingCountRow?.count ?? 0) > 0;
 
-    if (input.estimatedTotalConcrete < toNumber(project.totalConcretePoured)) {
+    if (!isHierarchyManaged && input.estimatedTotalConcrete < toNumber(project.totalConcretePoured)) {
       return failure("validation_error", "Please fix the highlighted fields.", {
         estimatedTotalConcrete:
           "Estimated total concrete must remain at or above the current total poured.",
@@ -313,7 +323,9 @@ export async function updateProject(
           projectCode: normalizeOptionalText(input.projectCode),
           dateStarted: input.dateStarted,
           estimatedCompletionDate: input.estimatedCompletionDate,
-          estimatedTotalConcrete: String(input.estimatedTotalConcrete),
+          estimatedTotalConcrete: isHierarchyManaged
+            ? project.estimatedTotalConcrete
+            : String(input.estimatedTotalConcrete),
         })
         .where(eq(projects.id, projectId));
 

@@ -71,6 +71,25 @@ export type AppPrincipal =
   | PlatformAdminPrincipal
   | PendingAccessPrincipal;
 
+const legacyAppUserRoleMap = {
+  dispatcher_admin: "admin",
+  field_superintendent: "field_supervisor",
+  executive_owner: "owner",
+  qc_technician: "viewer",
+} as const satisfies Record<string, AppUserRole>;
+
+export function normalizeAppUserRole(role: string | null | undefined): AppUserRole {
+  if (!role) {
+    return "viewer";
+  }
+
+  if ((appUserRoleValues as readonly string[]).includes(role)) {
+    return role as AppUserRole;
+  }
+
+  return legacyAppUserRoleMap[role as keyof typeof legacyAppUserRoleMap] ?? "viewer";
+}
+
 export function isTenantUserPrincipal(principal: AppPrincipal | null): principal is TenantUserPrincipal {
   return principal?.kind === "tenant_user";
 }

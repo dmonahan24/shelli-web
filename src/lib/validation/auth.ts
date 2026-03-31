@@ -40,9 +40,32 @@ export const resetPasswordTokenSearchSchema = z.object({
 
 export const resetPasswordSchema = z
   .object({
-    token: z.string().min(1, "Reset token is required"),
+    token: z.string().trim().optional().or(z.literal("")),
+    accessToken: z.string().trim().optional().or(z.literal("")),
+    refreshToken: z.string().trim().optional().or(z.literal("")),
     password: passwordSchema,
     confirmPassword: z.string(),
+  })
+  .superRefine((value, ctx) => {
+    const hasToken = Boolean(value.token);
+    const hasAccessToken = Boolean(value.accessToken);
+    const hasRefreshToken = Boolean(value.refreshToken);
+
+    if (!hasToken && !hasAccessToken && !hasRefreshToken) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["token"],
+        message: "Reset link is missing required credentials",
+      });
+    }
+
+    if (hasAccessToken !== hasRefreshToken) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: hasAccessToken ? ["refreshToken"] : ["accessToken"],
+        message: "Reset link is incomplete. Please request a new password reset email.",
+      });
+    }
   })
   .refine((value) => value.password === value.confirmPassword, {
     path: ["confirmPassword"],

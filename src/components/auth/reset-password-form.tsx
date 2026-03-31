@@ -20,7 +20,18 @@ import {
 } from "@/lib/validation/auth";
 import { resetPasswordServerFn } from "@/server/auth/reset-password";
 
-export function ResetPasswordForm({ token }: { token: string }) {
+type ResetPasswordFormProps = {
+  token: string;
+  recoverySession?: {
+    accessToken: string;
+    refreshToken: string;
+  } | null;
+};
+
+export function ResetPasswordForm({
+  token,
+  recoverySession = null,
+}: ResetPasswordFormProps) {
   const navigate = useNavigate();
   const [isPending, startTransition] = React.useTransition();
   const [formError, setFormError] = React.useState<string | null>(null);
@@ -28,10 +39,22 @@ export function ResetPasswordForm({ token }: { token: string }) {
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: {
       token,
+      accessToken: recoverySession?.accessToken ?? "",
+      refreshToken: recoverySession?.refreshToken ?? "",
       password: "",
       confirmPassword: "",
     },
   });
+
+  React.useEffect(() => {
+    form.reset({
+      token,
+      accessToken: recoverySession?.accessToken ?? "",
+      refreshToken: recoverySession?.refreshToken ?? "",
+      password: "",
+      confirmPassword: "",
+    });
+  }, [form, recoverySession?.accessToken, recoverySession?.refreshToken, token]);
 
   const onSubmit = form.handleSubmit((values) => {
     setFormError(null);

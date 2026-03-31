@@ -4,6 +4,7 @@ import {
   integer,
   pgTable,
   text,
+  timestamp,
   uuid,
   date,
   uniqueIndex,
@@ -18,7 +19,8 @@ import {
   updatedByUserIdColumn,
   volumeColumn,
 } from "@/db/schema/shared";
-import { companies, users } from "@/db/schema/core";
+import { companies, companyInvitations, users } from "@/db/schema/core";
+import { projectBuildings } from "@/db/schema/hierarchy";
 
 export const projects = pgTable(
   "projects",
@@ -88,6 +90,39 @@ export const projectMembers = pgTable(
     ),
     projectRoleIndex: index("project_members_project_role_idx").on(table.projectId, table.role),
     userIndex: index("project_members_user_id_idx").on(table.userId),
+  })
+);
+
+export const projectMemberInvitationAssignments = pgTable(
+  "project_member_invitation_assignments",
+  {
+    id: idColumn(),
+    companyInvitationId: uuid("company_invitation_id")
+      .notNull()
+      .references(() => companyInvitations.id, { onDelete: "cascade" }),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    projectRole: projectMemberRoleEnum("project_role").notNull().default("viewer"),
+    createdByUserId: uuid("created_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    createdAt: auditColumns.createdAt,
+  },
+  (table) => ({
+    invitationProjectIndex: uniqueIndex(
+      "project_member_invitation_assignments_invitation_project_idx"
+    ).on(table.companyInvitationId, table.projectId),
+    projectIndex: index("project_member_invitation_assignments_project_id_idx").on(
+      table.projectId
+    ),
+    invitationIndex: index(
+      "project_member_invitation_assignments_invitation_id_idx"
+    ).on(table.companyInvitationId),
+    acceptedIndex: index(
+      "project_member_invitation_assignments_project_accepted_idx"
+    ).on(table.projectId, table.acceptedAt),
   })
 );
 
@@ -180,7 +215,9 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
     relationName: "project_superintendent_user",
   }),
   members: many(projectMembers),
+  pendingInvitationAssignments: many(projectMemberInvitationAssignments),
   contacts: many(projectContacts),
+  buildings: many(projectBuildings),
 }));
 
 export const projectMembersRelations = relations(projectMembers, ({ one }) => ({
@@ -193,6 +230,25 @@ export const projectMembersRelations = relations(projectMembers, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+export const projectMemberInvitationAssignmentsRelations = relations(
+  projectMemberInvitationAssignments,
+  ({ one }) => ({
+    companyInvitation: one(companyInvitations, {
+      fields: [projectMemberInvitationAssignments.companyInvitationId],
+      references: [companyInvitations.id],
+    }),
+    project: one(projects, {
+      fields: [projectMemberInvitationAssignments.projectId],
+      references: [projects.id],
+    }),
+    createdByUser: one(users, {
+      fields: [projectMemberInvitationAssignments.createdByUserId],
+      references: [users.id],
+      relationName: "project_member_invitation_assignment_created_by_user",
+    }),
+  })
+);
 
 export const projectContactsRelations = relations(projectContacts, ({ one }) => ({
   company: one(companies, {

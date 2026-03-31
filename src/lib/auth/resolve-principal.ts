@@ -1,5 +1,5 @@
 import type { User as SupabaseUser } from "@supabase/supabase-js";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { accessRequests, companies, companyMemberships, platformAdmins, users } from "@/db/schema";
 import {
@@ -7,6 +7,7 @@ import {
   type PendingAccessPrincipal,
   type PlatformAdminPrincipal,
   type TenantUserPrincipal,
+  normalizeAppUserRole,
 } from "@/lib/auth/principal";
 
 export type InactiveTenantUserPrincipal = {
@@ -20,6 +21,13 @@ export type AuthUserPrincipalResolution = AppPrincipal | InactiveTenantUserPrinc
 
 type AuthIdentity = Pick<SupabaseUser, "id" | "email" | "user_metadata">;
 
+type TenantProfile = {
+  id: string;
+  companyId: string;
+  role: TenantUserPrincipal["role"];
+  createdAt: Date;
+};
+
 function getAuthUserDisplayName(authUser: AuthIdentity) {
   return (
     (typeof authUser.user_metadata?.full_name === "string"
@@ -28,6 +36,44 @@ function getAuthUserDisplayName(authUser: AuthIdentity) {
     authUser.email ??
     "Pending User"
   );
+}
+
+async function ensurePrimaryCompanyMembership(profile: TenantProfile) {
+  const membershipWhere = and(
+    eq(companyMemberships.userId, profile.id),
+    eq(companyMemberships.companyId, profile.companyId)
+  );
+
+  const existingMembership = await db.query.companyMemberships.findFirst({
+    where: membershipWhere,
+  });
+
+  if (existingMembership) {
+    return existingMembership;
+  }
+
+  try {
+    await db
+      .insert(companyMemberships)
+      .values({
+        companyId: profile.companyId,
+        userId: profile.id,
+        role: profile.role,
+        status: "active",
+        joinedAt: profile.createdAt,
+      })
+      .onConflictDoNothing();
+  } catch (error) {
+    console.error("Unable to auto-heal company membership during sign-in.", {
+      userId: profile.id,
+      companyId: profile.companyId,
+      error,
+    });
+  }
+
+  return db.query.companyMemberships.findFirst({
+    where: membershipWhere,
+  });
 }
 
 export async function resolvePrincipalFromAuthUser(
@@ -57,32 +103,15 @@ export async function resolvePrincipalFromAuthUser(
   }
 
   if (profile?.isActive) {
-    const membership =
-      (await db.query.companyMemberships.findFirst({
-        where: eq(companyMemberships.userId, authUser.id),
-      })) ??
-      (profile.companyId
-        ? await db
-            .insert(companyMemberships)
-            .values({
-              companyId: profile.companyId,
-              userId: profile.id,
-              role: profile.role,
-              status: "active",
-              joinedAt: profile.createdAt,
-            })
-            .onConflictDoNothing()
-            .returning()
-            .then((rows) => rows[0] ?? null)
-        : null) ??
-      (profile.companyId
-        ? await db.query.companyMemberships.findFirst({
-            where: eq(companyMemberships.userId, authUser.id),
-          })
-        : null);
+    const membership = await ensurePrimaryCompanyMembership({
+      id: profile.id,
+      companyId: profile.companyId,
+      role: profile.role,
+      createdAt: profile.createdAt,
+    });
 
     const company = await db.query.companies.findFirst({
-      where: eq(companies.id, membership?.companyId ?? profile.companyId),
+      where: eq(companies.id, profile.companyId),
     });
 
     const principal: TenantUserPrincipal = {
@@ -93,7 +122,7 @@ export async function resolvePrincipalFromAuthUser(
       companySlug: company?.slug ?? "company",
       email: profile.email,
       fullName: profile.fullName,
-      role: membership?.role ?? profile.role,
+      role: normalizeAppUserRole(membership?.role ?? profile.role),
     };
 
     return principal;

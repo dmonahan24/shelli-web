@@ -18,7 +18,7 @@ function LandingPage() {
               <HardHat className="size-5" />
             </div>
             <div>
-              <p className="text-sm font-semibold">Concrete Pour Tracker</p>
+              <p className="text-sm font-semibold">Shelli Concrete Tracker</p>
               <p className="text-xs text-muted-foreground">Construction operations for field teams</p>
             </div>
           </div>

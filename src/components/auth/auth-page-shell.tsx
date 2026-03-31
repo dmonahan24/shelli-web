@@ -24,7 +24,7 @@ export function AuthPageShell({
               <span className="flex size-11 items-center justify-center rounded-2xl bg-primary/90 text-primary-foreground shadow-lg">
                 <HardHat className="size-5" />
               </span>
-              Concrete Pour Tracker
+              Shelli Concrete Tracker
             </Link>
             <div className="max-w-xl space-y-4">
               <p className="text-sm font-semibold tracking-[0.3em] text-stone-400 uppercase">

@@ -1,4 +1,4 @@
-import type { AppUserRole, ProjectRole } from "@/lib/auth/principal";
+import { normalizeAppUserRole, type AppUserRole, type ProjectRole } from "@/lib/auth/principal";
 
 export type CompanyPermission =
   | "manage_members"
@@ -59,8 +59,8 @@ const projectPermissionMatrix: Record<ProjectRole, ProjectPermission[]> = {
   viewer: ["view"],
 };
 
-export function hasCompanyPermission(role: AppUserRole, permission: CompanyPermission) {
-  return companyPermissionMatrix[role].includes(permission);
+export function hasCompanyPermission(role: string | null | undefined, permission: CompanyPermission) {
+  return companyPermissionMatrix[normalizeAppUserRole(role)].includes(permission);
 }
 
 export function hasProjectPermission(role: ProjectRole, permission: ProjectPermission) {
@@ -68,31 +68,36 @@ export function hasProjectPermission(role: ProjectRole, permission: ProjectPermi
 }
 
 export function normalizeProjectPermissionForCompanyRole(
-  role: AppUserRole,
+  role: string | null | undefined,
   permission: ProjectPermission
 ) {
-  if (role === "owner" || role === "admin") {
+  const normalizedRole = normalizeAppUserRole(role);
+
+  if (normalizedRole === "owner" || normalizedRole === "admin") {
     return true;
   }
 
   if (permission === "analytics") {
-    return hasCompanyPermission(role, "view_company_analytics");
+    return hasCompanyPermission(normalizedRole, "view_company_analytics");
   }
 
   if (permission === "upload") {
-    return hasCompanyPermission(role, "upload_attachments");
+    return hasCompanyPermission(normalizedRole, "upload_attachments");
   }
 
   if (permission === "delete") {
-    return hasCompanyPermission(role, "delete_projects");
+    return hasCompanyPermission(normalizedRole, "delete_projects");
   }
 
   if (permission === "manage") {
-    return hasCompanyPermission(role, "manage_projects");
+    return hasCompanyPermission(normalizedRole, "manage_projects");
   }
 
   if (permission === "edit") {
-    return hasCompanyPermission(role, "manage_projects") || hasCompanyPermission(role, "edit_pours");
+    return (
+      hasCompanyPermission(normalizedRole, "manage_projects") ||
+      hasCompanyPermission(normalizedRole, "edit_pours")
+    );
   }
 
   return true;

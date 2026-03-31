@@ -20,15 +20,38 @@ import { Route as DashboardSettingsImport } from './routes/dashboard/settings'
 import { Route as AuthSignInImport } from './routes/auth/sign-in'
 import { Route as AuthResetPasswordImport } from './routes/auth/reset-password'
 import { Route as AuthPendingAccessImport } from './routes/auth/pending-access'
+import { Route as AuthOnboardingImport } from './routes/auth/onboarding'
 import { Route as AuthForgotPasswordImport } from './routes/auth/forgot-password'
 import { Route as AuthCreateAccountImport } from './routes/auth/create-account'
+import { Route as AuthAcceptInviteImport } from './routes/auth/accept-invite'
 import { Route as AdminUsersImport } from './routes/admin/users'
 import { Route as AdminCompaniesImport } from './routes/admin/companies'
 import { Route as AdminAccessRequestsImport } from './routes/admin/access-requests'
 import { Route as DashboardProjectsIndexImport } from './routes/dashboard/projects/index'
+import { Route as DashboardFieldIndexImport } from './routes/dashboard/field/index'
+import { Route as DashboardCompanyIndexImport } from './routes/dashboard/company/index'
+import { Route as DashboardAnalyticsIndexImport } from './routes/dashboard/analytics/index'
 import { Route as DashboardProjectsProjectIdImport } from './routes/dashboard/projects/$projectId'
+import { Route as DashboardCompanyRolesImport } from './routes/dashboard/company/roles'
+import { Route as DashboardCompanyProjectsImport } from './routes/dashboard/company/projects'
+import { Route as DashboardCompanyMembersImport } from './routes/dashboard/company/members'
+import { Route as DashboardCompanyInvitationsImport } from './routes/dashboard/company/invitations'
+import { Route as DashboardProjectsProjectIdIndexImport } from './routes/dashboard/projects/$projectId.index'
+import { Route as DashboardAnalyticsProjectsIndexImport } from './routes/dashboard/analytics/projects.index'
 import { Route as DashboardProjectsProjectIdEditImport } from './routes/dashboard/projects/$projectId.edit'
+import { Route as DashboardProjectsProjectIdBuildingsImport } from './routes/dashboard/projects/$projectId.buildings'
+import { Route as DashboardFieldProjectsProjectIdImport } from './routes/dashboard/field/projects.$projectId'
+import { Route as DashboardAnalyticsProjectsProjectIdImport } from './routes/dashboard/analytics/projects.$projectId'
+import { Route as DashboardProjectsProjectIdBuildingsIndexImport } from './routes/dashboard/projects/$projectId.buildings.index'
 import { Route as DashboardProjectsProjectIdPoursNewImport } from './routes/dashboard/projects/$projectId.pours.new'
+import { Route as DashboardProjectsProjectIdBuildingsBuildingIdImport } from './routes/dashboard/projects/$projectId.buildings.$buildingId'
+import { Route as DashboardProjectsProjectIdBuildingsBuildingIdIndexImport } from './routes/dashboard/projects/$projectId.buildings.$buildingId.index'
+import { Route as DashboardProjectsProjectIdBuildingsBuildingIdFloorsImport } from './routes/dashboard/projects/$projectId.buildings.$buildingId.floors'
+import { Route as DashboardProjectsProjectIdBuildingsBuildingIdEditImport } from './routes/dashboard/projects/$projectId.buildings.$buildingId.edit'
+import { Route as DashboardFieldProjectsProjectIdPoursQuickAddImport } from './routes/dashboard/field/projects.$projectId.pours.quick-add'
+import { Route as DashboardFieldProjectsProjectIdPhotosUploadImport } from './routes/dashboard/field/projects.$projectId.photos.upload'
+import { Route as DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdImport } from './routes/dashboard/projects/$projectId.buildings.$buildingId.floors.$floorId'
+import { Route as DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdEditImport } from './routes/dashboard/projects/$projectId.buildings.$buildingId.floors.$floorId.edit'
 
 // Create/Update Routes
 
@@ -86,6 +109,12 @@ const AuthPendingAccessRoute = AuthPendingAccessImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const AuthOnboardingRoute = AuthOnboardingImport.update({
+  id: '/auth/onboarding',
+  path: '/auth/onboarding',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const AuthForgotPasswordRoute = AuthForgotPasswordImport.update({
   id: '/auth/forgot-password',
   path: '/auth/forgot-password',
@@ -95,6 +124,12 @@ const AuthForgotPasswordRoute = AuthForgotPasswordImport.update({
 const AuthCreateAccountRoute = AuthCreateAccountImport.update({
   id: '/auth/create-account',
   path: '/auth/create-account',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AuthAcceptInviteRoute = AuthAcceptInviteImport.update({
+  id: '/auth/accept-invite',
+  path: '/auth/accept-invite',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -122,6 +157,24 @@ const DashboardProjectsIndexRoute = DashboardProjectsIndexImport.update({
   getParentRoute: () => DashboardRouteRoute,
 } as any)
 
+const DashboardFieldIndexRoute = DashboardFieldIndexImport.update({
+  id: '/field/',
+  path: '/field/',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+
+const DashboardCompanyIndexRoute = DashboardCompanyIndexImport.update({
+  id: '/company/',
+  path: '/company/',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+
+const DashboardAnalyticsIndexRoute = DashboardAnalyticsIndexImport.update({
+  id: '/analytics/',
+  path: '/analytics/',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+
 const DashboardProjectsProjectIdRoute = DashboardProjectsProjectIdImport.update(
   {
     id: '/projects/$projectId',
@@ -130,6 +183,45 @@ const DashboardProjectsProjectIdRoute = DashboardProjectsProjectIdImport.update(
   } as any,
 )
 
+const DashboardCompanyRolesRoute = DashboardCompanyRolesImport.update({
+  id: '/company/roles',
+  path: '/company/roles',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+
+const DashboardCompanyProjectsRoute = DashboardCompanyProjectsImport.update({
+  id: '/company/projects',
+  path: '/company/projects',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+
+const DashboardCompanyMembersRoute = DashboardCompanyMembersImport.update({
+  id: '/company/members',
+  path: '/company/members',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+
+const DashboardCompanyInvitationsRoute =
+  DashboardCompanyInvitationsImport.update({
+    id: '/company/invitations',
+    path: '/company/invitations',
+    getParentRoute: () => DashboardRouteRoute,
+  } as any)
+
+const DashboardProjectsProjectIdIndexRoute =
+  DashboardProjectsProjectIdIndexImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => DashboardProjectsProjectIdRoute,
+  } as any)
+
+const DashboardAnalyticsProjectsIndexRoute =
+  DashboardAnalyticsProjectsIndexImport.update({
+    id: '/analytics/projects/',
+    path: '/analytics/projects/',
+    getParentRoute: () => DashboardRouteRoute,
+  } as any)
+
 const DashboardProjectsProjectIdEditRoute =
   DashboardProjectsProjectIdEditImport.update({
     id: '/edit',
@@ -137,11 +229,97 @@ const DashboardProjectsProjectIdEditRoute =
     getParentRoute: () => DashboardProjectsProjectIdRoute,
   } as any)
 
+const DashboardProjectsProjectIdBuildingsRoute =
+  DashboardProjectsProjectIdBuildingsImport.update({
+    id: '/buildings',
+    path: '/buildings',
+    getParentRoute: () => DashboardProjectsProjectIdRoute,
+  } as any)
+
+const DashboardFieldProjectsProjectIdRoute =
+  DashboardFieldProjectsProjectIdImport.update({
+    id: '/field/projects/$projectId',
+    path: '/field/projects/$projectId',
+    getParentRoute: () => DashboardRouteRoute,
+  } as any)
+
+const DashboardAnalyticsProjectsProjectIdRoute =
+  DashboardAnalyticsProjectsProjectIdImport.update({
+    id: '/analytics/projects/$projectId',
+    path: '/analytics/projects/$projectId',
+    getParentRoute: () => DashboardRouteRoute,
+  } as any)
+
+const DashboardProjectsProjectIdBuildingsIndexRoute =
+  DashboardProjectsProjectIdBuildingsIndexImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => DashboardProjectsProjectIdBuildingsRoute,
+  } as any)
+
 const DashboardProjectsProjectIdPoursNewRoute =
   DashboardProjectsProjectIdPoursNewImport.update({
     id: '/pours/new',
     path: '/pours/new',
     getParentRoute: () => DashboardProjectsProjectIdRoute,
+  } as any)
+
+const DashboardProjectsProjectIdBuildingsBuildingIdRoute =
+  DashboardProjectsProjectIdBuildingsBuildingIdImport.update({
+    id: '/$buildingId',
+    path: '/$buildingId',
+    getParentRoute: () => DashboardProjectsProjectIdBuildingsRoute,
+  } as any)
+
+const DashboardProjectsProjectIdBuildingsBuildingIdIndexRoute =
+  DashboardProjectsProjectIdBuildingsBuildingIdIndexImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => DashboardProjectsProjectIdBuildingsBuildingIdRoute,
+  } as any)
+
+const DashboardProjectsProjectIdBuildingsBuildingIdFloorsRoute =
+  DashboardProjectsProjectIdBuildingsBuildingIdFloorsImport.update({
+    id: '/floors',
+    path: '/floors',
+    getParentRoute: () => DashboardProjectsProjectIdBuildingsBuildingIdRoute,
+  } as any)
+
+const DashboardProjectsProjectIdBuildingsBuildingIdEditRoute =
+  DashboardProjectsProjectIdBuildingsBuildingIdEditImport.update({
+    id: '/edit',
+    path: '/edit',
+    getParentRoute: () => DashboardProjectsProjectIdBuildingsBuildingIdRoute,
+  } as any)
+
+const DashboardFieldProjectsProjectIdPoursQuickAddRoute =
+  DashboardFieldProjectsProjectIdPoursQuickAddImport.update({
+    id: '/pours/quick-add',
+    path: '/pours/quick-add',
+    getParentRoute: () => DashboardFieldProjectsProjectIdRoute,
+  } as any)
+
+const DashboardFieldProjectsProjectIdPhotosUploadRoute =
+  DashboardFieldProjectsProjectIdPhotosUploadImport.update({
+    id: '/photos/upload',
+    path: '/photos/upload',
+    getParentRoute: () => DashboardFieldProjectsProjectIdRoute,
+  } as any)
+
+const DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdRoute =
+  DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdImport.update({
+    id: '/$floorId',
+    path: '/$floorId',
+    getParentRoute: () =>
+      DashboardProjectsProjectIdBuildingsBuildingIdFloorsRoute,
+  } as any)
+
+const DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdEditRoute =
+  DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdEditImport.update({
+    id: '/edit',
+    path: '/edit',
+    getParentRoute: () =>
+      DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdRoute,
   } as any)
 
 // Populate the FileRoutesByPath interface
@@ -190,6 +368,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersImport
       parentRoute: typeof AdminRouteImport
     }
+    '/auth/accept-invite': {
+      id: '/auth/accept-invite'
+      path: '/auth/accept-invite'
+      fullPath: '/auth/accept-invite'
+      preLoaderRoute: typeof AuthAcceptInviteImport
+      parentRoute: typeof rootRoute
+    }
     '/auth/create-account': {
       id: '/auth/create-account'
       path: '/auth/create-account'
@@ -202,6 +387,13 @@ declare module '@tanstack/react-router' {
       path: '/auth/forgot-password'
       fullPath: '/auth/forgot-password'
       preLoaderRoute: typeof AuthForgotPasswordImport
+      parentRoute: typeof rootRoute
+    }
+    '/auth/onboarding': {
+      id: '/auth/onboarding'
+      path: '/auth/onboarding'
+      fullPath: '/auth/onboarding'
+      preLoaderRoute: typeof AuthOnboardingImport
       parentRoute: typeof rootRoute
     }
     '/auth/pending-access': {
@@ -246,11 +438,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardIndexImport
       parentRoute: typeof DashboardRouteImport
     }
+    '/dashboard/company/invitations': {
+      id: '/dashboard/company/invitations'
+      path: '/company/invitations'
+      fullPath: '/dashboard/company/invitations'
+      preLoaderRoute: typeof DashboardCompanyInvitationsImport
+      parentRoute: typeof DashboardRouteImport
+    }
+    '/dashboard/company/members': {
+      id: '/dashboard/company/members'
+      path: '/company/members'
+      fullPath: '/dashboard/company/members'
+      preLoaderRoute: typeof DashboardCompanyMembersImport
+      parentRoute: typeof DashboardRouteImport
+    }
+    '/dashboard/company/projects': {
+      id: '/dashboard/company/projects'
+      path: '/company/projects'
+      fullPath: '/dashboard/company/projects'
+      preLoaderRoute: typeof DashboardCompanyProjectsImport
+      parentRoute: typeof DashboardRouteImport
+    }
+    '/dashboard/company/roles': {
+      id: '/dashboard/company/roles'
+      path: '/company/roles'
+      fullPath: '/dashboard/company/roles'
+      preLoaderRoute: typeof DashboardCompanyRolesImport
+      parentRoute: typeof DashboardRouteImport
+    }
     '/dashboard/projects/$projectId': {
       id: '/dashboard/projects/$projectId'
       path: '/projects/$projectId'
       fullPath: '/dashboard/projects/$projectId'
       preLoaderRoute: typeof DashboardProjectsProjectIdImport
+      parentRoute: typeof DashboardRouteImport
+    }
+    '/dashboard/analytics/': {
+      id: '/dashboard/analytics/'
+      path: '/analytics'
+      fullPath: '/dashboard/analytics'
+      preLoaderRoute: typeof DashboardAnalyticsIndexImport
+      parentRoute: typeof DashboardRouteImport
+    }
+    '/dashboard/company/': {
+      id: '/dashboard/company/'
+      path: '/company'
+      fullPath: '/dashboard/company'
+      preLoaderRoute: typeof DashboardCompanyIndexImport
+      parentRoute: typeof DashboardRouteImport
+    }
+    '/dashboard/field/': {
+      id: '/dashboard/field/'
+      path: '/field'
+      fullPath: '/dashboard/field'
+      preLoaderRoute: typeof DashboardFieldIndexImport
       parentRoute: typeof DashboardRouteImport
     }
     '/dashboard/projects/': {
@@ -260,6 +501,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardProjectsIndexImport
       parentRoute: typeof DashboardRouteImport
     }
+    '/dashboard/analytics/projects/$projectId': {
+      id: '/dashboard/analytics/projects/$projectId'
+      path: '/analytics/projects/$projectId'
+      fullPath: '/dashboard/analytics/projects/$projectId'
+      preLoaderRoute: typeof DashboardAnalyticsProjectsProjectIdImport
+      parentRoute: typeof DashboardRouteImport
+    }
+    '/dashboard/field/projects/$projectId': {
+      id: '/dashboard/field/projects/$projectId'
+      path: '/field/projects/$projectId'
+      fullPath: '/dashboard/field/projects/$projectId'
+      preLoaderRoute: typeof DashboardFieldProjectsProjectIdImport
+      parentRoute: typeof DashboardRouteImport
+    }
+    '/dashboard/projects/$projectId/buildings': {
+      id: '/dashboard/projects/$projectId/buildings'
+      path: '/buildings'
+      fullPath: '/dashboard/projects/$projectId/buildings'
+      preLoaderRoute: typeof DashboardProjectsProjectIdBuildingsImport
+      parentRoute: typeof DashboardProjectsProjectIdImport
+    }
     '/dashboard/projects/$projectId/edit': {
       id: '/dashboard/projects/$projectId/edit'
       path: '/edit'
@@ -267,12 +529,89 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardProjectsProjectIdEditImport
       parentRoute: typeof DashboardProjectsProjectIdImport
     }
+    '/dashboard/analytics/projects/': {
+      id: '/dashboard/analytics/projects/'
+      path: '/analytics/projects'
+      fullPath: '/dashboard/analytics/projects'
+      preLoaderRoute: typeof DashboardAnalyticsProjectsIndexImport
+      parentRoute: typeof DashboardRouteImport
+    }
+    '/dashboard/projects/$projectId/': {
+      id: '/dashboard/projects/$projectId/'
+      path: '/'
+      fullPath: '/dashboard/projects/$projectId/'
+      preLoaderRoute: typeof DashboardProjectsProjectIdIndexImport
+      parentRoute: typeof DashboardProjectsProjectIdImport
+    }
+    '/dashboard/projects/$projectId/buildings/$buildingId': {
+      id: '/dashboard/projects/$projectId/buildings/$buildingId'
+      path: '/$buildingId'
+      fullPath: '/dashboard/projects/$projectId/buildings/$buildingId'
+      preLoaderRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdImport
+      parentRoute: typeof DashboardProjectsProjectIdBuildingsImport
+    }
     '/dashboard/projects/$projectId/pours/new': {
       id: '/dashboard/projects/$projectId/pours/new'
       path: '/pours/new'
       fullPath: '/dashboard/projects/$projectId/pours/new'
       preLoaderRoute: typeof DashboardProjectsProjectIdPoursNewImport
       parentRoute: typeof DashboardProjectsProjectIdImport
+    }
+    '/dashboard/projects/$projectId/buildings/': {
+      id: '/dashboard/projects/$projectId/buildings/'
+      path: '/'
+      fullPath: '/dashboard/projects/$projectId/buildings/'
+      preLoaderRoute: typeof DashboardProjectsProjectIdBuildingsIndexImport
+      parentRoute: typeof DashboardProjectsProjectIdBuildingsImport
+    }
+    '/dashboard/field/projects/$projectId/photos/upload': {
+      id: '/dashboard/field/projects/$projectId/photos/upload'
+      path: '/photos/upload'
+      fullPath: '/dashboard/field/projects/$projectId/photos/upload'
+      preLoaderRoute: typeof DashboardFieldProjectsProjectIdPhotosUploadImport
+      parentRoute: typeof DashboardFieldProjectsProjectIdImport
+    }
+    '/dashboard/field/projects/$projectId/pours/quick-add': {
+      id: '/dashboard/field/projects/$projectId/pours/quick-add'
+      path: '/pours/quick-add'
+      fullPath: '/dashboard/field/projects/$projectId/pours/quick-add'
+      preLoaderRoute: typeof DashboardFieldProjectsProjectIdPoursQuickAddImport
+      parentRoute: typeof DashboardFieldProjectsProjectIdImport
+    }
+    '/dashboard/projects/$projectId/buildings/$buildingId/edit': {
+      id: '/dashboard/projects/$projectId/buildings/$buildingId/edit'
+      path: '/edit'
+      fullPath: '/dashboard/projects/$projectId/buildings/$buildingId/edit'
+      preLoaderRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdEditImport
+      parentRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdImport
+    }
+    '/dashboard/projects/$projectId/buildings/$buildingId/floors': {
+      id: '/dashboard/projects/$projectId/buildings/$buildingId/floors'
+      path: '/floors'
+      fullPath: '/dashboard/projects/$projectId/buildings/$buildingId/floors'
+      preLoaderRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsImport
+      parentRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdImport
+    }
+    '/dashboard/projects/$projectId/buildings/$buildingId/': {
+      id: '/dashboard/projects/$projectId/buildings/$buildingId/'
+      path: '/'
+      fullPath: '/dashboard/projects/$projectId/buildings/$buildingId/'
+      preLoaderRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdIndexImport
+      parentRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdImport
+    }
+    '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId': {
+      id: '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId'
+      path: '/$floorId'
+      fullPath: '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId'
+      preLoaderRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdImport
+      parentRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsImport
+    }
+    '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId/edit': {
+      id: '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId/edit'
+      path: '/edit'
+      fullPath: '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId/edit'
+      preLoaderRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdEditImport
+      parentRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdImport
     }
   }
 }
@@ -297,14 +636,88 @@ const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
   AdminRouteRouteChildren,
 )
 
+interface DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdRouteChildren {
+  DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdEditRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdEditRoute
+}
+
+const DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdRouteChildren: DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdRouteChildren =
+  {
+    DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdEditRoute:
+      DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdEditRoute,
+  }
+
+const DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdRouteWithChildren =
+  DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdRoute._addFileChildren(
+    DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdRouteChildren,
+  )
+
+interface DashboardProjectsProjectIdBuildingsBuildingIdFloorsRouteChildren {
+  DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdRouteWithChildren
+}
+
+const DashboardProjectsProjectIdBuildingsBuildingIdFloorsRouteChildren: DashboardProjectsProjectIdBuildingsBuildingIdFloorsRouteChildren =
+  {
+    DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdRoute:
+      DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdRouteWithChildren,
+  }
+
+const DashboardProjectsProjectIdBuildingsBuildingIdFloorsRouteWithChildren =
+  DashboardProjectsProjectIdBuildingsBuildingIdFloorsRoute._addFileChildren(
+    DashboardProjectsProjectIdBuildingsBuildingIdFloorsRouteChildren,
+  )
+
+interface DashboardProjectsProjectIdBuildingsBuildingIdRouteChildren {
+  DashboardProjectsProjectIdBuildingsBuildingIdEditRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdEditRoute
+  DashboardProjectsProjectIdBuildingsBuildingIdFloorsRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsRouteWithChildren
+  DashboardProjectsProjectIdBuildingsBuildingIdIndexRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdIndexRoute
+}
+
+const DashboardProjectsProjectIdBuildingsBuildingIdRouteChildren: DashboardProjectsProjectIdBuildingsBuildingIdRouteChildren =
+  {
+    DashboardProjectsProjectIdBuildingsBuildingIdEditRoute:
+      DashboardProjectsProjectIdBuildingsBuildingIdEditRoute,
+    DashboardProjectsProjectIdBuildingsBuildingIdFloorsRoute:
+      DashboardProjectsProjectIdBuildingsBuildingIdFloorsRouteWithChildren,
+    DashboardProjectsProjectIdBuildingsBuildingIdIndexRoute:
+      DashboardProjectsProjectIdBuildingsBuildingIdIndexRoute,
+  }
+
+const DashboardProjectsProjectIdBuildingsBuildingIdRouteWithChildren =
+  DashboardProjectsProjectIdBuildingsBuildingIdRoute._addFileChildren(
+    DashboardProjectsProjectIdBuildingsBuildingIdRouteChildren,
+  )
+
+interface DashboardProjectsProjectIdBuildingsRouteChildren {
+  DashboardProjectsProjectIdBuildingsBuildingIdRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdRouteWithChildren
+  DashboardProjectsProjectIdBuildingsIndexRoute: typeof DashboardProjectsProjectIdBuildingsIndexRoute
+}
+
+const DashboardProjectsProjectIdBuildingsRouteChildren: DashboardProjectsProjectIdBuildingsRouteChildren =
+  {
+    DashboardProjectsProjectIdBuildingsBuildingIdRoute:
+      DashboardProjectsProjectIdBuildingsBuildingIdRouteWithChildren,
+    DashboardProjectsProjectIdBuildingsIndexRoute:
+      DashboardProjectsProjectIdBuildingsIndexRoute,
+  }
+
+const DashboardProjectsProjectIdBuildingsRouteWithChildren =
+  DashboardProjectsProjectIdBuildingsRoute._addFileChildren(
+    DashboardProjectsProjectIdBuildingsRouteChildren,
+  )
+
 interface DashboardProjectsProjectIdRouteChildren {
+  DashboardProjectsProjectIdBuildingsRoute: typeof DashboardProjectsProjectIdBuildingsRouteWithChildren
   DashboardProjectsProjectIdEditRoute: typeof DashboardProjectsProjectIdEditRoute
+  DashboardProjectsProjectIdIndexRoute: typeof DashboardProjectsProjectIdIndexRoute
   DashboardProjectsProjectIdPoursNewRoute: typeof DashboardProjectsProjectIdPoursNewRoute
 }
 
 const DashboardProjectsProjectIdRouteChildren: DashboardProjectsProjectIdRouteChildren =
   {
+    DashboardProjectsProjectIdBuildingsRoute:
+      DashboardProjectsProjectIdBuildingsRouteWithChildren,
     DashboardProjectsProjectIdEditRoute: DashboardProjectsProjectIdEditRoute,
+    DashboardProjectsProjectIdIndexRoute: DashboardProjectsProjectIdIndexRoute,
     DashboardProjectsProjectIdPoursNewRoute:
       DashboardProjectsProjectIdPoursNewRoute,
   }
@@ -314,18 +727,58 @@ const DashboardProjectsProjectIdRouteWithChildren =
     DashboardProjectsProjectIdRouteChildren,
   )
 
+interface DashboardFieldProjectsProjectIdRouteChildren {
+  DashboardFieldProjectsProjectIdPhotosUploadRoute: typeof DashboardFieldProjectsProjectIdPhotosUploadRoute
+  DashboardFieldProjectsProjectIdPoursQuickAddRoute: typeof DashboardFieldProjectsProjectIdPoursQuickAddRoute
+}
+
+const DashboardFieldProjectsProjectIdRouteChildren: DashboardFieldProjectsProjectIdRouteChildren =
+  {
+    DashboardFieldProjectsProjectIdPhotosUploadRoute:
+      DashboardFieldProjectsProjectIdPhotosUploadRoute,
+    DashboardFieldProjectsProjectIdPoursQuickAddRoute:
+      DashboardFieldProjectsProjectIdPoursQuickAddRoute,
+  }
+
+const DashboardFieldProjectsProjectIdRouteWithChildren =
+  DashboardFieldProjectsProjectIdRoute._addFileChildren(
+    DashboardFieldProjectsProjectIdRouteChildren,
+  )
+
 interface DashboardRouteRouteChildren {
   DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
+  DashboardCompanyInvitationsRoute: typeof DashboardCompanyInvitationsRoute
+  DashboardCompanyMembersRoute: typeof DashboardCompanyMembersRoute
+  DashboardCompanyProjectsRoute: typeof DashboardCompanyProjectsRoute
+  DashboardCompanyRolesRoute: typeof DashboardCompanyRolesRoute
   DashboardProjectsProjectIdRoute: typeof DashboardProjectsProjectIdRouteWithChildren
+  DashboardAnalyticsIndexRoute: typeof DashboardAnalyticsIndexRoute
+  DashboardCompanyIndexRoute: typeof DashboardCompanyIndexRoute
+  DashboardFieldIndexRoute: typeof DashboardFieldIndexRoute
   DashboardProjectsIndexRoute: typeof DashboardProjectsIndexRoute
+  DashboardAnalyticsProjectsProjectIdRoute: typeof DashboardAnalyticsProjectsProjectIdRoute
+  DashboardFieldProjectsProjectIdRoute: typeof DashboardFieldProjectsProjectIdRouteWithChildren
+  DashboardAnalyticsProjectsIndexRoute: typeof DashboardAnalyticsProjectsIndexRoute
 }
 
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardIndexRoute: DashboardIndexRoute,
+  DashboardCompanyInvitationsRoute: DashboardCompanyInvitationsRoute,
+  DashboardCompanyMembersRoute: DashboardCompanyMembersRoute,
+  DashboardCompanyProjectsRoute: DashboardCompanyProjectsRoute,
+  DashboardCompanyRolesRoute: DashboardCompanyRolesRoute,
   DashboardProjectsProjectIdRoute: DashboardProjectsProjectIdRouteWithChildren,
+  DashboardAnalyticsIndexRoute: DashboardAnalyticsIndexRoute,
+  DashboardCompanyIndexRoute: DashboardCompanyIndexRoute,
+  DashboardFieldIndexRoute: DashboardFieldIndexRoute,
   DashboardProjectsIndexRoute: DashboardProjectsIndexRoute,
+  DashboardAnalyticsProjectsProjectIdRoute:
+    DashboardAnalyticsProjectsProjectIdRoute,
+  DashboardFieldProjectsProjectIdRoute:
+    DashboardFieldProjectsProjectIdRouteWithChildren,
+  DashboardAnalyticsProjectsIndexRoute: DashboardAnalyticsProjectsIndexRoute,
 }
 
 const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
@@ -339,18 +792,41 @@ export interface FileRoutesByFullPath {
   '/admin/access-requests': typeof AdminAccessRequestsRoute
   '/admin/companies': typeof AdminCompaniesRoute
   '/admin/users': typeof AdminUsersRoute
+  '/auth/accept-invite': typeof AuthAcceptInviteRoute
   '/auth/create-account': typeof AuthCreateAccountRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/onboarding': typeof AuthOnboardingRoute
   '/auth/pending-access': typeof AuthPendingAccessRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/admin/': typeof AdminIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/company/invitations': typeof DashboardCompanyInvitationsRoute
+  '/dashboard/company/members': typeof DashboardCompanyMembersRoute
+  '/dashboard/company/projects': typeof DashboardCompanyProjectsRoute
+  '/dashboard/company/roles': typeof DashboardCompanyRolesRoute
   '/dashboard/projects/$projectId': typeof DashboardProjectsProjectIdRouteWithChildren
+  '/dashboard/analytics': typeof DashboardAnalyticsIndexRoute
+  '/dashboard/company': typeof DashboardCompanyIndexRoute
+  '/dashboard/field': typeof DashboardFieldIndexRoute
   '/dashboard/projects': typeof DashboardProjectsIndexRoute
+  '/dashboard/analytics/projects/$projectId': typeof DashboardAnalyticsProjectsProjectIdRoute
+  '/dashboard/field/projects/$projectId': typeof DashboardFieldProjectsProjectIdRouteWithChildren
+  '/dashboard/projects/$projectId/buildings': typeof DashboardProjectsProjectIdBuildingsRouteWithChildren
   '/dashboard/projects/$projectId/edit': typeof DashboardProjectsProjectIdEditRoute
+  '/dashboard/analytics/projects': typeof DashboardAnalyticsProjectsIndexRoute
+  '/dashboard/projects/$projectId/': typeof DashboardProjectsProjectIdIndexRoute
+  '/dashboard/projects/$projectId/buildings/$buildingId': typeof DashboardProjectsProjectIdBuildingsBuildingIdRouteWithChildren
   '/dashboard/projects/$projectId/pours/new': typeof DashboardProjectsProjectIdPoursNewRoute
+  '/dashboard/projects/$projectId/buildings/': typeof DashboardProjectsProjectIdBuildingsIndexRoute
+  '/dashboard/field/projects/$projectId/photos/upload': typeof DashboardFieldProjectsProjectIdPhotosUploadRoute
+  '/dashboard/field/projects/$projectId/pours/quick-add': typeof DashboardFieldProjectsProjectIdPoursQuickAddRoute
+  '/dashboard/projects/$projectId/buildings/$buildingId/edit': typeof DashboardProjectsProjectIdBuildingsBuildingIdEditRoute
+  '/dashboard/projects/$projectId/buildings/$buildingId/floors': typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsRouteWithChildren
+  '/dashboard/projects/$projectId/buildings/$buildingId/': typeof DashboardProjectsProjectIdBuildingsBuildingIdIndexRoute
+  '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId': typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdRouteWithChildren
+  '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId/edit': typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdEditRoute
 }
 
 export interface FileRoutesByTo {
@@ -358,18 +834,38 @@ export interface FileRoutesByTo {
   '/admin/access-requests': typeof AdminAccessRequestsRoute
   '/admin/companies': typeof AdminCompaniesRoute
   '/admin/users': typeof AdminUsersRoute
+  '/auth/accept-invite': typeof AuthAcceptInviteRoute
   '/auth/create-account': typeof AuthCreateAccountRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/onboarding': typeof AuthOnboardingRoute
   '/auth/pending-access': typeof AuthPendingAccessRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/admin': typeof AdminIndexRoute
   '/dashboard': typeof DashboardIndexRoute
-  '/dashboard/projects/$projectId': typeof DashboardProjectsProjectIdRouteWithChildren
+  '/dashboard/company/invitations': typeof DashboardCompanyInvitationsRoute
+  '/dashboard/company/members': typeof DashboardCompanyMembersRoute
+  '/dashboard/company/projects': typeof DashboardCompanyProjectsRoute
+  '/dashboard/company/roles': typeof DashboardCompanyRolesRoute
+  '/dashboard/analytics': typeof DashboardAnalyticsIndexRoute
+  '/dashboard/company': typeof DashboardCompanyIndexRoute
+  '/dashboard/field': typeof DashboardFieldIndexRoute
   '/dashboard/projects': typeof DashboardProjectsIndexRoute
+  '/dashboard/analytics/projects/$projectId': typeof DashboardAnalyticsProjectsProjectIdRoute
+  '/dashboard/field/projects/$projectId': typeof DashboardFieldProjectsProjectIdRouteWithChildren
   '/dashboard/projects/$projectId/edit': typeof DashboardProjectsProjectIdEditRoute
+  '/dashboard/analytics/projects': typeof DashboardAnalyticsProjectsIndexRoute
+  '/dashboard/projects/$projectId': typeof DashboardProjectsProjectIdIndexRoute
   '/dashboard/projects/$projectId/pours/new': typeof DashboardProjectsProjectIdPoursNewRoute
+  '/dashboard/projects/$projectId/buildings': typeof DashboardProjectsProjectIdBuildingsIndexRoute
+  '/dashboard/field/projects/$projectId/photos/upload': typeof DashboardFieldProjectsProjectIdPhotosUploadRoute
+  '/dashboard/field/projects/$projectId/pours/quick-add': typeof DashboardFieldProjectsProjectIdPoursQuickAddRoute
+  '/dashboard/projects/$projectId/buildings/$buildingId/edit': typeof DashboardProjectsProjectIdBuildingsBuildingIdEditRoute
+  '/dashboard/projects/$projectId/buildings/$buildingId/floors': typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsRouteWithChildren
+  '/dashboard/projects/$projectId/buildings/$buildingId': typeof DashboardProjectsProjectIdBuildingsBuildingIdIndexRoute
+  '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId': typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdRouteWithChildren
+  '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId/edit': typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdEditRoute
 }
 
 export interface FileRoutesById {
@@ -380,18 +876,41 @@ export interface FileRoutesById {
   '/admin/access-requests': typeof AdminAccessRequestsRoute
   '/admin/companies': typeof AdminCompaniesRoute
   '/admin/users': typeof AdminUsersRoute
+  '/auth/accept-invite': typeof AuthAcceptInviteRoute
   '/auth/create-account': typeof AuthCreateAccountRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/onboarding': typeof AuthOnboardingRoute
   '/auth/pending-access': typeof AuthPendingAccessRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/admin/': typeof AdminIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/company/invitations': typeof DashboardCompanyInvitationsRoute
+  '/dashboard/company/members': typeof DashboardCompanyMembersRoute
+  '/dashboard/company/projects': typeof DashboardCompanyProjectsRoute
+  '/dashboard/company/roles': typeof DashboardCompanyRolesRoute
   '/dashboard/projects/$projectId': typeof DashboardProjectsProjectIdRouteWithChildren
+  '/dashboard/analytics/': typeof DashboardAnalyticsIndexRoute
+  '/dashboard/company/': typeof DashboardCompanyIndexRoute
+  '/dashboard/field/': typeof DashboardFieldIndexRoute
   '/dashboard/projects/': typeof DashboardProjectsIndexRoute
+  '/dashboard/analytics/projects/$projectId': typeof DashboardAnalyticsProjectsProjectIdRoute
+  '/dashboard/field/projects/$projectId': typeof DashboardFieldProjectsProjectIdRouteWithChildren
+  '/dashboard/projects/$projectId/buildings': typeof DashboardProjectsProjectIdBuildingsRouteWithChildren
   '/dashboard/projects/$projectId/edit': typeof DashboardProjectsProjectIdEditRoute
+  '/dashboard/analytics/projects/': typeof DashboardAnalyticsProjectsIndexRoute
+  '/dashboard/projects/$projectId/': typeof DashboardProjectsProjectIdIndexRoute
+  '/dashboard/projects/$projectId/buildings/$buildingId': typeof DashboardProjectsProjectIdBuildingsBuildingIdRouteWithChildren
   '/dashboard/projects/$projectId/pours/new': typeof DashboardProjectsProjectIdPoursNewRoute
+  '/dashboard/projects/$projectId/buildings/': typeof DashboardProjectsProjectIdBuildingsIndexRoute
+  '/dashboard/field/projects/$projectId/photos/upload': typeof DashboardFieldProjectsProjectIdPhotosUploadRoute
+  '/dashboard/field/projects/$projectId/pours/quick-add': typeof DashboardFieldProjectsProjectIdPoursQuickAddRoute
+  '/dashboard/projects/$projectId/buildings/$buildingId/edit': typeof DashboardProjectsProjectIdBuildingsBuildingIdEditRoute
+  '/dashboard/projects/$projectId/buildings/$buildingId/floors': typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsRouteWithChildren
+  '/dashboard/projects/$projectId/buildings/$buildingId/': typeof DashboardProjectsProjectIdBuildingsBuildingIdIndexRoute
+  '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId': typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdRouteWithChildren
+  '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId/edit': typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdEditRoute
 }
 
 export interface FileRouteTypes {
@@ -403,36 +922,79 @@ export interface FileRouteTypes {
     | '/admin/access-requests'
     | '/admin/companies'
     | '/admin/users'
+    | '/auth/accept-invite'
     | '/auth/create-account'
     | '/auth/forgot-password'
+    | '/auth/onboarding'
     | '/auth/pending-access'
     | '/auth/reset-password'
     | '/auth/sign-in'
     | '/dashboard/settings'
     | '/admin/'
     | '/dashboard/'
+    | '/dashboard/company/invitations'
+    | '/dashboard/company/members'
+    | '/dashboard/company/projects'
+    | '/dashboard/company/roles'
     | '/dashboard/projects/$projectId'
+    | '/dashboard/analytics'
+    | '/dashboard/company'
+    | '/dashboard/field'
     | '/dashboard/projects'
+    | '/dashboard/analytics/projects/$projectId'
+    | '/dashboard/field/projects/$projectId'
+    | '/dashboard/projects/$projectId/buildings'
     | '/dashboard/projects/$projectId/edit'
+    | '/dashboard/analytics/projects'
+    | '/dashboard/projects/$projectId/'
+    | '/dashboard/projects/$projectId/buildings/$buildingId'
     | '/dashboard/projects/$projectId/pours/new'
+    | '/dashboard/projects/$projectId/buildings/'
+    | '/dashboard/field/projects/$projectId/photos/upload'
+    | '/dashboard/field/projects/$projectId/pours/quick-add'
+    | '/dashboard/projects/$projectId/buildings/$buildingId/edit'
+    | '/dashboard/projects/$projectId/buildings/$buildingId/floors'
+    | '/dashboard/projects/$projectId/buildings/$buildingId/'
+    | '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId'
+    | '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/admin/access-requests'
     | '/admin/companies'
     | '/admin/users'
+    | '/auth/accept-invite'
     | '/auth/create-account'
     | '/auth/forgot-password'
+    | '/auth/onboarding'
     | '/auth/pending-access'
     | '/auth/reset-password'
     | '/auth/sign-in'
     | '/dashboard/settings'
     | '/admin'
     | '/dashboard'
-    | '/dashboard/projects/$projectId'
+    | '/dashboard/company/invitations'
+    | '/dashboard/company/members'
+    | '/dashboard/company/projects'
+    | '/dashboard/company/roles'
+    | '/dashboard/analytics'
+    | '/dashboard/company'
+    | '/dashboard/field'
     | '/dashboard/projects'
+    | '/dashboard/analytics/projects/$projectId'
+    | '/dashboard/field/projects/$projectId'
     | '/dashboard/projects/$projectId/edit'
+    | '/dashboard/analytics/projects'
+    | '/dashboard/projects/$projectId'
     | '/dashboard/projects/$projectId/pours/new'
+    | '/dashboard/projects/$projectId/buildings'
+    | '/dashboard/field/projects/$projectId/photos/upload'
+    | '/dashboard/field/projects/$projectId/pours/quick-add'
+    | '/dashboard/projects/$projectId/buildings/$buildingId/edit'
+    | '/dashboard/projects/$projectId/buildings/$buildingId/floors'
+    | '/dashboard/projects/$projectId/buildings/$buildingId'
+    | '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId'
+    | '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId/edit'
   id:
     | '__root__'
     | '/'
@@ -441,18 +1003,41 @@ export interface FileRouteTypes {
     | '/admin/access-requests'
     | '/admin/companies'
     | '/admin/users'
+    | '/auth/accept-invite'
     | '/auth/create-account'
     | '/auth/forgot-password'
+    | '/auth/onboarding'
     | '/auth/pending-access'
     | '/auth/reset-password'
     | '/auth/sign-in'
     | '/dashboard/settings'
     | '/admin/'
     | '/dashboard/'
+    | '/dashboard/company/invitations'
+    | '/dashboard/company/members'
+    | '/dashboard/company/projects'
+    | '/dashboard/company/roles'
     | '/dashboard/projects/$projectId'
+    | '/dashboard/analytics/'
+    | '/dashboard/company/'
+    | '/dashboard/field/'
     | '/dashboard/projects/'
+    | '/dashboard/analytics/projects/$projectId'
+    | '/dashboard/field/projects/$projectId'
+    | '/dashboard/projects/$projectId/buildings'
     | '/dashboard/projects/$projectId/edit'
+    | '/dashboard/analytics/projects/'
+    | '/dashboard/projects/$projectId/'
+    | '/dashboard/projects/$projectId/buildings/$buildingId'
     | '/dashboard/projects/$projectId/pours/new'
+    | '/dashboard/projects/$projectId/buildings/'
+    | '/dashboard/field/projects/$projectId/photos/upload'
+    | '/dashboard/field/projects/$projectId/pours/quick-add'
+    | '/dashboard/projects/$projectId/buildings/$buildingId/edit'
+    | '/dashboard/projects/$projectId/buildings/$buildingId/floors'
+    | '/dashboard/projects/$projectId/buildings/$buildingId/'
+    | '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId'
+    | '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId/edit'
   fileRoutesById: FileRoutesById
 }
 
@@ -460,8 +1045,10 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRouteRoute: typeof AdminRouteRouteWithChildren
   DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
+  AuthAcceptInviteRoute: typeof AuthAcceptInviteRoute
   AuthCreateAccountRoute: typeof AuthCreateAccountRoute
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
+  AuthOnboardingRoute: typeof AuthOnboardingRoute
   AuthPendingAccessRoute: typeof AuthPendingAccessRoute
   AuthResetPasswordRoute: typeof AuthResetPasswordRoute
   AuthSignInRoute: typeof AuthSignInRoute
@@ -471,8 +1058,10 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRouteRoute: AdminRouteRouteWithChildren,
   DashboardRouteRoute: DashboardRouteRouteWithChildren,
+  AuthAcceptInviteRoute: AuthAcceptInviteRoute,
   AuthCreateAccountRoute: AuthCreateAccountRoute,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
+  AuthOnboardingRoute: AuthOnboardingRoute,
   AuthPendingAccessRoute: AuthPendingAccessRoute,
   AuthResetPasswordRoute: AuthResetPasswordRoute,
   AuthSignInRoute: AuthSignInRoute,
@@ -491,8 +1080,10 @@ export const routeTree = rootRoute
         "/",
         "/admin",
         "/dashboard",
+        "/auth/accept-invite",
         "/auth/create-account",
         "/auth/forgot-password",
+        "/auth/onboarding",
         "/auth/pending-access",
         "/auth/reset-password",
         "/auth/sign-in"
@@ -515,8 +1106,18 @@ export const routeTree = rootRoute
       "children": [
         "/dashboard/settings",
         "/dashboard/",
+        "/dashboard/company/invitations",
+        "/dashboard/company/members",
+        "/dashboard/company/projects",
+        "/dashboard/company/roles",
         "/dashboard/projects/$projectId",
-        "/dashboard/projects/"
+        "/dashboard/analytics/",
+        "/dashboard/company/",
+        "/dashboard/field/",
+        "/dashboard/projects/",
+        "/dashboard/analytics/projects/$projectId",
+        "/dashboard/field/projects/$projectId",
+        "/dashboard/analytics/projects/"
       ]
     },
     "/admin/access-requests": {
@@ -531,11 +1132,17 @@ export const routeTree = rootRoute
       "filePath": "admin/users.tsx",
       "parent": "/admin"
     },
+    "/auth/accept-invite": {
+      "filePath": "auth/accept-invite.tsx"
+    },
     "/auth/create-account": {
       "filePath": "auth/create-account.tsx"
     },
     "/auth/forgot-password": {
       "filePath": "auth/forgot-password.tsx"
+    },
+    "/auth/onboarding": {
+      "filePath": "auth/onboarding.tsx"
     },
     "/auth/pending-access": {
       "filePath": "auth/pending-access.tsx"
@@ -558,25 +1165,130 @@ export const routeTree = rootRoute
       "filePath": "dashboard/index.tsx",
       "parent": "/dashboard"
     },
+    "/dashboard/company/invitations": {
+      "filePath": "dashboard/company/invitations.tsx",
+      "parent": "/dashboard"
+    },
+    "/dashboard/company/members": {
+      "filePath": "dashboard/company/members.tsx",
+      "parent": "/dashboard"
+    },
+    "/dashboard/company/projects": {
+      "filePath": "dashboard/company/projects.tsx",
+      "parent": "/dashboard"
+    },
+    "/dashboard/company/roles": {
+      "filePath": "dashboard/company/roles.tsx",
+      "parent": "/dashboard"
+    },
     "/dashboard/projects/$projectId": {
       "filePath": "dashboard/projects/$projectId.tsx",
       "parent": "/dashboard",
       "children": [
+        "/dashboard/projects/$projectId/buildings",
         "/dashboard/projects/$projectId/edit",
+        "/dashboard/projects/$projectId/",
         "/dashboard/projects/$projectId/pours/new"
       ]
+    },
+    "/dashboard/analytics/": {
+      "filePath": "dashboard/analytics/index.tsx",
+      "parent": "/dashboard"
+    },
+    "/dashboard/company/": {
+      "filePath": "dashboard/company/index.tsx",
+      "parent": "/dashboard"
+    },
+    "/dashboard/field/": {
+      "filePath": "dashboard/field/index.tsx",
+      "parent": "/dashboard"
     },
     "/dashboard/projects/": {
       "filePath": "dashboard/projects/index.tsx",
       "parent": "/dashboard"
     },
+    "/dashboard/analytics/projects/$projectId": {
+      "filePath": "dashboard/analytics/projects.$projectId.tsx",
+      "parent": "/dashboard"
+    },
+    "/dashboard/field/projects/$projectId": {
+      "filePath": "dashboard/field/projects.$projectId.tsx",
+      "parent": "/dashboard",
+      "children": [
+        "/dashboard/field/projects/$projectId/photos/upload",
+        "/dashboard/field/projects/$projectId/pours/quick-add"
+      ]
+    },
+    "/dashboard/projects/$projectId/buildings": {
+      "filePath": "dashboard/projects/$projectId.buildings.tsx",
+      "parent": "/dashboard/projects/$projectId",
+      "children": [
+        "/dashboard/projects/$projectId/buildings/$buildingId",
+        "/dashboard/projects/$projectId/buildings/"
+      ]
+    },
     "/dashboard/projects/$projectId/edit": {
       "filePath": "dashboard/projects/$projectId.edit.tsx",
       "parent": "/dashboard/projects/$projectId"
     },
+    "/dashboard/analytics/projects/": {
+      "filePath": "dashboard/analytics/projects.index.tsx",
+      "parent": "/dashboard"
+    },
+    "/dashboard/projects/$projectId/": {
+      "filePath": "dashboard/projects/$projectId.index.tsx",
+      "parent": "/dashboard/projects/$projectId"
+    },
+    "/dashboard/projects/$projectId/buildings/$buildingId": {
+      "filePath": "dashboard/projects/$projectId.buildings.$buildingId.tsx",
+      "parent": "/dashboard/projects/$projectId/buildings",
+      "children": [
+        "/dashboard/projects/$projectId/buildings/$buildingId/edit",
+        "/dashboard/projects/$projectId/buildings/$buildingId/floors",
+        "/dashboard/projects/$projectId/buildings/$buildingId/"
+      ]
+    },
     "/dashboard/projects/$projectId/pours/new": {
       "filePath": "dashboard/projects/$projectId.pours.new.tsx",
       "parent": "/dashboard/projects/$projectId"
+    },
+    "/dashboard/projects/$projectId/buildings/": {
+      "filePath": "dashboard/projects/$projectId.buildings.index.tsx",
+      "parent": "/dashboard/projects/$projectId/buildings"
+    },
+    "/dashboard/field/projects/$projectId/photos/upload": {
+      "filePath": "dashboard/field/projects.$projectId.photos.upload.tsx",
+      "parent": "/dashboard/field/projects/$projectId"
+    },
+    "/dashboard/field/projects/$projectId/pours/quick-add": {
+      "filePath": "dashboard/field/projects.$projectId.pours.quick-add.tsx",
+      "parent": "/dashboard/field/projects/$projectId"
+    },
+    "/dashboard/projects/$projectId/buildings/$buildingId/edit": {
+      "filePath": "dashboard/projects/$projectId.buildings.$buildingId.edit.tsx",
+      "parent": "/dashboard/projects/$projectId/buildings/$buildingId"
+    },
+    "/dashboard/projects/$projectId/buildings/$buildingId/floors": {
+      "filePath": "dashboard/projects/$projectId.buildings.$buildingId.floors.tsx",
+      "parent": "/dashboard/projects/$projectId/buildings/$buildingId",
+      "children": [
+        "/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId"
+      ]
+    },
+    "/dashboard/projects/$projectId/buildings/$buildingId/": {
+      "filePath": "dashboard/projects/$projectId.buildings.$buildingId.index.tsx",
+      "parent": "/dashboard/projects/$projectId/buildings/$buildingId"
+    },
+    "/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId": {
+      "filePath": "dashboard/projects/$projectId.buildings.$buildingId.floors.$floorId.tsx",
+      "parent": "/dashboard/projects/$projectId/buildings/$buildingId/floors",
+      "children": [
+        "/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId/edit"
+      ]
+    },
+    "/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId/edit": {
+      "filePath": "dashboard/projects/$projectId.buildings.$buildingId.floors.$floorId.edit.tsx",
+      "parent": "/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId"
     }
   }
 }

@@ -1,7 +1,7 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { projectMembers, projects } from "@/db/schema";
-import type { TenantUserPrincipal } from "@/lib/auth/principal";
+import { normalizeAppUserRole, type TenantUserPrincipal } from "@/lib/auth/principal";
 import {
   hasProjectPermission,
   normalizeProjectPermissionForCompanyRole,
@@ -65,7 +65,7 @@ async function getProjectAccessContextForUser(
       projectManagerUserId: project.projectManagerUserId ?? null,
       superintendentUserId: project.superintendentUserId ?? null,
     },
-    companyRole: membership.role,
+    companyRole: normalizeAppUserRole(membership.role),
     projectRole: projectMember?.role ?? null,
     hasExplicitAssignments,
   };
@@ -92,7 +92,13 @@ export function hasProjectAccess(
   accessLevel: ProjectAccessLevel
 ) {
   if (normalizeProjectPermissionForCompanyRole(context.companyRole, accessLevel)) {
-    if (context.companyRole === "project_manager" || context.companyRole === "field_supervisor" || context.companyRole === "viewer") {
+    const normalizedCompanyRole = normalizeAppUserRole(context.companyRole);
+
+    if (
+      normalizedCompanyRole === "project_manager" ||
+      normalizedCompanyRole === "field_supervisor" ||
+      normalizedCompanyRole === "viewer"
+    ) {
       return userIsAssignedToProject(user.id, context);
     }
 
@@ -148,7 +154,9 @@ export async function listAccessibleProjectIds(
     return [];
   }
 
-  if (membership.role === "owner" || membership.role === "admin") {
+  const normalizedRole = normalizeAppUserRole(membership.role);
+
+  if (normalizedRole === "owner" || normalizedRole === "admin") {
     return db
       .select({ id: projects.id })
       .from(projects)

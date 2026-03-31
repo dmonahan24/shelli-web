@@ -2,6 +2,7 @@ export * from "@/db/schema/enums";
 export * from "@/db/schema/shared";
 export * from "@/db/schema/core";
 export * from "@/db/schema/projects";
+export * from "@/db/schema/hierarchy";
 export * from "@/db/schema/operations";
 export * from "@/db/schema/attachments";
 export * from "@/db/schema/audit";

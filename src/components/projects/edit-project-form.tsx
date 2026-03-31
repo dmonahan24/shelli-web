@@ -10,10 +10,12 @@ import type { ProjectInput } from "@/lib/validation/project";
 export function EditProjectForm({
   currentTotalConcretePoured,
   defaultValues,
+  isHierarchyManaged = false,
   projectId,
 }: {
   currentTotalConcretePoured: number;
   defaultValues: ProjectInput;
+  isHierarchyManaged?: boolean;
   projectId: string;
 }) {
   const router = useRouter();
@@ -29,7 +31,10 @@ export function EditProjectForm({
           </CardContent>
         </Card>
       ) : null}
-      <ProjectMetadataCard currentTotalConcretePoured={currentTotalConcretePoured} />
+      <ProjectMetadataCard
+        currentTotalConcretePoured={currentTotalConcretePoured}
+        isHierarchyManaged={isHierarchyManaged}
+      />
       <Card className="rounded-[28px] border-border/70 bg-card/90 shadow-sm">
         <CardHeader>
           <CardTitle>Edit Project</CardTitle>
@@ -37,6 +42,7 @@ export function EditProjectForm({
         <CardContent>
           <ProjectForm
             defaultValues={defaultValues}
+            disableEstimatedTotalConcrete={isHierarchyManaged}
             onSubmit={(values, setFieldError) =>
               startTransition(async () => {
                 const result = await updateProjectServerFn({
@@ -78,8 +84,10 @@ export function EditProjectForm({
 
 export function ProjectMetadataCard({
   currentTotalConcretePoured,
+  isHierarchyManaged = false,
 }: {
   currentTotalConcretePoured: number;
+  isHierarchyManaged?: boolean;
 }) {
   return (
     <Card className="rounded-[24px] border-border/70 bg-card/90 shadow-sm">
@@ -87,8 +95,11 @@ export function ProjectMetadataCard({
         <CardTitle>Project Metadata</CardTitle>
       </CardHeader>
       <CardContent className="text-sm text-muted-foreground">
-        Total concrete poured is managed by the project’s pour event log and is currently{" "}
+        Total concrete poured is currently{" "}
         <span className="font-semibold text-foreground">{currentTotalConcretePoured.toFixed(2)} CY</span>.
+        {isHierarchyManaged
+          ? " Estimated and actual planning totals are now driven by the building hierarchy."
+          : " This project does not have hierarchy records yet, so the estimate is still managed here."}
       </CardContent>
     </Card>
   );

@@ -56,4 +56,15 @@ describe("auth validation", () => {
       }).success
     ).toBe(true);
   });
+
+  it("accepts reset-password payloads with Supabase recovery session tokens", () => {
+    expect(
+      resetPasswordSchema.safeParse({
+        accessToken: "access-token",
+        refreshToken: "refresh-token",
+        password: "password123",
+        confirmPassword: "password123",
+      }).success
+    ).toBe(true);
+  });
 });

@@ -1,10 +1,11 @@
-import { eq, and, desc, inArray, sql } from "drizzle-orm";
+import { eq, and, asc, desc, inArray, notInArray, or, sql } from "drizzle-orm";
 import { ZodError } from "zod";
 import { db } from "@/db";
 import {
   companies,
   companyInvitations,
   companyMemberships,
+  projectMemberInvitationAssignments,
   projectMembers,
   projects,
   pours,
@@ -13,16 +14,21 @@ import {
 import { assertSameOrigin } from "@/lib/auth/csrf";
 import { createRandomToken, hashToken } from "@/lib/auth/crypto";
 import { canManageInvitations, canManageMembers, requireCompanyMembership } from "@/lib/auth/company-access";
+import type { ProjectRole } from "@/lib/auth/principal";
 import { requireProjectAccess } from "@/lib/auth/project-access";
 import { requireTenantUser } from "@/lib/auth/session";
 import {
   assignProjectMemberSchema,
+  bulkAssignProjectMembersSchema,
   companyOnboardingSchema,
   inviteMemberSchema,
+  listProjectAccessRostersSchema,
+  projectAccessRosterParamsSchema,
   resendInvitationSchema,
   revokeInvitationSchema,
   updateMembershipRoleSchema,
   type AssignProjectMemberInput,
+  type BulkAssignProjectMembersInput,
   type CompanyOnboardingInput,
   type InviteMemberInput,
   type UpdateMembershipRoleInput,
@@ -46,6 +52,80 @@ function zodFieldErrors(error: ZodError) {
 function normalizeOptionalText(value?: string | null) {
   const trimmed = value?.trim();
   return trimmed ? trimmed : null;
+}
+
+function normalizeEmail(value: string) {
+  return value.trim().toLowerCase();
+}
+
+type ProjectAccessRoster = {
+  projectId: string;
+  projectName: string;
+  hasExplicitAssignments: boolean;
+  projectManagerUserId: string | null;
+  superintendentUserId: string | null;
+  activeMembers: Array<{
+    userId: string;
+    fullName: string;
+    email: string;
+    companyRole: string;
+    projectRole: string;
+    isProjectManager: boolean;
+    isSuperintendent: boolean;
+  }>;
+  pendingInvitees: Array<{
+    invitationId: string;
+    email: string;
+    companyRole: string;
+    projectRole: string;
+    expiresAt: Date;
+    invitedByName: string;
+  }>;
+  availableMembers: Array<{
+    userId: string;
+    fullName: string;
+    email: string;
+    companyRole: string;
+  }>;
+};
+
+type BulkProjectAssignmentSummary = {
+  assignedCount: number;
+  invitedCount: number;
+  updatedCount: number;
+  skippedCount: number;
+};
+
+function formatBulkAssignmentSummary(summary: BulkProjectAssignmentSummary) {
+  const parts = [
+    `${summary.assignedCount} assigned`,
+    `${summary.invitedCount} invited`,
+    `${summary.updatedCount} updated`,
+    `${summary.skippedCount} skipped`,
+  ];
+
+  return `Project access saved: ${parts.join(", ")}.`;
+}
+
+function isMissingPendingProjectAssignmentSchemaError(error: unknown) {
+  const databaseError =
+    error && typeof error === "object"
+      ? (error as {
+          code?: string;
+          message?: string;
+          detail?: string;
+        })
+      : null;
+
+  const message = databaseError?.message ?? "";
+  const detail = databaseError?.detail ?? "";
+  const combined = `${message} ${detail}`;
+
+  return (
+    databaseError?.code === "42P01" ||
+    databaseError?.code === "42703" ||
+    combined.includes("project_member_invitation_assignments")
+  );
 }
 
 export function slugifyCompanyName(name: string) {
@@ -169,6 +249,194 @@ export async function listMembers() {
     ...row,
     assignedProjectsCount: countByUserId.get(row.userId) ?? 0,
   }));
+}
+
+export async function getProjectAccessRoster(rawInput: unknown): Promise<ProjectAccessRoster> {
+  const { projectId } = projectAccessRosterParamsSchema.parse(rawInput);
+  const access = await requireProjectAccess(projectId, "view");
+  const project = await db.query.projects.findFirst({
+    where: eq(projects.id, projectId),
+  });
+
+  if (!project) {
+    throw new Error("Project not found.");
+  }
+
+  const activeMemberRows = await db
+    .select({
+      userId: users.id,
+      fullName: users.fullName,
+      email: users.email,
+      companyRole: companyMemberships.role,
+      projectRole: projectMembers.role,
+    })
+    .from(projectMembers)
+    .innerJoin(users, eq(projectMembers.userId, users.id))
+    .innerJoin(
+      companyMemberships,
+      and(
+        eq(companyMemberships.userId, users.id),
+        eq(companyMemberships.companyId, project.companyId),
+        eq(companyMemberships.status, "active")
+      )
+    )
+    .where(eq(projectMembers.projectId, projectId))
+    .orderBy(asc(users.fullName));
+
+  const missingLeadershipUserIds = [
+    project.projectManagerUserId,
+    project.superintendentUserId,
+  ].filter(
+    (value): value is string =>
+      Boolean(value) && !activeMemberRows.some((member) => member.userId === value)
+  );
+
+  const leadershipOnlyRows =
+    missingLeadershipUserIds.length === 0
+      ? []
+      : await db
+          .select({
+            userId: users.id,
+            fullName: users.fullName,
+            email: users.email,
+            companyRole: companyMemberships.role,
+          })
+          .from(companyMemberships)
+          .innerJoin(users, eq(companyMemberships.userId, users.id))
+          .where(
+            and(
+              eq(companyMemberships.companyId, project.companyId),
+              eq(companyMemberships.status, "active"),
+              inArray(users.id, missingLeadershipUserIds)
+            )
+          )
+          .orderBy(asc(users.fullName));
+
+  const normalizedActiveMembers = activeMemberRows.concat(
+    leadershipOnlyRows.map((row) => ({
+      ...row,
+      projectRole: "viewer",
+    }))
+  );
+
+  const excludedUserIds = new Set(
+    normalizedActiveMembers.map((row) => row.userId).concat(
+      [project.projectManagerUserId, project.superintendentUserId].filter(
+        (value): value is string => Boolean(value)
+      )
+    )
+  );
+
+  const availableMemberRows =
+    excludedUserIds.size === 0
+      ? await db
+          .select({
+            userId: users.id,
+            fullName: users.fullName,
+            email: users.email,
+            companyRole: companyMemberships.role,
+          })
+          .from(companyMemberships)
+          .innerJoin(users, eq(companyMemberships.userId, users.id))
+          .where(
+            and(
+              eq(companyMemberships.companyId, project.companyId),
+              eq(companyMemberships.status, "active")
+            )
+          )
+          .orderBy(asc(users.fullName))
+      : await db
+          .select({
+            userId: users.id,
+            fullName: users.fullName,
+            email: users.email,
+            companyRole: companyMemberships.role,
+          })
+          .from(companyMemberships)
+          .innerJoin(users, eq(companyMemberships.userId, users.id))
+          .where(
+            and(
+              eq(companyMemberships.companyId, project.companyId),
+              eq(companyMemberships.status, "active"),
+              notInArray(users.id, Array.from(excludedUserIds))
+            )
+          )
+          .orderBy(asc(users.fullName));
+
+  let pendingInviteRows: Array<{
+    invitationId: string;
+    email: string;
+    companyRole: string;
+    projectRole: string;
+    expiresAt: Date;
+    invitedByName: string | null;
+  }> = [];
+
+  try {
+    pendingInviteRows = await db
+      .select({
+        invitationId: companyInvitations.id,
+        email: companyInvitations.email,
+        companyRole: companyInvitations.role,
+        projectRole: projectMemberInvitationAssignments.projectRole,
+        expiresAt: companyInvitations.expiresAt,
+        invitedByName: users.fullName,
+      })
+      .from(projectMemberInvitationAssignments)
+      .innerJoin(
+        companyInvitations,
+        eq(projectMemberInvitationAssignments.companyInvitationId, companyInvitations.id)
+      )
+      .leftJoin(users, eq(companyInvitations.invitedByUserId, users.id))
+      .where(
+        and(
+          eq(projectMemberInvitationAssignments.projectId, projectId),
+          sql`${projectMemberInvitationAssignments.acceptedAt} is null`,
+          sql`${companyInvitations.acceptedAt} is null`,
+          sql`${companyInvitations.revokedAt} is null`,
+          sql`${companyInvitations.expiresAt} > now()`
+        )
+      )
+      .orderBy(desc(companyInvitations.createdAt));
+  } catch (error) {
+    if (!isMissingPendingProjectAssignmentSchemaError(error)) {
+      throw error;
+    }
+  }
+
+  return {
+    projectId: project.id,
+    projectName: project.name,
+    hasExplicitAssignments: access.context.hasExplicitAssignments,
+    projectManagerUserId: project.projectManagerUserId ?? null,
+    superintendentUserId: project.superintendentUserId ?? null,
+    activeMembers: normalizedActiveMembers.map((row) => ({
+      ...row,
+      isProjectManager: row.userId === project.projectManagerUserId,
+      isSuperintendent: row.userId === project.superintendentUserId,
+    })),
+    pendingInvitees: pendingInviteRows.map((row) => ({
+      ...row,
+      invitedByName: row.invitedByName ?? "System",
+    })),
+    availableMembers: availableMemberRows,
+  };
+}
+
+export async function listProjectAccessRosters(rawInput: unknown) {
+  const input = listProjectAccessRostersSchema.parse(rawInput);
+
+  const rosters = await Promise.all(
+    input.projectIds.map(async (projectId) => ({
+      projectId,
+      roster: await getProjectAccessRoster({ projectId }),
+    }))
+  );
+
+  return Object.fromEntries(rosters.map((entry) => [entry.projectId, entry.roster])) as Record<
+    string,
+    ProjectAccessRoster
+  >;
 }
 
 export async function listInvitations() {
@@ -434,63 +702,20 @@ export async function assignProjectMember(
   rawInput: AssignProjectMemberInput
 ): Promise<ActionResult<{ projectId: string; userId: string }>> {
   try {
-    assertSameOrigin();
     const input = assignProjectMemberSchema.parse(rawInput);
-    const access = await requireProjectAccess(input.projectId, "manage");
-
-    const targetUser = await db.query.users.findFirst({
-      where: eq(users.id, input.userId),
-    });
-
-    if (!targetUser || targetUser.companyId !== access.context.project.companyId) {
-      return failure("validation_error", "That user is not part of this company.", {
-        userId: "That user is not part of this company.",
-      });
-    }
-
-    await db.transaction(async (tx) => {
-      await tx
-        .insert(projectMembers)
-        .values({
-          projectId: input.projectId,
+    const result = await bulkAssignProjectMembers({
+      projectId: input.projectId,
+      assignments: [
+        {
           userId: input.userId,
-          role: input.role,
-        })
-        .onConflictDoUpdate({
-          target: [projectMembers.projectId, projectMembers.userId],
-          set: {
-            role: input.role,
-          },
-        });
-
-      await tx
-        .update(projects)
-        .set({
-          projectManagerUserId:
-            targetUser.role === "project_manager"
-              ? targetUser.id
-              : access.context.project.projectManagerUserId,
-          superintendentUserId:
-            targetUser.role === "field_supervisor"
-              ? targetUser.id
-              : access.context.project.superintendentUserId,
-        })
-        .where(eq(projects.id, input.projectId));
-
-      await recordActivityEvent(tx, {
-        companyId: access.context.project.companyId,
-        projectId: input.projectId,
-        actorUserId: access.user.id,
-        eventType: "project_updated",
-        entityType: "project_member",
-        entityId: input.userId,
-        summary: `Assigned ${targetUser.fullName} to the project`,
-        metadata: {
-          userId: input.userId,
-          role: input.role,
+          projectRole: input.role,
         },
-      });
+      ],
     });
+
+    if (!result.ok) {
+      return failure(result.code, result.formError, result.fieldErrors);
+    }
 
     return success({ projectId: input.projectId, userId: input.userId }, "Project member assigned.");
   } catch (error) {
@@ -499,6 +724,480 @@ export async function assignProjectMember(
     }
 
     return failure("assign_project_member_failed", "Unable to assign that project member right now.");
+  }
+}
+
+export async function bulkAssignProjectMembers(
+  rawInput: BulkAssignProjectMembersInput
+): Promise<
+  ActionResult<{
+    projectId: string;
+    summary: BulkProjectAssignmentSummary;
+  }>
+> {
+  try {
+    assertSameOrigin();
+    const input = bulkAssignProjectMembersSchema.parse(rawInput);
+    const access = await requireProjectAccess(input.projectId, "manage");
+    const companyId = access.context.project.companyId;
+    const company = await db.query.companies.findFirst({
+      where: eq(companies.id, companyId),
+    });
+
+    if (!company) {
+      return failure("not_found", "Company not found.");
+    }
+
+    const requestedUserIds = input.assignments
+      .map((assignment) => assignment.userId)
+      .filter((value): value is string => Boolean(value));
+    const requestedEmails = input.assignments
+      .map((assignment) => assignment.email)
+      .filter((value): value is string => Boolean(value))
+      .map(normalizeEmail);
+
+    const matchedCompanyMembers =
+      requestedUserIds.length === 0 && requestedEmails.length === 0
+        ? []
+        : await db
+            .select({
+              userId: users.id,
+              fullName: users.fullName,
+              email: users.email,
+              companyRole: companyMemberships.role,
+            })
+            .from(companyMemberships)
+            .innerJoin(users, eq(companyMemberships.userId, users.id))
+            .where(
+              and(
+                eq(companyMemberships.companyId, companyId),
+                eq(companyMemberships.status, "active"),
+                or(
+                  requestedUserIds.length > 0 ? inArray(users.id, requestedUserIds) : undefined,
+                  requestedEmails.length > 0 ? inArray(users.email, requestedEmails) : undefined
+                )
+              )
+            );
+
+    const memberByUserId = new Map(matchedCompanyMembers.map((member) => [member.userId, member]));
+    const memberByEmail = new Map(
+      matchedCompanyMembers.map((member) => [normalizeEmail(member.email), member])
+    );
+
+    const invalidExistingAssignment = requestedUserIds.find((userId) => !memberByUserId.has(userId));
+    if (invalidExistingAssignment) {
+      return failure(
+        "validation_error",
+        "One or more selected members are no longer active in this company."
+      );
+    }
+
+    const userIdsMatchedByEmail = new Set(
+      requestedEmails
+        .map((email) => memberByEmail.get(email)?.userId)
+        .filter((value): value is string => Boolean(value))
+    );
+
+    const duplicateResolvedUserId = requestedUserIds.find((userId) =>
+      userIdsMatchedByEmail.has(userId)
+    );
+
+    if (duplicateResolvedUserId) {
+      return failure(
+        "validation_error",
+        "The same person cannot be included as both an existing member and an email invite in one batch."
+      );
+    }
+
+    const existingAssignments = await db
+      .select({
+        userId: projectMembers.userId,
+        role: projectMembers.role,
+      })
+      .from(projectMembers)
+      .where(eq(projectMembers.projectId, input.projectId));
+
+    const currentRoleByUserId = new Map(
+      existingAssignments.map((assignment) => [assignment.userId, assignment.role])
+    );
+    const currentlyAssignedUserIds = new Set(
+      existingAssignments
+        .map((assignment) => assignment.userId)
+        .concat(
+          [
+            access.context.project.projectManagerUserId,
+            access.context.project.superintendentUserId,
+          ].filter((value): value is string => Boolean(value))
+        )
+    );
+
+    const leadershipCandidateIds = new Set(
+      requestedUserIds
+        .concat(Array.from(userIdsMatchedByEmail))
+        .concat(Array.from(currentlyAssignedUserIds))
+    );
+
+    const leadershipIds = [
+      input.projectManagerUserId,
+      input.superintendentUserId,
+    ].filter((value): value is string => Boolean(value));
+
+    for (const leadershipUserId of leadershipIds) {
+      if (!leadershipCandidateIds.has(leadershipUserId)) {
+        return failure(
+          "validation_error",
+          "Leadership assignments must reference selected team members or people already assigned to the project."
+        );
+      }
+    }
+
+    const invitationCandidates = requestedEmails.filter((email) => !memberByEmail.has(email));
+    const existingInvitations =
+      invitationCandidates.length === 0
+        ? []
+        : await db
+            .select({
+              id: companyInvitations.id,
+              email: companyInvitations.email,
+              role: companyInvitations.role,
+              expiresAt: companyInvitations.expiresAt,
+            })
+            .from(companyInvitations)
+            .where(
+              and(
+                eq(companyInvitations.companyId, companyId),
+                inArray(companyInvitations.email, invitationCandidates),
+                sql`${companyInvitations.acceptedAt} is null`,
+                sql`${companyInvitations.revokedAt} is null`,
+                sql`${companyInvitations.expiresAt} > now()`
+              )
+            );
+
+    const invitationByEmail = new Map(
+      existingInvitations.map((invitation) => [normalizeEmail(invitation.email), invitation])
+    );
+
+    const leadershipRoleRows =
+      leadershipIds.length === 0
+        ? []
+        : await db
+            .select({
+              userId: users.id,
+              companyRole: companyMemberships.role,
+            })
+            .from(companyMemberships)
+            .innerJoin(users, eq(companyMemberships.userId, users.id))
+            .where(
+              and(
+                eq(companyMemberships.companyId, companyId),
+                eq(companyMemberships.status, "active"),
+                inArray(users.id, leadershipIds)
+              )
+            );
+
+    const leadershipRoleByUserId = new Map(
+      leadershipRoleRows.map((row) => [row.userId, row.companyRole])
+    );
+
+    if (
+      input.projectManagerUserId &&
+      leadershipRoleByUserId.get(input.projectManagerUserId) !== "project_manager"
+    ) {
+      return failure(
+        "validation_error",
+        "Only company project managers can be set as the project manager."
+      );
+    }
+
+    if (
+      input.superintendentUserId &&
+      leadershipRoleByUserId.get(input.superintendentUserId) !== "field_supervisor"
+    ) {
+      return failure(
+        "validation_error",
+        "Only field supervisors can be set as the superintendent."
+      );
+    }
+
+    const summary: BulkProjectAssignmentSummary = {
+      assignedCount: 0,
+      invitedCount: 0,
+      updatedCount: 0,
+      skippedCount: 0,
+    };
+    const invitationEmailsToSend: Array<{
+      email: string;
+      role: string;
+      inviteUrl: string;
+    }> = [];
+
+    await db.transaction(async (tx) => {
+      for (const assignment of input.assignments) {
+        const requestedEmail = assignment.email ? normalizeEmail(assignment.email) : null;
+        const activeCompanyMember =
+          (assignment.userId ? memberByUserId.get(assignment.userId) : null) ??
+          (requestedEmail ? memberByEmail.get(requestedEmail) : null) ??
+          null;
+
+        if (activeCompanyMember) {
+          const previousRole = currentRoleByUserId.get(activeCompanyMember.userId) ?? null;
+
+          if (previousRole === assignment.projectRole) {
+            summary.skippedCount += 1;
+            continue;
+          }
+
+          if (previousRole) {
+            summary.updatedCount += 1;
+          } else {
+            summary.assignedCount += 1;
+          }
+
+          await tx
+            .insert(projectMembers)
+            .values({
+              projectId: input.projectId,
+              userId: activeCompanyMember.userId,
+              role: assignment.projectRole,
+            })
+            .onConflictDoUpdate({
+              target: [projectMembers.projectId, projectMembers.userId],
+              set: {
+                role: assignment.projectRole,
+              },
+            });
+
+          currentRoleByUserId.set(activeCompanyMember.userId, assignment.projectRole);
+
+          await recordActivityEvent(tx, {
+            companyId,
+            projectId: input.projectId,
+            actorUserId: access.user.id,
+            eventType: previousRole ? "project_member_updated" : "project_member_assigned",
+            entityType: "project_member",
+            entityId: activeCompanyMember.userId,
+            summary: previousRole
+              ? `Updated ${activeCompanyMember.fullName} to ${assignment.projectRole.replaceAll("_", " ")}`
+              : `Assigned ${activeCompanyMember.fullName} to the project as ${assignment.projectRole.replaceAll("_", " ")}`,
+            metadata: {
+              userId: activeCompanyMember.userId,
+              email: activeCompanyMember.email,
+              role: assignment.projectRole,
+            },
+          });
+
+          continue;
+        }
+
+        const inviteEmail = requestedEmail!;
+        const existingInvitation = invitationByEmail.get(inviteEmail) ?? null;
+        let invitationId = existingInvitation?.id ?? null;
+        const invitationRoleChanged =
+          Boolean(existingInvitation) &&
+          Boolean(assignment.companyRole) &&
+          existingInvitation?.role !== assignment.companyRole;
+
+        if (!invitationId) {
+          const token = createRandomToken();
+          const inviteUrl = `${env.APP_URL}/auth/accept-invite?token=${token}`;
+
+          const [createdInvitation] = await tx
+            .insert(companyInvitations)
+            .values({
+              companyId,
+              email: inviteEmail,
+              role: assignment.companyRole!,
+              tokenHash: hashToken(token),
+              expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
+              invitedByUserId: access.user.id,
+            })
+            .returning({
+              id: companyInvitations.id,
+            });
+
+          invitationId = createdInvitation?.id ?? null;
+
+          if (!invitationId) {
+            throw new Error("Failed to create project invitation.");
+          }
+
+          invitationByEmail.set(inviteEmail, {
+            id: invitationId,
+            email: inviteEmail,
+            role: assignment.companyRole!,
+            expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
+          });
+          invitationEmailsToSend.push({
+            email: inviteEmail,
+            role: assignment.companyRole!,
+            inviteUrl,
+          });
+        } else if (invitationRoleChanged) {
+          await tx
+            .update(companyInvitations)
+            .set({
+              role: assignment.companyRole!,
+              updatedAt: new Date(),
+            })
+            .where(eq(companyInvitations.id, invitationId));
+
+          invitationByEmail.set(inviteEmail, {
+            id: invitationId,
+            email: inviteEmail,
+            role: assignment.companyRole!,
+            expiresAt: existingInvitation!.expiresAt,
+          });
+        }
+
+        const existingPendingAssignment = await tx
+          .select({
+            id: projectMemberInvitationAssignments.id,
+            projectRole: projectMemberInvitationAssignments.projectRole,
+          })
+          .from(projectMemberInvitationAssignments)
+          .where(
+            and(
+              eq(projectMemberInvitationAssignments.companyInvitationId, invitationId),
+              eq(projectMemberInvitationAssignments.projectId, input.projectId)
+            )
+          )
+          .then((rows) => rows[0] ?? null);
+
+        if (
+          existingPendingAssignment?.projectRole === assignment.projectRole &&
+          !invitationRoleChanged
+        ) {
+          summary.skippedCount += 1;
+          continue;
+        }
+
+        if (existingPendingAssignment) {
+          summary.updatedCount += 1;
+        } else {
+          summary.invitedCount += 1;
+        }
+
+        await tx
+          .insert(projectMemberInvitationAssignments)
+          .values({
+            companyInvitationId: invitationId,
+            projectId: input.projectId,
+            projectRole: assignment.projectRole,
+            createdByUserId: access.user.id,
+          })
+          .onConflictDoUpdate({
+            target: [
+              projectMemberInvitationAssignments.companyInvitationId,
+              projectMemberInvitationAssignments.projectId,
+            ],
+            set: {
+              projectRole: assignment.projectRole,
+            },
+          });
+
+        await recordActivityEvent(tx, {
+          companyId,
+          projectId: input.projectId,
+          actorUserId: access.user.id,
+          eventType: "project_member_invited",
+          entityType: "company_invitation",
+          entityId: invitationId,
+          summary: `Invited ${inviteEmail} and queued project access as ${assignment.projectRole.replaceAll("_", " ")}`,
+          metadata: {
+            email: inviteEmail,
+            companyRole: assignment.companyRole,
+            projectRole: assignment.projectRole,
+          },
+        });
+      }
+
+      if (
+        input.projectManagerUserId ||
+        input.superintendentUserId ||
+        access.context.project.projectManagerUserId ||
+        access.context.project.superintendentUserId
+      ) {
+        await tx
+          .update(projects)
+          .set({
+            projectManagerUserId:
+              input.projectManagerUserId || access.context.project.projectManagerUserId || null,
+            superintendentUserId:
+              input.superintendentUserId || access.context.project.superintendentUserId || null,
+          })
+          .where(eq(projects.id, input.projectId));
+
+        if (
+          input.projectManagerUserId &&
+          input.projectManagerUserId !== access.context.project.projectManagerUserId
+        ) {
+          await recordActivityEvent(tx, {
+            companyId,
+            projectId: input.projectId,
+            actorUserId: access.user.id,
+            eventType: "project_updated",
+            entityType: "project",
+            entityId: input.projectId,
+            summary: "Updated project manager assignment",
+            metadata: {
+              projectManagerUserId: input.projectManagerUserId,
+            },
+          });
+        }
+
+        if (
+          input.superintendentUserId &&
+          input.superintendentUserId !== access.context.project.superintendentUserId
+        ) {
+          await recordActivityEvent(tx, {
+            companyId,
+            projectId: input.projectId,
+            actorUserId: access.user.id,
+            eventType: "project_updated",
+            entityType: "project",
+            entityId: input.projectId,
+            summary: "Updated superintendent assignment",
+            metadata: {
+              superintendentUserId: input.superintendentUserId,
+            },
+          });
+        }
+      }
+    });
+
+    for (const invitation of invitationEmailsToSend) {
+      await sendCompanyInvitationEmail({
+        email: invitation.email,
+        inviterName: access.user.fullName,
+        companyName: company.name,
+        inviteUrl: invitation.inviteUrl,
+        role: invitation.role,
+      });
+    }
+
+    return success(
+      {
+        projectId: input.projectId,
+        summary,
+      },
+      formatBulkAssignmentSummary(summary)
+    );
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return failure("validation_error", "Please fix the highlighted fields.", zodFieldErrors(error));
+    }
+
+    if (isMissingPendingProjectAssignmentSchemaError(error)) {
+      return failure(
+        "project_access_schema_missing",
+        "Project invite assignments are not available yet. Run the latest database migration and try again."
+      );
+    }
+
+    return failure(
+      "assign_project_member_failed",
+      "Unable to update project access right now."
+    );
   }
 }
 
@@ -525,6 +1224,48 @@ export async function acceptInvitation(
     }
 
     await db.transaction(async (tx) => {
+      let pendingProjectAssignments: Array<{
+        id: string;
+        projectId: string;
+        projectRole: ProjectRole;
+        projectCompanyId: string;
+        projectName: string;
+      }> = [];
+
+      try {
+        pendingProjectAssignments = await tx
+          .select({
+            id: projectMemberInvitationAssignments.id,
+            projectId: projectMemberInvitationAssignments.projectId,
+            projectRole: projectMemberInvitationAssignments.projectRole,
+            projectCompanyId: projects.companyId,
+            projectName: projects.name,
+          })
+          .from(projectMemberInvitationAssignments)
+          .innerJoin(
+            projects,
+            eq(projectMemberInvitationAssignments.projectId, projects.id)
+          )
+          .where(
+            and(
+              eq(projectMemberInvitationAssignments.companyInvitationId, invitation.id),
+              sql`${projectMemberInvitationAssignments.acceptedAt} is null`
+            )
+          );
+      } catch (error) {
+        if (!isMissingPendingProjectAssignmentSchemaError(error)) {
+          throw error;
+        }
+      }
+
+      const invalidPendingAssignment = pendingProjectAssignments.find(
+        (assignment) => assignment.projectCompanyId !== invitation.companyId
+      );
+
+      if (invalidPendingAssignment) {
+        throw new Error("Invitation has invalid pending project assignments.");
+      }
+
       await tx
         .insert(companyMemberships)
         .values({
@@ -561,6 +1302,44 @@ export async function acceptInvitation(
           updatedAt: new Date(),
         })
         .where(eq(companyInvitations.id, invitation.id));
+
+      for (const assignment of pendingProjectAssignments) {
+        await tx
+          .insert(projectMembers)
+          .values({
+            projectId: assignment.projectId,
+            userId: user.id,
+            role: assignment.projectRole,
+          })
+          .onConflictDoUpdate({
+            target: [projectMembers.projectId, projectMembers.userId],
+            set: {
+              role: assignment.projectRole,
+            },
+          });
+
+        await tx
+          .update(projectMemberInvitationAssignments)
+          .set({
+            acceptedAt: new Date(),
+          })
+          .where(eq(projectMemberInvitationAssignments.id, assignment.id));
+
+        await recordActivityEvent(tx, {
+          companyId: invitation.companyId,
+          projectId: assignment.projectId,
+          actorUserId: user.id,
+          eventType: "project_member_activated",
+          entityType: "project_member",
+          entityId: user.id,
+          summary: `Activated project access for ${user.email} on ${assignment.projectName}`,
+          metadata: {
+            userId: user.id,
+            email: user.email,
+            role: assignment.projectRole,
+          },
+        });
+      }
 
       await recordActivityEvent(tx, {
         companyId: invitation.companyId,
