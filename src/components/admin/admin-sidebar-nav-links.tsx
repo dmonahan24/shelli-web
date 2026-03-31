@@ -42,7 +42,7 @@ export function AdminSidebarNavLinks() {
               activeProps={{
                 "data-active": true,
               }}
-              className="data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground"
+              className="text-sidebar-foreground/80 hover:text-sidebar-accent-foreground data-[active=true]:text-sidebar-accent-foreground"
             >
               <item.icon className="size-4" />
               <span>{item.label}</span>
