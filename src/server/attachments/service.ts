@@ -36,11 +36,15 @@ function normalizeOptionalText(value?: string | null) {
 }
 
 export async function listProjectAttachments(projectId: string, rawInput?: unknown) {
-  await requireProjectAccess(projectId, "view");
-  return listProjectAttachmentsQuery(projectId, rawInput);
+  const access = await requireProjectAccess(projectId, "view");
+  return listProjectAttachmentsQuery(projectId, rawInput, access.context.project.companyId);
 }
 
-export async function listProjectAttachmentsQuery(projectId: string, rawInput?: unknown) {
+export async function listProjectAttachmentsQuery(
+  projectId: string,
+  rawInput?: unknown,
+  companyId?: string
+) {
   await ensureHumanFriendlyUrlSchema();
 
   const input = attachmentListSchema.parse({
@@ -48,7 +52,10 @@ export async function listProjectAttachmentsQuery(projectId: string, rawInput?: 
     ...(rawInput ?? {}),
   });
   const offset = (input.page - 1) * input.pageSize;
-  const whereClause = eq(attachments.projectId, projectId);
+  const whereClause = and(
+    eq(attachments.projectId, projectId),
+    companyId ? eq(attachments.companyId, companyId) : undefined
+  );
 
   const [rows, totalCountRows] = await Promise.all([
     db

@@ -10,6 +10,7 @@ import {
   isTenantUserPrincipal,
 } from "@/lib/auth/principal";
 import { resolvePrincipalFromAuthUser } from "@/lib/auth/resolve-principal";
+import { memoizeRequestPromise, measureRequestSpan } from "@/lib/server/request-context";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export function getRequestIpAddress() {
@@ -34,32 +35,41 @@ export async function revokeUserSessions(_userId: string) {
 }
 
 export async function getCurrentPrincipal(): Promise<AppPrincipal | null> {
-  const cookie = readSessionCookie();
-  if (!cookie) {
-    return null;
-  }
+  return memoizeRequestPromise("auth:current-principal", async () =>
+    measureRequestSpan("auth.resolve_principal", async () => {
+      const cookie = readSessionCookie();
+      if (!cookie) {
+        return null;
+      }
 
-  const supabase = createSupabaseServerClient();
-  const { data, error } = await supabase.auth.setSession({
-    access_token: cookie.accessToken,
-    refresh_token: cookie.refreshToken,
-  });
+      const supabase = createSupabaseServerClient();
+      const { data, error } = await supabase.auth.setSession({
+        access_token: cookie.accessToken,
+        refresh_token: cookie.refreshToken,
+      });
 
-  if (error || !data.session) {
-    clearSessionCookie();
-    return null;
-  }
+      if (error || !data.session) {
+        clearSessionCookie();
+        return null;
+      }
 
-  setSessionCookie(data.session, cookie.rememberMe);
+      if (
+        data.session.access_token !== cookie.accessToken ||
+        data.session.refresh_token !== cookie.refreshToken
+      ) {
+        setSessionCookie(data.session, cookie.rememberMe);
+      }
 
-  const resolvedPrincipal = await resolvePrincipalFromAuthUser(data.session.user);
+      const resolvedPrincipal = await resolvePrincipalFromAuthUser(data.session.user);
 
-  if (resolvedPrincipal.kind === "inactive_tenant_user") {
-    clearSessionCookie();
-    return null;
-  }
+      if (resolvedPrincipal.kind === "inactive_tenant_user") {
+        clearSessionCookie();
+        return null;
+      }
 
-  return resolvedPrincipal;
+      return resolvedPrincipal;
+    })
+  );
 }
 
 export async function getCurrentUser() {

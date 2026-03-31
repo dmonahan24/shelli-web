@@ -46,9 +46,22 @@ export function ProjectMembersCard({
 }: {
   projectId: string;
   projectName: string;
-  roster: ProjectAccessRoster;
+  roster: ProjectAccessRoster | null;
   onMutationComplete?: () => void;
 }) {
+  if (!roster) {
+    return (
+      <Card className="border-border/70">
+        <CardHeader>
+          <CardTitle className="text-base">Project Access</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">Loading project access details...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="border-border/70">
       <CardHeader className="flex flex-row items-center justify-between gap-4">

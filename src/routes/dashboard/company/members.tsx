@@ -1,10 +1,12 @@
 // @ts-nocheck
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, getRouteApi, redirect } from "@tanstack/react-router";
 import { ListPendingPage } from "@/components/navigation/page-pending";
 import { InviteMemberDialog } from "@/components/company/invite-member-dialog";
 import { MembersTable } from "@/components/company/members-table";
 import { READ_ROUTE_CACHE_OPTIONS } from "@/lib/router-cache";
-import { getCompanyOverviewServerFn, listMembersServerFn } from "@/server/company/list-members";
+import { listMembersServerFn } from "@/server/company/list-members";
+
+const dashboardRouteApi = getRouteApi("/dashboard");
 
 export const Route = createFileRoute("/dashboard/company/members")({
   ...READ_ROUTE_CACHE_OPTIONS,
@@ -13,16 +15,16 @@ export const Route = createFileRoute("/dashboard/company/members")({
       throw redirect({ to: "/dashboard" });
     }
   },
-  loader: async () => {
-    const [overview, members] = await Promise.all([getCompanyOverviewServerFn(), listMembersServerFn()]);
-    return { overview, members };
-  },
+  loader: async () => listMembersServerFn(),
   pendingComponent: ListPendingPage,
   component: CompanyMembersPage,
 });
 
 function CompanyMembersPage() {
-  const data = Route.useLoaderData();
+  const rows = Route.useLoaderData();
+  const user = dashboardRouteApi.useRouteContext({
+    select: (context) => context.user,
+  });
 
   return (
     <div className="space-y-6">
@@ -31,9 +33,9 @@ function CompanyMembersPage() {
           <p className="text-sm font-medium text-muted-foreground">Company</p>
           <h1 className="text-2xl font-semibold tracking-tight">Members</h1>
         </div>
-        <InviteMemberDialog companyId={data.overview.company.id} />
+        <InviteMemberDialog companyId={user.companyId} />
       </div>
-      <MembersTable companyId={data.overview.company.id} rows={data.members} />
+      <MembersTable companyId={user.companyId} rows={rows} />
     </div>
   );
 }

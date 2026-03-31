@@ -1,6 +1,8 @@
+import * as React from "react";
 import { Link, createFileRoute, notFound, redirect, useRouter } from "@tanstack/react-router";
 import { AttachmentUploadDialog } from "@/components/attachments/attachment-upload-dialog";
 import { ProjectAttachmentsCard } from "@/components/attachments/project-attachments-card";
+import { RecentActivityFeed } from "@/components/analytics/recent-activity-feed";
 import { ProjectMembersCard } from "@/components/company/project-members-card";
 import { ProjectBuildingsSection } from "@/components/hierarchy/project-buildings-section";
 import { DetailPendingPage } from "@/components/navigation/page-pending";
@@ -13,8 +15,22 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getProjectRouteParams } from "@/lib/project-paths";
 import { HIERARCHY_ROUTE_CACHE_OPTIONS } from "@/lib/router-cache";
-import { formatDateTime } from "@/lib/utils/format";
-import { getProjectPageDataServerFn } from "@/server/navigation/page-data";
+import {
+  getProjectPageDataServerFn,
+  getProjectPageDeferredDataServerFn,
+} from "@/server/navigation/page-data";
+
+type ProjectPageDeferredData = {
+  accessRoster: any;
+  attachments: any;
+  recentActivity: Array<{
+    actorName?: string | null;
+    createdAt?: Date | string | null;
+    eventType?: string | null;
+    id: string;
+    summary?: string | null;
+  }>;
+};
 
 export const Route = createFileRoute("/dashboard/projects/$projectIdentifier/")({
   ...HIERARCHY_ROUTE_CACHE_OPTIONS,
@@ -44,8 +60,35 @@ export const Route = createFileRoute("/dashboard/projects/$projectIdentifier/")(
 
 function ProjectDetailPage() {
   const router = useRouter();
-  const { attachments, accessRoster, buildings, detail, pours } = Route.useLoaderData();
+  const { buildings, detail, pours } = Route.useLoaderData();
+  const routeParams = Route.useParams();
   const projectParams = getProjectRouteParams(detail.project);
+  const [deferredData, setDeferredData] = React.useState<ProjectPageDeferredData | null>(null);
+  const [isDeferredLoading, setIsDeferredLoading] = React.useState(true);
+
+  const refreshDeferredData = React.useCallback(async () => {
+    setIsDeferredLoading(true);
+
+    try {
+      const result = (await getProjectPageDeferredDataServerFn({
+        data: {
+          cause: "enter",
+          params: routeParams,
+        },
+      })) as any;
+
+      if (result.status === "success") {
+        setDeferredData(result.data);
+      }
+    } finally {
+      setIsDeferredLoading(false);
+    }
+  }, [routeParams]);
+
+  React.useEffect(() => {
+    setDeferredData(null);
+    void refreshDeferredData();
+  }, [refreshDeferredData]);
 
   return (
     <div className="space-y-6">
@@ -87,8 +130,8 @@ function ProjectDetailPage() {
           <ProjectMembersCard
             projectId={detail.project.id}
             projectName={detail.project.name}
-            roster={accessRoster}
-            onMutationComplete={() => router.invalidate()}
+            roster={deferredData?.accessRoster ?? null}
+            onMutationComplete={() => refreshDeferredData()}
           />
           <ProjectBuildingsSection
             buildings={buildings}
@@ -110,29 +153,14 @@ function ProjectDetailPage() {
         <div className="space-y-6">
           <ProjectInfoCard project={detail.project} />
           <ProjectAttachmentsCard
-            initialData={attachments}
-            onMutationComplete={() => router.invalidate()}
+            initialData={deferredData?.attachments ?? null}
+            onMutationComplete={() => refreshDeferredData()}
             projectId={detail.project.id}
           />
-          <Card className="rounded-[24px] border-border/70 bg-card/90 shadow-sm">
-            <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {detail.recentActivity.length > 0 ? (
-                detail.recentActivity.map((activity: any) => (
-                  <div key={activity.id} className="space-y-1 text-sm">
-                    <p className="font-medium">{activity.summary}</p>
-                    <p className="text-muted-foreground">
-                      {activity.actorName} • {formatDateTime(activity.createdAt)}
-                    </p>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground">No recent activity yet.</p>
-              )}
-            </CardContent>
-          </Card>
+          <ProjectDeferredActivityCard
+            isLoading={isDeferredLoading}
+            items={deferredData?.recentActivity ?? []}
+          />
           <DangerZoneCard>
             <DeleteProjectDialog
               attachmentCount={detail.summary.totalAttachments}
@@ -146,4 +174,33 @@ function ProjectDetailPage() {
       </div>
     </div>
   );
+}
+
+function ProjectDeferredActivityCard({
+  isLoading,
+  items,
+}: {
+  isLoading: boolean;
+  items: Array<{
+    actorName?: string | null;
+    createdAt?: Date | string | null;
+    eventType?: string | null;
+    id: string;
+    summary?: string | null;
+  }>;
+}) {
+  if (isLoading && items.length === 0) {
+    return (
+      <Card className="rounded-[24px] border-border/70 bg-card/90 shadow-sm">
+        <CardHeader>
+          <CardTitle>Recent Activity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">Loading recent project activity...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return <RecentActivityFeed items={items} />;
 }

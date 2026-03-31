@@ -1,10 +1,12 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { ZodError } from "zod";
 import { db } from "@/db";
 import { attachments, loadTickets, pours, projects } from "@/db/schema";
+import type { TenantUserPrincipal } from "@/lib/auth/principal";
 import { assertSameOrigin } from "@/lib/auth/csrf";
 import { listAccessibleProjectIds, requireProjectAccess } from "@/lib/auth/project-access";
 import { requireTenantUser } from "@/lib/auth/session";
+import { measureRequestSpan } from "@/lib/server/request-context";
 import {
   fieldAttachmentUploadSchema,
   quickPourSchema,
@@ -39,82 +41,176 @@ function toNumber(value: string | number | null | undefined) {
   return value ? Number(value) : 0;
 }
 
-export async function getFieldHomeData() {
-  const user = await requireTenantUser();
+async function listFieldProjects(
+  user: Pick<TenantUserPrincipal, "id" | "companyId" | "role">,
+  limit: number
+) {
   await ensureHumanFriendlyUrlSchema();
   const projectIds = await listAccessibleProjectIds(user, user.companyId);
 
   if (projectIds.length === 0) {
-    return {
-      projects: [],
-      recentActivity: [],
-      documentationTasks: [],
-    };
+    return [];
   }
 
-  const [projectRows, recentActivity, recentPours, recentAttachments] = await Promise.all([
-    db
-      .select({
-        id: projects.id,
-        name: projects.name,
-        slug: projects.slug,
-        status: projects.status,
-        estimatedTotalConcrete: projects.estimatedTotalConcrete,
-        totalConcretePoured: projects.totalConcretePoured,
-        lastPourDate: projects.lastPourDate,
-      })
-      .from(projects)
-      .where(inArray(projects.id, projectIds))
-      .orderBy(desc(projects.updatedAt))
-      .limit(8),
-    listRecentActivity({
-      companyId: user.companyId,
-      limit: 6,
-    }),
+  return db
+    .select({
+      id: projects.id,
+      name: projects.name,
+      slug: projects.slug,
+      status: projects.status,
+      estimatedTotalConcrete: projects.estimatedTotalConcrete,
+      totalConcretePoured: projects.totalConcretePoured,
+      lastPourDate: projects.lastPourDate,
+    })
+    .from(projects)
+    .where(and(eq(projects.companyId, user.companyId), inArray(projects.id, projectIds)))
+    .orderBy(desc(projects.updatedAt))
+    .limit(limit);
+}
+
+async function buildFieldDocumentationTasks(
+  companyId: string,
+  projectRows: Array<{
+    id: string;
+    name: string;
+    slug: string | null;
+    status: string;
+    estimatedTotalConcrete: string | number | null;
+    totalConcretePoured: string | number | null;
+    lastPourDate: string | null;
+  }>
+) {
+  if (projectRows.length === 0) {
+    return [];
+  }
+
+  const projectIds = projectRows.map((project) => project.id);
+  const [pourCountRows, attachmentCountRows] = await Promise.all([
     db
       .select({
         projectId: pours.projectId,
-        date: pours.scheduledDate,
+        count: sql<number>`count(*)`,
       })
       .from(pours)
-      .where(inArray(pours.projectId, projectIds))
-      .orderBy(desc(pours.scheduledDate)),
+      .where(and(eq(pours.companyId, companyId), inArray(pours.projectId, projectIds)))
+      .groupBy(pours.projectId),
     db
       .select({
         projectId: attachments.projectId,
         attachmentType: attachments.attachmentType,
+        count: sql<number>`count(*)`,
       })
       .from(attachments)
-      .where(inArray(attachments.projectId, projectIds))
-      .orderBy(desc(attachments.createdAt)),
+      .where(and(eq(attachments.companyId, companyId), inArray(attachments.projectId, projectIds)))
+      .groupBy(attachments.projectId, attachments.attachmentType),
   ]);
 
-  const documentationTasks = projectRows.flatMap((project) =>
+  const pourCountByProjectId = new Map(
+    pourCountRows.map((row) => [row.projectId, row.count])
+  );
+  const attachmentCountsByProjectId = new Map<
+    string,
+    {
+      photoCount: number;
+      ticketCount: number;
+    }
+  >();
+
+  for (const row of attachmentCountRows) {
+    const current = attachmentCountsByProjectId.get(row.projectId) ?? {
+      photoCount: 0,
+      ticketCount: 0,
+    };
+
+    if (row.attachmentType === "photo") {
+      current.photoCount = row.count;
+    }
+
+    if (row.attachmentType === "delivery_ticket") {
+      current.ticketCount = row.count;
+    }
+
+    attachmentCountsByProjectId.set(row.projectId, current);
+  }
+
+  return projectRows.flatMap((project) =>
     buildDocumentationTasks({
       projectName: project.name,
-      recentPourCount: recentPours.filter((row) => row.projectId === project.id).length,
-      recentPhotoCount: recentAttachments.filter(
-        (row) => row.projectId === project.id && row.attachmentType === "photo"
-      ).length,
-      recentTicketCount: recentAttachments.filter(
-        (row) => row.projectId === project.id && row.attachmentType === "delivery_ticket"
-      ).length,
+      recentPourCount: pourCountByProjectId.get(project.id) ?? 0,
+      recentPhotoCount: attachmentCountsByProjectId.get(project.id)?.photoCount ?? 0,
+      recentTicketCount: attachmentCountsByProjectId.get(project.id)?.ticketCount ?? 0,
     }).map((task) => ({
       ...task,
       projectId: project.id,
     }))
   );
+}
+
+export async function getFieldHomeCriticalData(
+  user?: Pick<TenantUserPrincipal, "id" | "companyId" | "role">
+) {
+  const resolvedUser = user ?? (await requireTenantUser());
+
+  return measureRequestSpan(
+    "field.home_critical",
+    async () => {
+      const projectRows = await listFieldProjects(resolvedUser, 8);
+      const documentationTasks = await buildFieldDocumentationTasks(
+        resolvedUser.companyId,
+        projectRows
+      );
+
+      return {
+        projects: projectRows.map((project) => ({
+          ...project,
+          remainingConcrete: calculateRemainingConcrete(
+            toNumber(project.totalConcretePoured),
+            toNumber(project.estimatedTotalConcrete)
+          ),
+        })),
+        documentationTasks,
+      };
+    },
+    {
+      details: (result) => ({
+        projects: result.projects.length,
+        tasks: result.documentationTasks.length,
+      }),
+    }
+  );
+}
+
+export async function getFieldHomeDeferredData(
+  user?: Pick<TenantUserPrincipal, "id" | "companyId" | "role">
+) {
+  const resolvedUser = user ?? (await requireTenantUser());
+
+  return measureRequestSpan(
+    "field.home_deferred",
+    async () => ({
+      recentActivity: await listRecentActivity({
+        companyId: resolvedUser.companyId,
+        limit: 6,
+      }),
+    }),
+    {
+      details: (result) => ({
+        recentActivity: result.recentActivity.length,
+      }),
+    }
+  );
+}
+
+export async function getFieldHomeData() {
+  const user = await requireTenantUser();
+  const [critical, deferred] = await Promise.all([
+    getFieldHomeCriticalData(user),
+    getFieldHomeDeferredData(user),
+  ]);
 
   return {
-    projects: projectRows.map((project) => ({
-      ...project,
-      remainingConcrete: calculateRemainingConcrete(
-        toNumber(project.totalConcretePoured),
-        toNumber(project.estimatedTotalConcrete)
-      ),
-    })),
-    recentActivity,
-    documentationTasks,
+    ...critical,
+    ...deferred,
   };
 }
 

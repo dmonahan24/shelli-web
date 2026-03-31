@@ -4,6 +4,7 @@ import { companies, companyMemberships, users } from "@/db/schema";
 import { normalizeAppUserRole, type AppUserRole, type TenantUserPrincipal } from "@/lib/auth/principal";
 import { hasCompanyPermission } from "@/lib/auth/permissions";
 import { requireTenantUser } from "@/lib/auth/session";
+import { memoizeRequestPromise, measureRequestSpan } from "@/lib/server/request-context";
 
 export type CompanyAccessContext = {
   user: TenantUserPrincipal;
@@ -53,44 +54,50 @@ export async function ensureLegacyCompanyMembership(userId: string, companyId: s
 }
 
 export async function getCompanyMembershipForUser(userId: string, companyId: string) {
-  return (
-    (await db
-      .select({
-        membershipId: companyMemberships.id,
-        role: companyMemberships.role,
-        status: companyMemberships.status,
-        joinedAt: companyMemberships.joinedAt,
-        companyId: companies.id,
-        companyName: companies.name,
-        companySlug: companies.slug,
+  return memoizeRequestPromise(
+    `auth:company-membership:${userId}:${companyId}`,
+    async () =>
+      measureRequestSpan("auth.company_membership", async () => {
+        return (
+          (await db
+            .select({
+              membershipId: companyMemberships.id,
+              role: companyMemberships.role,
+              status: companyMemberships.status,
+              joinedAt: companyMemberships.joinedAt,
+              companyId: companies.id,
+              companyName: companies.name,
+              companySlug: companies.slug,
+            })
+            .from(companyMemberships)
+            .innerJoin(companies, eq(companyMemberships.companyId, companies.id))
+            .where(and(eq(companyMemberships.userId, userId), eq(companyMemberships.companyId, companyId)))
+            .then((rows) => rows[0] ?? null)) ??
+          (await ensureLegacyCompanyMembership(userId, companyId).then(async (membership) => {
+            if (!membership) {
+              return null;
+            }
+
+            const company = await db.query.companies.findFirst({
+              where: eq(companies.id, companyId),
+            });
+
+            if (!company) {
+              return null;
+            }
+
+            return {
+              membershipId: membership.id,
+              role: normalizeAppUserRole(membership.role),
+              status: membership.status,
+              joinedAt: membership.joinedAt,
+              companyId: company.id,
+              companyName: company.name,
+              companySlug: company.slug,
+            };
+          }))
+        );
       })
-      .from(companyMemberships)
-      .innerJoin(companies, eq(companyMemberships.companyId, companies.id))
-      .where(and(eq(companyMemberships.userId, userId), eq(companyMemberships.companyId, companyId)))
-      .then((rows) => rows[0] ?? null)) ??
-    (await ensureLegacyCompanyMembership(userId, companyId).then(async (membership) => {
-      if (!membership) {
-        return null;
-      }
-
-      const company = await db.query.companies.findFirst({
-        where: eq(companies.id, companyId),
-      });
-
-      if (!company) {
-        return null;
-      }
-
-      return {
-        membershipId: membership.id,
-        role: normalizeAppUserRole(membership.role),
-        status: membership.status,
-        joinedAt: membership.joinedAt,
-        companyId: company.id,
-        companyName: company.name,
-        companySlug: company.slug,
-      };
-    }))
   );
 }
 

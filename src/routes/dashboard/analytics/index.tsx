@@ -1,13 +1,28 @@
 // @ts-nocheck
+import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { AnalyticsKpiCards } from "@/components/analytics/analytics-kpi-cards";
-import { ConcretePouredOverTimeChart } from "@/components/analytics/concrete-poured-over-time-chart";
-import { ProjectStatusBreakdownChart } from "@/components/analytics/project-status-breakdown-chart";
 import { RecentActivityFeed } from "@/components/analytics/recent-activity-feed";
-import { TopProjectsChart } from "@/components/analytics/top-projects-chart";
 import { AnalyticsPendingPage } from "@/components/navigation/page-pending";
-import { READ_ROUTE_CACHE_OPTIONS } from "@/lib/router-cache";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SUMMARY_ROUTE_CACHE_OPTIONS } from "@/lib/router-cache";
 import { getCompanyAnalyticsOverviewServerFn } from "@/server/analytics/get-company-analytics-overview";
+
+const ConcretePouredOverTimeChart = React.lazy(() =>
+  import("@/components/analytics/concrete-poured-over-time-chart").then((module) => ({
+    default: module.ConcretePouredOverTimeChart,
+  }))
+);
+const ProjectStatusBreakdownChart = React.lazy(() =>
+  import("@/components/analytics/project-status-breakdown-chart").then((module) => ({
+    default: module.ProjectStatusBreakdownChart,
+  }))
+);
+const TopProjectsChart = React.lazy(() =>
+  import("@/components/analytics/top-projects-chart").then((module) => ({
+    default: module.TopProjectsChart,
+  }))
+);
 
 function defaultDateRange() {
   const to = new Date();
@@ -20,7 +35,7 @@ function defaultDateRange() {
 }
 
 export const Route = createFileRoute("/dashboard/analytics/")({
-  ...READ_ROUTE_CACHE_OPTIONS,
+  ...SUMMARY_ROUTE_CACHE_OPTIONS,
   loader: async () =>
     getCompanyAnalyticsOverviewServerFn({
       data: {
@@ -50,12 +65,29 @@ function AnalyticsOverviewPage() {
           { label: "This Month", value: `${data.kpis.totalConcretePouredThisMonth.toFixed(0)} yds` },
         ]}
       />
-      <div className="grid gap-6 xl:grid-cols-2">
-        <ConcretePouredOverTimeChart data={data.charts.concretePouredOverTime} />
-        <ProjectStatusBreakdownChart data={data.charts.projectStatusBreakdown} />
-      </div>
-      <TopProjectsChart data={data.charts.topProjectsByConcrete} />
+      <React.Suspense fallback={<AnalyticsChartsLoadingState />}>
+        <div className="grid gap-6 xl:grid-cols-2">
+          <ConcretePouredOverTimeChart data={data.charts.concretePouredOverTime} />
+          <ProjectStatusBreakdownChart data={data.charts.projectStatusBreakdown} />
+        </div>
+        <TopProjectsChart data={data.charts.topProjectsByConcrete} />
+      </React.Suspense>
       <RecentActivityFeed items={data.recentFieldActivity} />
     </div>
+  );
+}
+
+function AnalyticsChartsLoadingState() {
+  return (
+    <Card className="border-border/70">
+      <CardHeader>
+        <CardTitle className="text-base">Loading charts</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-muted-foreground">
+          Preparing the latest production charts for this company.
+        </p>
+      </CardContent>
+    </Card>
   );
 }

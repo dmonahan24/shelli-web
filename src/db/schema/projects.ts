@@ -64,6 +64,10 @@ export const projects = pgTable(
       table.companyId,
       table.dateStarted
     ),
+    companyUpdatedAtIndex: index("projects_company_updated_at_idx").on(
+      table.companyId,
+      table.updatedAt.desc()
+    ),
     companySlugIndex: uniqueIndex("projects_company_slug_idx").on(
       table.companyId,
       table.slug

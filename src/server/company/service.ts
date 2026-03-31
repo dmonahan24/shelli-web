@@ -36,6 +36,11 @@ import {
 import { acceptInvitationSchema, type AcceptInvitationInput } from "@/lib/validation/invitation";
 import { failure, success, type ActionResult } from "@/lib/utils/action-result";
 import { env } from "@/lib/env/server";
+import {
+  cacheServerRead,
+  invalidateServerReadCache,
+} from "@/lib/server/read-cache";
+import { measureRequestSpan } from "@/lib/server/request-context";
 import { createProject } from "@/server/projects/service";
 import { sendCompanyInvitationEmail } from "@/server/auth/email";
 import { recordActivityEvent } from "@/server/activity/service";
@@ -164,52 +169,77 @@ export async function getCompanyOverview() {
   const user = await requireTenantUser();
   const access = await requireCompanyMembership(user.companyId);
 
-  const [memberCountRows, activeProjectCountRows, monthlyPourStatsRows, pendingInviteCountRows] =
-    await Promise.all([
-      db
-        .select({ count: sql<number>`count(*)` })
-        .from(companyMemberships)
-        .where(and(eq(companyMemberships.companyId, access.company.id), eq(companyMemberships.status, "active"))),
-      db
-        .select({ count: sql<number>`count(*)` })
-        .from(projects)
-        .where(and(eq(projects.companyId, access.company.id), eq(projects.status, "active"))),
-      db
-        .select({
-          count: sql<number>`count(*)`,
-          totalConcrete: sql<number>`coalesce(sum(${pours.actualVolume}), 0)`,
-        })
-        .from(pours)
-        .where(
-          and(
-            eq(pours.companyId, access.company.id),
-            sql`${pours.scheduledDate} >= date_trunc('month', now())::date`
-          )
-        ),
-      db
-        .select({ count: sql<number>`count(*)` })
-        .from(companyInvitations)
-        .where(
-          and(
-            eq(companyInvitations.companyId, access.company.id),
-            sql`${companyInvitations.acceptedAt} is null`,
-            sql`${companyInvitations.revokedAt} is null`,
-            sql`${companyInvitations.expiresAt} > now()`
-          )
-        ),
-    ]);
+  return cacheServerRead(
+    `company-overview:${access.company.id}:${access.membership.role}`,
+    15_000,
+    async () =>
+      measureRequestSpan(
+        "company.overview",
+        async () => {
+          const [
+            memberCountRows,
+            activeProjectCountRows,
+            monthlyPourStatsRows,
+            pendingInviteCountRows,
+          ] = await Promise.all([
+            db
+              .select({ count: sql<number>`count(*)` })
+              .from(companyMemberships)
+              .where(
+                and(
+                  eq(companyMemberships.companyId, access.company.id),
+                  eq(companyMemberships.status, "active")
+                )
+              ),
+            db
+              .select({ count: sql<number>`count(*)` })
+              .from(projects)
+              .where(and(eq(projects.companyId, access.company.id), eq(projects.status, "active"))),
+            db
+              .select({
+                count: sql<number>`count(*)`,
+                totalConcrete: sql<number>`coalesce(sum(${pours.actualVolume}), 0)`,
+              })
+              .from(pours)
+              .where(
+                and(
+                  eq(pours.companyId, access.company.id),
+                  sql`${pours.scheduledDate} >= date_trunc('month', now())::date`
+                )
+              ),
+            db
+              .select({ count: sql<number>`count(*)` })
+              .from(companyInvitations)
+              .where(
+                and(
+                  eq(companyInvitations.companyId, access.company.id),
+                  sql`${companyInvitations.acceptedAt} is null`,
+                  sql`${companyInvitations.revokedAt} is null`,
+                  sql`${companyInvitations.expiresAt} > now()`
+                )
+              ),
+          ]);
 
-  return {
-    company: access.company,
-    membershipRole: access.membership.role,
-    metrics: {
-      totalMembers: memberCountRows[0]?.count ?? 0,
-      totalActiveProjects: activeProjectCountRows[0]?.count ?? 0,
-      totalPoursThisMonth: monthlyPourStatsRows[0]?.count ?? 0,
-      totalConcreteThisMonth: Number(monthlyPourStatsRows[0]?.totalConcrete ?? 0),
-      pendingInvitations: pendingInviteCountRows[0]?.count ?? 0,
-    },
-  };
+          return {
+            company: access.company,
+            membershipRole: access.membership.role,
+            metrics: {
+              totalMembers: memberCountRows[0]?.count ?? 0,
+              totalActiveProjects: activeProjectCountRows[0]?.count ?? 0,
+              totalPoursThisMonth: monthlyPourStatsRows[0]?.count ?? 0,
+              totalConcreteThisMonth: Number(monthlyPourStatsRows[0]?.totalConcrete ?? 0),
+              pendingInvitations: pendingInviteCountRows[0]?.count ?? 0,
+            },
+          };
+        },
+        {
+          details: (result) => ({
+            members: result.metrics.totalMembers,
+            activeProjects: result.metrics.totalActiveProjects,
+          }),
+        }
+      )
+  );
 }
 
 export async function listMembers() {
@@ -562,6 +592,8 @@ export async function inviteMember(
       role: input.role,
     });
 
+    invalidateServerReadCache(`company-overview:${input.companyId}`);
+
     return success(
       {
         invitationId: invitation.id,
@@ -616,6 +648,8 @@ export async function resendInvitation(
       role: invitation.role,
     });
 
+    invalidateServerReadCache(`company-overview:${input.companyId}`);
+
     return success({ invitationId: invitation.id, inviteUrl }, "Invitation resent.");
   } catch (error) {
     if (error instanceof ZodError) {
@@ -648,6 +682,8 @@ export async function revokeInvitation(
       .update(companyInvitations)
       .set({ revokedAt: new Date() })
       .where(eq(companyInvitations.id, invitation.id));
+
+    invalidateServerReadCache(`company-overview:${input.companyId}`);
 
     return success({ invitationId: invitation.id }, "Invitation revoked.");
   } catch (error) {
@@ -706,6 +742,9 @@ export async function updateMemberRole(
         },
       });
     });
+
+    invalidateServerReadCache(`company-overview:${input.companyId}`);
+    invalidateServerReadCache(`analytics:company:${input.companyId}`);
 
     return success({ membershipId: membership.id }, "Member role updated.");
   } catch (error) {
@@ -1194,6 +1233,9 @@ export async function bulkAssignProjectMembers(
       });
     }
 
+    invalidateServerReadCache(`company-overview:${companyId}`);
+    invalidateServerReadCache(`analytics:company:${companyId}`);
+
     return success(
       {
         projectId: input.projectId,
@@ -1373,6 +1415,9 @@ export async function acceptInvitation(
         },
       });
     });
+
+    invalidateServerReadCache(`company-overview:${invitation.companyId}`);
+    invalidateServerReadCache(`analytics:company:${invitation.companyId}`);
 
     return success({ redirectTo: "/dashboard/company" }, "Invitation accepted.");
   } catch (error) {

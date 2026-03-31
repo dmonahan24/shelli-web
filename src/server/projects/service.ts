@@ -5,8 +5,11 @@ import { attachments, projectBuildings, projectMembers, projects, pours } from "
 import { assertSameOrigin } from "@/lib/auth/csrf";
 import { requireCompanyMembership } from "@/lib/auth/company-access";
 import { hasCompanyPermission } from "@/lib/auth/permissions";
+import type { TenantUserPrincipal } from "@/lib/auth/principal";
 import { listAccessibleProjectIds, requireProjectAccess } from "@/lib/auth/project-access";
 import { requireTenantUser } from "@/lib/auth/session";
+import { invalidateServerReadCache } from "@/lib/server/read-cache";
+import { measureRequestSpan } from "@/lib/server/request-context";
 import {
   createProjectSchema,
   deleteProjectSchema,
@@ -20,7 +23,7 @@ import {
   type ProjectListQuery,
 } from "@/lib/validation/project-list";
 import { failure, success, type ActionResult } from "@/lib/utils/action-result";
-import { listRecentActivity, recordActivityEvent } from "@/server/activity/service";
+import { recordActivityEvent } from "@/server/activity/service";
 import { ensureHumanFriendlyUrlSchema } from "@/server/navigation/schema-compat";
 import { generateProjectSlug } from "@/server/navigation/service";
 import { deleteStoredFile } from "@/server/attachments/storage";
@@ -110,72 +113,90 @@ function toNumber(value: string | number | null | undefined) {
 }
 
 export async function listProjects(rawInput?: unknown) {
-  const user = await requireTenantUser();
-  await ensureHumanFriendlyUrlSchema();
-  const input = projectListQuerySchema.parse(rawInput ?? {});
-  const accessibleProjectIds = await listAccessibleProjectIds(user, user.companyId);
+  return listProjectsForUser(await requireTenantUser(), rawInput);
+}
 
-  if (accessibleProjectIds.length === 0) {
-    return {
-      rows: [],
-      totalCount: 0,
-      page: input.page,
-      pageSize: input.pageSize,
-      pageCount: 1,
-      cursor: null as string | null,
-    };
-  }
+export async function listProjectsForUser(
+  user: Pick<TenantUserPrincipal, "id" | "companyId" | "role">,
+  rawInput?: unknown
+) {
+  return measureRequestSpan(
+    "projects.list",
+    async () => {
+      await ensureHumanFriendlyUrlSchema();
+      const input = projectListQuerySchema.parse(rawInput ?? {});
+      const accessibleProjectIds = await listAccessibleProjectIds(user, user.companyId);
 
-  const filters = buildProjectFilters(user.companyId, accessibleProjectIds, input);
-  const whereClause = and(...filters);
-  const orderByClauses = getProjectOrderBy(input);
-  const offset = (input.page - 1) * input.pageSize;
+      if (accessibleProjectIds.length === 0) {
+        return {
+          rows: [],
+          totalCount: 0,
+          page: input.page,
+          pageSize: input.pageSize,
+          pageCount: 1,
+          cursor: null as string | null,
+        };
+      }
 
-  const [rows, totalCountRows] = await Promise.all([
-    db
-      .select({
-        id: projects.id,
-        name: projects.name,
-        slug: projects.slug,
-        address: projects.address,
-        status: projects.status,
-        projectCode: projects.projectCode,
-        description: projects.description,
-        dateStarted: projects.dateStarted,
-        estimatedCompletionDate: projects.estimatedCompletionDate,
-        lastPourDate: projects.lastPourDate,
-        totalConcretePoured: projects.totalConcretePoured,
-        estimatedTotalConcrete: projects.estimatedTotalConcrete,
-        updatedAt: projects.updatedAt,
-      })
-      .from(projects)
-      .where(whereClause)
-      .orderBy(...orderByClauses)
-      .limit(input.pageSize)
-      .offset(offset),
-    db
-      .select({
-        count: sql<number>`count(*)`,
-      })
-      .from(projects)
-      .where(whereClause),
-  ]);
+      const filters = buildProjectFilters(user.companyId, accessibleProjectIds, input);
+      const whereClause = and(...filters);
+      const orderByClauses = getProjectOrderBy(input);
+      const offset = (input.page - 1) * input.pageSize;
 
-  const totalCount = totalCountRows[0]?.count ?? 0;
-  const pageCount = Math.max(1, Math.ceil(totalCount / input.pageSize));
+      const [rows, totalCountRows] = await Promise.all([
+        db
+          .select({
+            id: projects.id,
+            name: projects.name,
+            slug: projects.slug,
+            address: projects.address,
+            status: projects.status,
+            projectCode: projects.projectCode,
+            description: projects.description,
+            dateStarted: projects.dateStarted,
+            estimatedCompletionDate: projects.estimatedCompletionDate,
+            lastPourDate: projects.lastPourDate,
+            totalConcretePoured: projects.totalConcretePoured,
+            estimatedTotalConcrete: projects.estimatedTotalConcrete,
+            updatedAt: projects.updatedAt,
+          })
+          .from(projects)
+          .where(whereClause)
+          .orderBy(...orderByClauses)
+          .limit(input.pageSize)
+          .offset(offset),
+        db
+          .select({
+            count: sql<number>`count(*)`,
+          })
+          .from(projects)
+          .where(whereClause),
+      ]);
 
-  return {
-    rows: rows.map((project) => ({
-      ...project,
-      totalConcretePoured: toNumber(project.totalConcretePoured),
-      estimatedTotalConcrete: toNumber(project.estimatedTotalConcrete),
-    })),
-    totalCount,
-    page: input.page,
-    pageSize: input.pageSize,
-    pageCount,
-    cursor: null as string | null,
-  };
+      const totalCount = totalCountRows[0]?.count ?? 0;
+      const pageCount = Math.max(1, Math.ceil(totalCount / input.pageSize));
+
+      return {
+        rows: rows.map((project) => ({
+          ...project,
+          totalConcretePoured: toNumber(project.totalConcretePoured),
+          estimatedTotalConcrete: toNumber(project.estimatedTotalConcrete),
+        })),
+        totalCount,
+        page: input.page,
+        pageSize: input.pageSize,
+        pageCount,
+        cursor: null as string | null,
+      };
+    },
+    {
+      details: (result) => ({
+        rows: result.rows.length,
+        totalCount: result.totalCount,
+        page: result.page,
+      }),
+    }
+  );
 }
 
 export async function getProjectDetail(rawInput: unknown): Promise<any> {
@@ -185,52 +206,53 @@ export async function getProjectDetail(rawInput: unknown): Promise<any> {
 }
 
 export async function getProjectDetailQuery(projectId: string, companyId: string): Promise<any> {
-  await ensureHumanFriendlyUrlSchema();
+  return measureRequestSpan(
+    "projects.detail",
+    async () => {
+      await ensureHumanFriendlyUrlSchema();
 
-  const project = await db.query.projects.findFirst({
-    where: and(eq(projects.id, projectId), eq(projects.companyId, companyId)),
-  });
+      const project = await db.query.projects.findFirst({
+        where: and(eq(projects.id, projectId), eq(projects.companyId, companyId)),
+      });
 
-  if (!project) {
-    return null;
-  }
+      if (!project) {
+        return null;
+      }
 
-  const [attachmentCountRows, pourCountRows, buildingCountRows, recentActivity] = await Promise.all([
-    db
-      .select({ count: sql<number>`count(*)` })
-      .from(attachments)
-      .where(eq(attachments.projectId, projectId)),
-    db
-      .select({ count: sql<number>`count(*)` })
-      .from(pours)
-      .where(eq(pours.projectId, projectId)),
-    db
-      .select({ count: sql<number>`count(*)` })
-      .from(projectBuildings)
-      .where(eq(projectBuildings.projectId, projectId)),
-    listRecentActivity({
-      companyId,
-      projectId,
-      limit: 6,
-    }),
-  ]);
+      const [attachmentCountRows, pourCountRows, buildingCountRows] = await Promise.all([
+        db
+          .select({ count: sql<number>`count(*)` })
+          .from(attachments)
+          .where(and(eq(attachments.companyId, companyId), eq(attachments.projectId, projectId))),
+        db
+          .select({ count: sql<number>`count(*)` })
+          .from(pours)
+          .where(and(eq(pours.companyId, companyId), eq(pours.projectId, projectId))),
+        db
+          .select({ count: sql<number>`count(*)` })
+          .from(projectBuildings)
+          .where(eq(projectBuildings.projectId, projectId)),
+      ]);
 
-  return {
-    project: {
-      ...project,
-      totalConcretePoured: toNumber(project.totalConcretePoured),
-      estimatedTotalConcrete: toNumber(project.estimatedTotalConcrete),
+      return {
+        project: {
+          ...project,
+          totalConcretePoured: toNumber(project.totalConcretePoured),
+          estimatedTotalConcrete: toNumber(project.estimatedTotalConcrete),
+        },
+        summary: {
+          totalBuildings: buildingCountRows[0]?.count ?? 0,
+          totalAttachments: attachmentCountRows[0]?.count ?? 0,
+          totalPourEvents: pourCountRows[0]?.count ?? 0,
+        },
+      };
     },
-    summary: {
-      totalBuildings: buildingCountRows[0]?.count ?? 0,
-      totalAttachments: attachmentCountRows[0]?.count ?? 0,
-      totalPourEvents: pourCountRows[0]?.count ?? 0,
-    },
-    recentActivity: recentActivity.map((activity) => ({
-      ...activity,
-      summary: summarizeActivity(activity.summary, activity.eventType, activity.metadataJson),
-    })),
-  };
+    {
+      details: (result) => ({
+        found: Boolean(result),
+      }),
+    }
+  );
 }
 
 export async function createProject(
@@ -290,6 +312,9 @@ export async function createProject(
 
       return project;
     });
+
+    invalidateServerReadCache(`company-overview:${user.companyId}`);
+    invalidateServerReadCache(`analytics:company:${user.companyId}`);
 
     return success({ id: createdProject.id, slug: createdProject.slug }, "Project created.");
   } catch (error) {
@@ -378,6 +403,9 @@ export async function updateProject(
       where: eq(projects.id, projectId),
     });
 
+    invalidateServerReadCache(`company-overview:${user.companyId}`);
+    invalidateServerReadCache(`analytics:company:${user.companyId}`);
+
     return success(
       {
         id: projectId,
@@ -440,6 +468,9 @@ export async function deleteProject(
     });
 
     await Promise.all(projectFiles.map((attachment) => deleteStoredFile(attachment.storagePath)));
+
+    invalidateServerReadCache(`company-overview:${user.companyId}`);
+    invalidateServerReadCache(`analytics:company:${user.companyId}`);
 
     return success({ redirectTo: "/dashboard/projects" }, "Project deleted.");
   } catch (error) {

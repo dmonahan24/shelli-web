@@ -7,12 +7,14 @@ import {
   hierarchyFloorRouteParamsSchema,
 } from "@/lib/validation/hierarchy";
 import { env } from "@/lib/env/server";
+import { runWithRequestContext } from "@/lib/server/request-context";
 import { listProjectAttachmentsQuery } from "@/server/attachments/service";
 import { getBuildingDetailQuery, listBuildingsForProjectQuery } from "@/server/buildings/service";
 import { getProjectAccessRosterQuery } from "@/server/company/service";
+import { listRecentActivity } from "@/server/activity/service";
 import { resolveBuildingRoute, resolveFloorRoute, resolveProjectRoute } from "@/server/navigation/service";
 import { listProjectPoursQuery } from "@/server/pours/service";
-import { getProjectDetailQuery } from "@/server/projects/service";
+import { getProjectDetailQuery, summarizeActivity } from "@/server/projects/service";
 import { getFloorDetailQuery } from "@/server/floors/service";
 
 const loaderCauseSchema = z.enum(["preload", "enter", "stay"]).optional().default("enter");
@@ -63,72 +65,158 @@ export const getProjectPageDataServerFn = createServerFn({
   method: "GET",
 })
   .validator((input) => projectPageDataInputSchema.parse(input ?? {}))
-  .handler(async ({ data }) => {
-    const startedAt = performance.now();
-    const resolved = await resolveProjectRoute(data.params.projectIdentifier, "view");
+  .handler(async ({ data }) =>
+    (await runWithRequestContext("serverfn:project.page_critical", async () => {
+      const startedAt = performance.now();
+      const resolved = await resolveProjectRoute(data.params.projectIdentifier, "view");
 
-    if (!resolved) {
-      logPageDataDuration("/dashboard/projects/$projectIdentifier", data.cause, startedAt, "not_found");
-      return { status: "not_found" } satisfies PageDataResult<never, typeof data.params>;
-    }
+      if (!resolved) {
+        logPageDataDuration(
+          "/dashboard/projects/$projectIdentifier",
+          data.cause,
+          startedAt,
+          "not_found"
+        );
+        return { status: "not_found" } satisfies PageDataResult<never, typeof data.params>;
+      }
 
-    if (!resolved.isCanonical) {
-      logPageDataDuration("/dashboard/projects/$projectIdentifier", data.cause, startedAt, "redirect");
+      if (!resolved.isCanonical) {
+        logPageDataDuration("/dashboard/projects/$projectIdentifier", data.cause, startedAt, "redirect");
+        return {
+          status: "redirect",
+          canonicalParams: resolved.canonicalParams,
+        } satisfies PageDataResult<never, typeof data.params>;
+      }
+
+      const [detail, pours, buildings] = await Promise.all([
+        getProjectDetailQuery(resolved.project.id, resolved.project.companyId),
+        listProjectPoursQuery(resolved.project.id, {
+          page: 1,
+          pageSize: 10,
+        }, resolved.project.companyId),
+        listBuildingsForProjectQuery(resolved.project.id),
+      ]);
+
+      if (!detail) {
+        logPageDataDuration(
+          "/dashboard/projects/$projectIdentifier",
+          data.cause,
+          startedAt,
+          "not_found"
+        );
+        return { status: "not_found" } satisfies PageDataResult<never, typeof data.params>;
+      }
+
+      logPageDataDuration("/dashboard/projects/$projectIdentifier", data.cause, startedAt, "success");
       return {
-        status: "redirect",
-        canonicalParams: resolved.canonicalParams,
-      } satisfies PageDataResult<never, typeof data.params>;
-    }
-
-    const [detail, pours, attachments, buildings, accessRoster] = await Promise.all([
-      getProjectDetailQuery(resolved.project.id, resolved.project.companyId),
-      listProjectPoursQuery(resolved.project.id, {
-        page: 1,
-        pageSize: 10,
-      }),
-      listProjectAttachmentsQuery(resolved.project.id, {
-        page: 1,
-        pageSize: 8,
-      }),
-      listBuildingsForProjectQuery(resolved.project.id),
-      getProjectAccessRosterQuery({
-        hasExplicitAssignments: resolved.access.context.hasExplicitAssignments,
-        project: {
-          id: resolved.project.id,
-          name: resolved.project.name,
-          companyId: resolved.project.companyId,
-          projectManagerUserId: resolved.project.projectManagerUserId ?? null,
-          superintendentUserId: resolved.project.superintendentUserId ?? null,
+        status: "success",
+        data: {
+          buildings,
+          detail,
+          pours,
         },
-      }),
-    ]);
+      } satisfies PageDataResult<
+        {
+          buildings: Awaited<ReturnType<typeof listBuildingsForProjectQuery>>;
+          detail: Awaited<ReturnType<typeof getProjectDetailQuery>>;
+          pours: Awaited<ReturnType<typeof listProjectPoursQuery>>;
+        },
+        typeof data.params
+      >;
+    })) as any
+  );
 
-    if (!detail) {
-      logPageDataDuration("/dashboard/projects/$projectIdentifier", data.cause, startedAt, "not_found");
-      return { status: "not_found" } satisfies PageDataResult<never, typeof data.params>;
-    }
+export const getProjectPageDeferredDataServerFn = createServerFn({
+  method: "GET",
+})
+  .validator((input) => projectPageDataInputSchema.parse(input ?? {}))
+  .handler(async ({ data }) =>
+    (await runWithRequestContext("serverfn:project.page_deferred", async () => {
+      const startedAt = performance.now();
+      const resolved = await resolveProjectRoute(data.params.projectIdentifier, "view");
 
-    logPageDataDuration("/dashboard/projects/$projectIdentifier", data.cause, startedAt, "success");
-    return {
-      status: "success",
-      data: {
-        attachments,
-        accessRoster,
-        buildings,
-        detail,
-        pours,
-      },
-    } satisfies PageDataResult<
-      {
-        attachments: Awaited<ReturnType<typeof listProjectAttachmentsQuery>>;
-        accessRoster: Awaited<ReturnType<typeof getProjectAccessRosterQuery>>;
-        buildings: Awaited<ReturnType<typeof listBuildingsForProjectQuery>>;
-        detail: Awaited<ReturnType<typeof getProjectDetailQuery>>;
-        pours: Awaited<ReturnType<typeof listProjectPoursQuery>>;
-      },
-      typeof data.params
-    >;
-  });
+      if (!resolved) {
+        logPageDataDuration(
+          "/dashboard/projects/$projectIdentifier/deferred",
+          data.cause,
+          startedAt,
+          "not_found"
+        );
+        return { status: "not_found" } satisfies PageDataResult<never, typeof data.params>;
+      }
+
+      if (!resolved.isCanonical) {
+        logPageDataDuration(
+          "/dashboard/projects/$projectIdentifier/deferred",
+          data.cause,
+          startedAt,
+          "redirect"
+        );
+        return {
+          status: "redirect",
+          canonicalParams: resolved.canonicalParams,
+        } satisfies PageDataResult<never, typeof data.params>;
+      }
+
+      const [attachments, accessRoster, recentActivity] = await Promise.all([
+        listProjectAttachmentsQuery(resolved.project.id, {
+          page: 1,
+          pageSize: 8,
+        }, resolved.project.companyId),
+        getProjectAccessRosterQuery({
+          hasExplicitAssignments: resolved.access.context.hasExplicitAssignments,
+          project: {
+            id: resolved.project.id,
+            name: resolved.project.name,
+            companyId: resolved.project.companyId,
+            projectManagerUserId: resolved.project.projectManagerUserId ?? null,
+            superintendentUserId: resolved.project.superintendentUserId ?? null,
+          },
+        }),
+        listRecentActivity({
+          companyId: resolved.project.companyId,
+          projectId: resolved.project.id,
+          limit: 6,
+        }),
+      ]);
+
+      logPageDataDuration(
+        "/dashboard/projects/$projectIdentifier/deferred",
+        data.cause,
+        startedAt,
+        "success"
+      );
+
+      return {
+        status: "success",
+        data: {
+          attachments,
+          accessRoster,
+          recentActivity: recentActivity.map((activity) => ({
+            ...activity,
+            summary: summarizeActivity(activity.summary, activity.eventType, activity.metadataJson),
+          })),
+        },
+      } satisfies PageDataResult<
+        {
+          attachments: Awaited<ReturnType<typeof listProjectAttachmentsQuery>>;
+          accessRoster: Awaited<ReturnType<typeof getProjectAccessRosterQuery>>;
+          recentActivity: Array<{
+            actorName: string;
+            createdAt: Date;
+            entityId: string | null;
+            entityType: string;
+            eventType: string;
+            id: string;
+            metadataJson: unknown;
+            projectId: string | null;
+            summary: string;
+          }>;
+        },
+        typeof data.params
+      >;
+    })) as any
+  );
 
 export const getProjectBuildingsPageDataServerFn = createServerFn({
   method: "GET",

@@ -54,14 +54,21 @@ function toNumber(value: string | number | null | undefined) {
 }
 
 export async function listProjectPours(projectId: string, rawInput?: unknown) {
-  await requireProjectAccess(projectId, "view");
-  return listProjectPoursQuery(projectId, rawInput);
+  const access = await requireProjectAccess(projectId, "view");
+  return listProjectPoursQuery(projectId, rawInput, access.context.project.companyId);
 }
 
-export async function listProjectPoursQuery(projectId: string, rawInput?: unknown) {
+export async function listProjectPoursQuery(
+  projectId: string,
+  rawInput?: unknown,
+  companyId?: string
+) {
 
   const input = pourEventListQuerySchema.parse(rawInput ?? {});
   const filters = buildPourFilters(projectId, input);
+  if (companyId) {
+    filters.unshift(eq(pours.companyId, companyId));
+  }
   const whereClause = and(...filters);
   const orderByClauses = getPourOrderBy(input);
   const offset = (input.page - 1) * input.pageSize;

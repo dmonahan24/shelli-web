@@ -1,11 +1,12 @@
 // @ts-nocheck
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, getRouteApi, redirect } from "@tanstack/react-router";
 import { ListPendingPage } from "@/components/navigation/page-pending";
 import { InviteMemberDialog } from "@/components/company/invite-member-dialog";
 import { InvitationsTable } from "@/components/company/invitations-table";
 import { READ_ROUTE_CACHE_OPTIONS } from "@/lib/router-cache";
-import { getCompanyOverviewServerFn } from "@/server/company/list-members";
 import { listInvitationsServerFn } from "@/server/company/list-invitations";
+
+const dashboardRouteApi = getRouteApi("/dashboard");
 
 export const Route = createFileRoute("/dashboard/company/invitations")({
   ...READ_ROUTE_CACHE_OPTIONS,
@@ -14,20 +15,16 @@ export const Route = createFileRoute("/dashboard/company/invitations")({
       throw redirect({ to: "/dashboard" });
     }
   },
-  loader: async () => {
-    const [overview, invitations] = await Promise.all([
-      getCompanyOverviewServerFn(),
-      listInvitationsServerFn(),
-    ]);
-
-    return { overview, invitations };
-  },
+  loader: async () => listInvitationsServerFn(),
   pendingComponent: ListPendingPage,
   component: CompanyInvitationsPage,
 });
 
 function CompanyInvitationsPage() {
-  const data = Route.useLoaderData();
+  const rows = Route.useLoaderData();
+  const user = dashboardRouteApi.useRouteContext({
+    select: (context) => context.user,
+  });
 
   return (
     <div className="space-y-6">
@@ -36,9 +33,9 @@ function CompanyInvitationsPage() {
           <p className="text-sm font-medium text-muted-foreground">Company</p>
           <h1 className="text-2xl font-semibold tracking-tight">Invitations</h1>
         </div>
-        <InviteMemberDialog companyId={data.overview.company.id} />
+        <InviteMemberDialog companyId={user.companyId} />
       </div>
-      <InvitationsTable companyId={data.overview.company.id} rows={data.invitations} />
+      <InvitationsTable companyId={user.companyId} rows={rows} />
     </div>
   );
 }

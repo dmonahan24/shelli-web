@@ -18,14 +18,22 @@ export function ProjectAttachmentsCard({
   onMutationComplete,
   projectId,
 }: {
-  initialData: AttachmentsResponse;
+  initialData: AttachmentsResponse | null;
   onMutationComplete: () => Promise<void> | void;
   projectId: string;
 }) {
-  const [attachments, setAttachments] = React.useState(initialData);
+  const [attachments, setAttachments] = React.useState<AttachmentsResponse | null>(initialData);
   const [previewAttachmentId, setPreviewAttachmentId] = React.useState<string | null>(null);
 
+  React.useEffect(() => {
+    setAttachments(initialData);
+  }, [initialData]);
+
   const refresh = React.useCallback(async () => {
+    if (!attachments) {
+      return;
+    }
+
     const response = await listProjectAttachmentsServerFn({
       data: {
         projectId,
@@ -37,11 +45,10 @@ export function ProjectAttachmentsCard({
     });
 
     setAttachments(response);
-  }, [attachments.page, attachments.pageSize, projectId]);
+  }, [attachments, projectId]);
 
-  const previewAttachment = attachments.rows.find(
-    (attachment) => attachment.id === previewAttachmentId
-  ) ?? null;
+  const previewAttachment =
+    attachments?.rows.find((attachment) => attachment.id === previewAttachmentId) ?? null;
   const handleDelete = async (attachmentId: string) => {
     const result = await deleteProjectAttachmentServerFn({
       data: {
@@ -59,12 +66,10 @@ export function ProjectAttachmentsCard({
     await refresh();
     await onMutationComplete();
   };
-  const photoAttachments = attachments.rows.filter((attachment) =>
-    attachment.mimeType.startsWith("image/")
-  );
-  const documentAttachments = attachments.rows.filter(
-    (attachment) => !attachment.mimeType.startsWith("image/")
-  );
+  const photoAttachments =
+    attachments?.rows.filter((attachment) => attachment.mimeType.startsWith("image/")) ?? [];
+  const documentAttachments =
+    attachments?.rows.filter((attachment) => !attachment.mimeType.startsWith("image/")) ?? [];
 
   return (
     <>
@@ -91,7 +96,11 @@ export function ProjectAttachmentsCard({
           />
         </CardHeader>
         <CardContent className="space-y-5">
-          {attachments.rows.length === 0 ? (
+          {!attachments ? (
+            <div className="rounded-2xl border border-dashed border-border/70 bg-muted/20 px-6 py-10 text-center text-sm text-muted-foreground">
+              Loading project attachments...
+            </div>
+          ) : attachments.rows.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-border/70 bg-muted/20 px-6 py-10 text-center text-sm text-muted-foreground">
               No attachments yet. Upload documentation from the pour site, delivery tickets, or
               inspection records.

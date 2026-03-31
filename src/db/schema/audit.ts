@@ -58,6 +58,11 @@ export const activityEvents = pgTable(
       table.companyId,
       table.projectId
     ),
+    companyProjectCreatedAtIndex: index("activity_events_company_project_created_at_idx").on(
+      table.companyId,
+      table.projectId,
+      table.createdAt.desc()
+    ),
     companyCreatedAtIndex: index("activity_events_company_created_at_idx").on(
       table.companyId,
       table.createdAt

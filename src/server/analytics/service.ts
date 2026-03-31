@@ -4,6 +4,8 @@ import { activityEvents, attachments, pours, projects } from "@/db/schema";
 import { canViewAnalytics } from "@/lib/auth/company-access";
 import { listAccessibleProjectIds, requireProjectAccess } from "@/lib/auth/project-access";
 import { requireTenantUser } from "@/lib/auth/session";
+import { cacheServerRead } from "@/lib/server/read-cache";
+import { measureRequestSpan } from "@/lib/server/request-context";
 import {
   companyAnalyticsQuerySchema,
   projectAnalyticsQuerySchema,
@@ -213,158 +215,180 @@ export async function getCompanyAnalyticsOverview(rawInput: CompanyAnalyticsQuer
   const user = await requireTenantUser();
   await ensureHumanFriendlyUrlSchema();
   const companyId = input.companyId ?? user.companyId;
-  const projectIds = await getScopedProjectIds({
-    companyId,
-    assignedOnly: input.assignedOnly,
-    userId: user.id,
-    role: user.role,
-  });
 
-  if (projectIds.length === 0) {
-    return {
-      kpis: {
-        activeProjects: 0,
-        completedProjects: 0,
-        totalConcretePoured: 0,
-        totalConcretePouredThisMonth: 0,
-        averageProjectCompletionPercentage: 0,
-        upcomingEstimatedCompletions: 0,
-        openProjectsWithNoRecentPourActivity: 0,
-        documentationCompletionRate: 100,
-      },
-      charts: {
-        concretePouredOverTime: [] as TimeseriesPoint[],
-        projectStartsOverTime: [] as TimeseriesPoint[],
-        estimatedCompletionDistribution: [] as BreakdownDatum[],
-        projectStatusBreakdown: [] as BreakdownDatum[],
-        topProjectsByConcrete: [] as ProjectRankingDatum[],
-      },
-      recentFieldActivity: [],
-    };
-  }
+  return cacheServerRead(
+    `analytics:company:${companyId}:${user.role}:${input.assignedOnly ?? false}:${input.status}:${input.dateRange.from}:${input.dateRange.to}`,
+    15_000,
+    async () =>
+      measureRequestSpan(
+        "analytics.company_overview",
+        async () => {
+          const projectIds = await getScopedProjectIds({
+            companyId,
+            assignedOnly: input.assignedOnly,
+            userId: user.id,
+            role: user.role,
+          });
 
-  const [projectRows, pourRows, attachmentRows, recentFieldActivity] = await Promise.all([
-    db
-      .select({
-        id: projects.id,
-        name: projects.name,
-        status: projects.status,
-        dateStarted: projects.dateStarted,
-        estimatedCompletionDate: projects.estimatedCompletionDate,
-        lastPourDate: projects.lastPourDate,
-        totalConcretePoured: projects.totalConcretePoured,
-        estimatedTotalConcrete: projects.estimatedTotalConcrete,
-      })
-      .from(projects)
-      .where(
-        and(
-          eq(projects.companyId, companyId),
-          inArray(projects.id, projectIds),
-          input.status === "all" ? undefined : eq(projects.status, input.status)
-        )
-      ),
-    db
-      .select({
-        projectId: pours.projectId,
-        date: pours.scheduledDate,
-        actualVolume: pours.actualVolume,
-      })
-      .from(pours)
-      .where(
-        and(
-          eq(pours.companyId, companyId),
-          inArray(pours.projectId, projectIds),
-          gte(pours.scheduledDate, input.dateRange.from),
-          lte(pours.scheduledDate, input.dateRange.to)
-        )
-      ),
-    db
-      .select({
-        projectId: attachments.projectId,
-        createdAt: sql<string>`to_char(${attachments.createdAt}, 'YYYY-MM-DD')`,
-        attachmentType: attachments.attachmentType,
-      })
-      .from(attachments)
-      .where(
-        and(
-          eq(attachments.companyId, companyId),
-          inArray(attachments.projectId, projectIds),
-          gte(sql`date(${attachments.createdAt})`, input.dateRange.from),
-          lte(sql`date(${attachments.createdAt})`, input.dateRange.to)
-        )
-      ),
-    getRecentFieldActivity(input),
-  ]);
+          if (projectIds.length === 0) {
+            return {
+              kpis: {
+                activeProjects: 0,
+                completedProjects: 0,
+                totalConcretePoured: 0,
+                totalConcretePouredThisMonth: 0,
+                averageProjectCompletionPercentage: 0,
+                upcomingEstimatedCompletions: 0,
+                openProjectsWithNoRecentPourActivity: 0,
+                documentationCompletionRate: 100,
+              },
+              charts: {
+                concretePouredOverTime: [] as TimeseriesPoint[],
+                projectStartsOverTime: [] as TimeseriesPoint[],
+                estimatedCompletionDistribution: [] as BreakdownDatum[],
+                projectStatusBreakdown: [] as BreakdownDatum[],
+                topProjectsByConcrete: [] as ProjectRankingDatum[],
+              },
+              recentFieldActivity: [],
+            };
+          }
 
-  const activeProjects = projectRows.filter((project) => project.status === "active");
-  const completedProjects = projectRows.filter((project) => project.status === "completed");
-  const totalConcretePoured = projectRows.reduce(
-    (total, project) => total + toNumber(project.totalConcretePoured),
-    0
+          const [projectRows, pourRows, attachmentRows, recentFieldActivity] = await Promise.all([
+            db
+              .select({
+                id: projects.id,
+                name: projects.name,
+                status: projects.status,
+                dateStarted: projects.dateStarted,
+                estimatedCompletionDate: projects.estimatedCompletionDate,
+                lastPourDate: projects.lastPourDate,
+                totalConcretePoured: projects.totalConcretePoured,
+                estimatedTotalConcrete: projects.estimatedTotalConcrete,
+              })
+              .from(projects)
+              .where(
+                and(
+                  eq(projects.companyId, companyId),
+                  inArray(projects.id, projectIds),
+                  input.status === "all" ? undefined : eq(projects.status, input.status)
+                )
+              ),
+            db
+              .select({
+                projectId: pours.projectId,
+                date: pours.scheduledDate,
+                actualVolume: pours.actualVolume,
+              })
+              .from(pours)
+              .where(
+                and(
+                  eq(pours.companyId, companyId),
+                  inArray(pours.projectId, projectIds),
+                  gte(pours.scheduledDate, input.dateRange.from),
+                  lte(pours.scheduledDate, input.dateRange.to)
+                )
+              ),
+            db
+              .select({
+                projectId: attachments.projectId,
+                createdAt: sql<string>`to_char(${attachments.createdAt}, 'YYYY-MM-DD')`,
+                attachmentType: attachments.attachmentType,
+              })
+              .from(attachments)
+              .where(
+                and(
+                  eq(attachments.companyId, companyId),
+                  inArray(attachments.projectId, projectIds),
+                  gte(sql`date(${attachments.createdAt})`, input.dateRange.from),
+                  lte(sql`date(${attachments.createdAt})`, input.dateRange.to)
+                )
+              ),
+            getRecentFieldActivity(input),
+          ]);
+
+          const activeProjects = projectRows.filter((project) => project.status === "active");
+          const completedProjects = projectRows.filter((project) => project.status === "completed");
+          const totalConcretePoured = projectRows.reduce(
+            (total, project) => total + toNumber(project.totalConcretePoured),
+            0
+          );
+          const totalConcretePouredThisMonth = pourRows
+            .filter((row) => row.date >= new Date().toISOString().slice(0, 7))
+            .reduce((total, row) => total + toNumber(row.actualVolume), 0);
+          const averageProjectCompletionPercentage =
+            projectRows.length === 0
+              ? 0
+              : projectRows.reduce(
+                  (total, project) =>
+                    total +
+                    calculatePercentComplete(
+                      toNumber(project.totalConcretePoured),
+                      toNumber(project.estimatedTotalConcrete)
+                    ),
+                  0
+                ) / projectRows.length;
+          const upcomingEstimatedCompletions = activeProjects.filter((project) => {
+            const date = new Date(`${project.estimatedCompletionDate}T00:00:00`);
+            return date.getTime() <= Date.now() + 1000 * 60 * 60 * 24 * 30;
+          }).length;
+          const openProjectsWithNoRecentPourActivity = activeProjects.filter((project) => {
+            const daysSinceLastPour = calculateDaysSinceLastPour(project.lastPourDate);
+            return daysSinceLastPour === null || daysSinceLastPour > 14;
+          }).length;
+
+          const attachmentCountByProjectId = new Map<string, number>();
+          for (const row of attachmentRows) {
+            attachmentCountByProjectId.set(
+              row.projectId,
+              (attachmentCountByProjectId.get(row.projectId) ?? 0) + 1
+            );
+          }
+
+          const documentationCompletionRate =
+            activeProjects.length === 0
+              ? 100
+              : (activeProjects.filter(
+                  (project) => (attachmentCountByProjectId.get(project.id) ?? 0) > 0
+                ).length /
+                  activeProjects.length) *
+                100;
+
+          return {
+            kpis: {
+              activeProjects: activeProjects.length,
+              completedProjects: completedProjects.length,
+              totalConcretePoured,
+              totalConcretePouredThisMonth,
+              averageProjectCompletionPercentage,
+              upcomingEstimatedCompletions,
+              openProjectsWithNoRecentPourActivity,
+              documentationCompletionRate,
+            },
+            charts: {
+              concretePouredOverTime: groupSumByDate(
+                pourRows.map((row) => ({ date: row.date, value: toNumber(row.actualVolume) }))
+              ),
+              projectStartsOverTime: groupSumByDate(
+                projectRows.map((row) => ({
+                  date: row.dateStarted,
+                  value: 1,
+                }))
+              ),
+              estimatedCompletionDistribution: buildEstimatedCompletionDistribution(projectRows),
+              projectStatusBreakdown: await getProjectStatusBreakdown(input),
+              topProjectsByConcrete: await getTopProjectsByConcrete(input),
+            },
+            recentFieldActivity,
+          };
+        },
+        {
+          details: (result) => ({
+            activeProjects: result.kpis.activeProjects,
+            activity: result.recentFieldActivity.length,
+          }),
+        }
+      )
   );
-  const totalConcretePouredThisMonth = pourRows
-    .filter((row) => row.date >= new Date().toISOString().slice(0, 7))
-    .reduce((total, row) => total + toNumber(row.actualVolume), 0);
-  const averageProjectCompletionPercentage =
-    projectRows.length === 0
-      ? 0
-      : projectRows.reduce(
-          (total, project) =>
-            total +
-            calculatePercentComplete(
-              toNumber(project.totalConcretePoured),
-              toNumber(project.estimatedTotalConcrete)
-            ),
-          0
-        ) / projectRows.length;
-  const upcomingEstimatedCompletions = activeProjects.filter((project) => {
-    const date = new Date(`${project.estimatedCompletionDate}T00:00:00`);
-    return date.getTime() <= Date.now() + 1000 * 60 * 60 * 24 * 30;
-  }).length;
-  const openProjectsWithNoRecentPourActivity = activeProjects.filter((project) => {
-    const daysSinceLastPour = calculateDaysSinceLastPour(project.lastPourDate);
-    return daysSinceLastPour === null || daysSinceLastPour > 14;
-  }).length;
-
-  const attachmentCountByProjectId = new Map<string, number>();
-  for (const row of attachmentRows) {
-    attachmentCountByProjectId.set(row.projectId, (attachmentCountByProjectId.get(row.projectId) ?? 0) + 1);
-  }
-
-  const documentationCompletionRate =
-    activeProjects.length === 0
-      ? 100
-      : (activeProjects.filter((project) => (attachmentCountByProjectId.get(project.id) ?? 0) > 0).length /
-          activeProjects.length) *
-        100;
-
-  return {
-    kpis: {
-      activeProjects: activeProjects.length,
-      completedProjects: completedProjects.length,
-      totalConcretePoured,
-      totalConcretePouredThisMonth,
-      averageProjectCompletionPercentage,
-      upcomingEstimatedCompletions,
-      openProjectsWithNoRecentPourActivity,
-      documentationCompletionRate,
-    },
-    charts: {
-      concretePouredOverTime: groupSumByDate(
-        pourRows.map((row) => ({ date: row.date, value: toNumber(row.actualVolume) }))
-      ),
-      projectStartsOverTime: groupSumByDate(
-        projectRows.map((row) => ({
-          date: row.dateStarted,
-          value: 1,
-        }))
-      ),
-      estimatedCompletionDistribution: buildEstimatedCompletionDistribution(projectRows),
-      projectStatusBreakdown: await getProjectStatusBreakdown(input),
-      topProjectsByConcrete: await getTopProjectsByConcrete(input),
-    },
-    recentFieldActivity,
-  };
 }
 
 export async function getProjectAnalytics(rawInput: ProjectAnalyticsQueryInput) {

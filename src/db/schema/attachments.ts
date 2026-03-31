@@ -34,6 +34,11 @@ export const attachments = pgTable(
       table.companyId,
       table.projectId
     ),
+    companyProjectCreatedAtIndex: index("attachments_company_project_created_at_idx").on(
+      table.companyId,
+      table.projectId,
+      table.createdAt.desc()
+    ),
     storagePathIndex: index("attachments_storage_path_idx").on(
       table.storageBucket,
       table.storagePath

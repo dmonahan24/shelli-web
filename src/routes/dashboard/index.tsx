@@ -1,107 +1,149 @@
-import { createFileRoute } from "@tanstack/react-router";
+import * as React from "react";
+import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { AnalyticsKpiCards } from "@/components/analytics/analytics-kpi-cards";
-import { DashboardPendingPage } from "@/components/navigation/page-pending";
 import { RecentActivityFeed } from "@/components/analytics/recent-activity-feed";
+import { ProjectsDashboardView } from "@/components/dashboard/projects-dashboard-view";
 import { DocumentationTaskCard } from "@/components/field/documentation-task-card";
 import { FieldActionGrid } from "@/components/field/field-action-grid";
-import { ProjectsDashboardView } from "@/components/dashboard/projects-dashboard-view";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { READ_ROUTE_CACHE_OPTIONS } from "@/lib/router-cache";
-import { getCurrentPrincipalServerFn } from "@/server/auth/get-current-user";
-import { getCompanyAnalyticsOverviewServerFn } from "@/server/analytics/get-company-analytics-overview";
-import { getFieldHomeDataServerFn } from "@/server/field/get-field-home-data";
-import { listProjectsServerFn } from "@/server/projects/list-projects";
+import {
+  getDashboardHomeCriticalDataServerFn,
+  getDashboardHomeDeferredDataServerFn,
+} from "@/server/dashboard/get-home-page-data";
+
+const dashboardRouteApi = getRouteApi("/dashboard");
+
+type DashboardHomeDeferredData = Awaited<
+  ReturnType<typeof getDashboardHomeDeferredDataServerFn>
+>;
 
 export const Route = createFileRoute("/dashboard/")({
   ...READ_ROUTE_CACHE_OPTIONS,
-  loader: async () => {
-    const principal = await getCurrentPrincipalServerFn();
-    const projects = await listProjectsServerFn({
-      data: {
-        page: 1,
-        pageSize: 5,
-      },
-    });
-    const fieldHome = await getFieldHomeDataServerFn();
-    const analytics =
-      principal?.kind === "tenant_user" &&
-      principal.role !== "field_supervisor" &&
-      principal.role !== "viewer"
-        ? await getCompanyAnalyticsOverviewServerFn({
-            data: {
-              dateRange: {
-                from: new Date(Date.now() - 1000 * 60 * 60 * 24 * 90).toISOString().slice(0, 10),
-                to: new Date().toISOString().slice(0, 10),
-              },
-              status: "all",
-              assignedOnly: principal.role === "project_manager",
-            },
-          })
-        : null;
-
-    return { principal, projects, fieldHome, analytics };
-  },
+  loader: async () => getDashboardHomeCriticalDataServerFn(),
   pendingComponent: DashboardPendingPage,
   component: DashboardHomePage,
 });
 
+function DashboardPendingPage() {
+  return <div className="min-h-40" />;
+}
+
 function DashboardHomePage() {
-  const { principal, projects, fieldHome, analytics } = Route.useLoaderData();
+  const user = dashboardRouteApi.useRouteContext({
+    select: (context) => context.user,
+  });
+  const criticalData = Route.useLoaderData();
+  const [deferredData, setDeferredData] = React.useState<DashboardHomeDeferredData | null>(null);
 
-  if (principal?.kind !== "tenant_user") {
-    return null;
-  }
+  React.useEffect(() => {
+    let isCancelled = false;
 
-  if (principal.role === "field_supervisor") {
+    void (async () => {
+      const result = await getDashboardHomeDeferredDataServerFn();
+      if (!isCancelled) {
+        setDeferredData(result);
+      }
+    })();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  if (user.role === "field_supervisor") {
     return (
       <div className="space-y-6">
         <div>
           <p className="text-sm font-medium text-muted-foreground">Dashboard</p>
           <h1 className="text-2xl font-semibold tracking-tight">Field supervisor view</h1>
         </div>
-        <FieldActionGrid project={fieldHome.projects[0]} />
+        <FieldActionGrid project={criticalData.fieldHome?.projects[0]} />
         <div className="space-y-3">
-          {fieldHome.documentationTasks.map((task: any) => (
+          {criticalData.fieldHome?.documentationTasks.map((task: any) => (
             <DocumentationTaskCard key={`${task.title}-${task.description}`} {...task} />
           ))}
         </div>
-        <RecentActivityFeed items={fieldHome.recentActivity} />
+        <RecentActivitySection items={deferredData?.fieldHome.recentActivity ?? []} />
       </div>
     );
   }
 
-  if (principal.role === "viewer") {
+  if (user.role === "viewer") {
     return (
       <div className="space-y-6">
         <ProjectsDashboardView
-          projects={projects.rows}
+          projects={criticalData.projects?.rows ?? []}
           title="Project summaries"
           subtitle="Read-only visibility into current construction work and recent operational activity."
           showActions={false}
         />
-        <RecentActivityFeed items={fieldHome.recentActivity} />
+        <RecentActivitySection items={deferredData?.fieldHome.recentActivity ?? []} />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {analytics ? (
+      {deferredData?.analytics ? (
         <AnalyticsKpiCards
           items={[
-            { label: "Active Projects", value: String(analytics.kpis.activeProjects) },
-            { label: "Concrete This Month", value: `${analytics.kpis.totalConcretePouredThisMonth.toFixed(0)} yds` },
-            { label: "Upcoming Completions", value: String(analytics.kpis.upcomingEstimatedCompletions) },
-            { label: "Docs Completion", value: `${analytics.kpis.documentationCompletionRate.toFixed(0)}%` },
+            { label: "Active Projects", value: String(deferredData.analytics.kpis.activeProjects) },
+            {
+              label: "Concrete This Month",
+              value: `${deferredData.analytics.kpis.totalConcretePouredThisMonth.toFixed(0)} yds`,
+            },
+            {
+              label: "Upcoming Completions",
+              value: String(deferredData.analytics.kpis.upcomingEstimatedCompletions),
+            },
+            {
+              label: "Docs Completion",
+              value: `${deferredData.analytics.kpis.documentationCompletionRate.toFixed(0)}%`,
+            },
           ]}
         />
-      ) : null}
+      ) : (
+        <DashboardDeferredPlaceholder title="Performance Snapshot" />
+      )}
       <ProjectsDashboardView
-        projects={projects.rows}
-        title={principal.role === "project_manager" ? "Assigned projects" : "Projects"}
+        projects={criticalData.projects?.rows ?? []}
+        title={user.role === "project_manager" ? "Assigned projects" : "Projects"}
         subtitle="Track upcoming pours, project progress, and documentation health from one shared operating view."
         showActions
       />
-      <RecentActivityFeed items={fieldHome.recentActivity} />
+      <RecentActivitySection items={deferredData?.fieldHome.recentActivity ?? []} />
     </div>
+  );
+}
+
+function RecentActivitySection({
+  items,
+}: {
+  items: Array<{
+    actorName?: string | null;
+    createdAt?: Date | string | null;
+    eventType?: string | null;
+    id: string;
+    summary?: string | null;
+  }>;
+}) {
+  if (items.length === 0) {
+    return <DashboardDeferredPlaceholder title="Recent Activity" />;
+  }
+
+  return <RecentActivityFeed items={items} />;
+}
+
+function DashboardDeferredPlaceholder({ title }: { title: string }) {
+  return (
+    <Card className="border-border/70">
+      <CardHeader>
+        <CardTitle className="text-base">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-muted-foreground">Loading the latest dashboard summary...</p>
+      </CardContent>
+    </Card>
   );
 }

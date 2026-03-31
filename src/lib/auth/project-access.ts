@@ -1,6 +1,6 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, isNull, or, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { projectMembers, projects } from "@/db/schema";
+import { companyMemberships, projectMembers, projects } from "@/db/schema";
 import { normalizeAppUserRole, type TenantUserPrincipal } from "@/lib/auth/principal";
 import {
   hasProjectPermission,
@@ -9,6 +9,7 @@ import {
 } from "@/lib/auth/permissions";
 import { getCompanyMembershipForUser } from "@/lib/auth/company-access";
 import { requireTenantUser } from "@/lib/auth/session";
+import { memoizeRequestPromise, measureRequestSpan } from "@/lib/server/request-context";
 
 export type ProjectAccessLevel = ProjectPermission;
 
@@ -29,46 +30,70 @@ async function getProjectAccessContextForUser(
   user: Pick<TenantUserPrincipal, "id" | "companyId" | "role">,
   projectId: string
 ): Promise<ProjectAccessContext | null> {
-  const project = await db.query.projects.findFirst({
-    where: eq(projects.id, projectId),
-  });
+  return memoizeRequestPromise(
+    `auth:project-access-context:${user.id}:${projectId}`,
+    async () =>
+      measureRequestSpan("auth.project_access_context", async () => {
+        const assignmentSummary = db
+          .select({
+            projectId: projectMembers.projectId,
+            memberCount: sql<number>`count(*)`.as("member_count"),
+          })
+          .from(projectMembers)
+          .groupBy(projectMembers.projectId)
+          .as("project_assignment_summary");
 
-  if (!project) {
-    return null;
-  }
+        const row = await db
+          .select({
+            projectId: projects.id,
+            companyId: projects.companyId,
+            projectName: projects.name,
+            projectManagerUserId: projects.projectManagerUserId,
+            superintendentUserId: projects.superintendentUserId,
+            companyRole: companyMemberships.role,
+            membershipStatus: companyMemberships.status,
+            projectRole: projectMembers.role,
+            explicitMemberCount: sql<number>`coalesce(${assignmentSummary.memberCount}, 0)`,
+          })
+          .from(projects)
+          .innerJoin(
+            companyMemberships,
+            and(
+              eq(companyMemberships.companyId, projects.companyId),
+              eq(companyMemberships.userId, user.id)
+            )
+          )
+          .leftJoin(
+            projectMembers,
+            and(eq(projectMembers.projectId, projects.id), eq(projectMembers.userId, user.id))
+          )
+          .leftJoin(assignmentSummary, eq(assignmentSummary.projectId, projects.id))
+          .where(eq(projects.id, projectId))
+          .then((rows) => rows[0] ?? null);
 
-  const membership = await getCompanyMembershipForUser(user.id, project.companyId);
-  if (!membership || membership.status !== "active") {
-    return null;
-  }
+        if (!row || row.membershipStatus !== "active") {
+          return null;
+        }
 
-  const [projectMember, projectMemberCountRow] = await Promise.all([
-    db.query.projectMembers.findFirst({
-      where: and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, user.id)),
-    }),
-    db
-      .select({ count: sql<number>`count(*)` })
-      .from(projectMembers)
-      .where(eq(projectMembers.projectId, projectId)),
-  ]);
+        const hasExplicitAssignments =
+          Boolean(row.projectManagerUserId) ||
+          Boolean(row.superintendentUserId) ||
+          row.explicitMemberCount > 0;
 
-  const hasExplicitAssignments =
-    Boolean(project.projectManagerUserId) ||
-    Boolean(project.superintendentUserId) ||
-    (projectMemberCountRow[0]?.count ?? 0) > 0;
-
-  return {
-    project: {
-      id: project.id,
-      companyId: project.companyId,
-      name: project.name,
-      projectManagerUserId: project.projectManagerUserId ?? null,
-      superintendentUserId: project.superintendentUserId ?? null,
-    },
-    companyRole: normalizeAppUserRole(membership.role),
-    projectRole: projectMember?.role ?? null,
-    hasExplicitAssignments,
-  };
+        return {
+          project: {
+            id: row.projectId,
+            companyId: row.companyId,
+            name: row.projectName,
+            projectManagerUserId: row.projectManagerUserId ?? null,
+            superintendentUserId: row.superintendentUserId ?? null,
+          },
+          companyRole: normalizeAppUserRole(row.companyRole),
+          projectRole: row.projectRole ?? null,
+          hasExplicitAssignments,
+        };
+      })
+  );
 }
 
 function userIsAssignedToProject(
@@ -149,70 +174,69 @@ export async function listAccessibleProjectIds(
   user: Pick<TenantUserPrincipal, "id" | "companyId" | "role">,
   companyId: string
 ) {
-  const membership = await getCompanyMembershipForUser(user.id, companyId);
-  if (!membership || membership.status !== "active") {
-    return [];
-  }
+  return memoizeRequestPromise(
+    `auth:accessible-project-ids:${user.id}:${companyId}`,
+    async () =>
+      measureRequestSpan(
+        "auth.accessible_project_ids",
+        async () => {
+          const membership = await getCompanyMembershipForUser(user.id, companyId);
+          if (!membership || membership.status !== "active") {
+            return [];
+          }
 
-  const normalizedRole = normalizeAppUserRole(membership.role);
+          const normalizedRole = normalizeAppUserRole(membership.role);
 
-  if (normalizedRole === "owner" || normalizedRole === "admin") {
-    return db
-      .select({ id: projects.id })
-      .from(projects)
-      .where(eq(projects.companyId, companyId))
-      .then((rows) => rows.map((row) => row.id));
-  }
+          if (normalizedRole === "owner" || normalizedRole === "admin") {
+            return db
+              .select({ id: projects.id })
+              .from(projects)
+              .where(eq(projects.companyId, companyId))
+              .then((rows) => rows.map((row) => row.id));
+          }
 
-  const projectRows = await db
-    .select({
-      id: projects.id,
-      projectManagerUserId: projects.projectManagerUserId,
-      superintendentUserId: projects.superintendentUserId,
-    })
-    .from(projects)
-    .where(eq(projects.companyId, companyId));
+          const assignmentSummary = db
+            .select({
+              projectId: projectMembers.projectId,
+              memberCount: sql<number>`count(*)`.as("member_count"),
+            })
+            .from(projectMembers)
+            .groupBy(projectMembers.projectId)
+            .as("project_assignment_summary");
 
-  if (projectRows.length === 0) {
-    return [];
-  }
+          const rows = await db
+            .select({
+              id: projects.id,
+            })
+            .from(projects)
+            .leftJoin(
+              projectMembers,
+              and(eq(projectMembers.projectId, projects.id), eq(projectMembers.userId, user.id))
+            )
+            .leftJoin(assignmentSummary, eq(assignmentSummary.projectId, projects.id))
+            .where(
+              and(
+                eq(projects.companyId, companyId),
+                or(
+                  and(
+                    isNull(projects.projectManagerUserId),
+                    isNull(projects.superintendentUserId),
+                    sql`coalesce(${assignmentSummary.memberCount}, 0) = 0`
+                  ),
+                  eq(projects.projectManagerUserId, user.id),
+                  eq(projects.superintendentUserId, user.id),
+                  eq(projectMembers.userId, user.id)
+                )
+              )
+            );
 
-  const memberRows = await db
-    .select({
-      projectId: projectMembers.projectId,
-    })
-    .from(projectMembers)
-    .where(
-      and(eq(projectMembers.userId, user.id), inArray(projectMembers.projectId, projectRows.map((row) => row.id)))
-    );
-
-  const memberProjectIds = new Set(memberRows.map((row) => row.projectId));
-  const explicitlyAssignedCount = await db
-    .select({
-      projectId: projectMembers.projectId,
-      count: sql<number>`count(*)`,
-    })
-    .from(projectMembers)
-    .where(inArray(projectMembers.projectId, projectRows.map((row) => row.id)))
-    .groupBy(projectMembers.projectId);
-  const explicitAssignmentMap = new Map(explicitlyAssignedCount.map((row) => [row.projectId, row.count]));
-
-  return projectRows
-    .filter((project) => {
-      const hasExplicitAssignments =
-        Boolean(project.projectManagerUserId) ||
-        Boolean(project.superintendentUserId) ||
-        (explicitAssignmentMap.get(project.id) ?? 0) > 0;
-
-      if (!hasExplicitAssignments) {
-        return true;
-      }
-
-      return (
-        project.projectManagerUserId === user.id ||
-        project.superintendentUserId === user.id ||
-        memberProjectIds.has(project.id)
-      );
-    })
-    .map((project) => project.id);
+          return rows.map((row) => row.id);
+        },
+        {
+          details: (projectIds) => ({
+            count: projectIds.length,
+          }),
+        }
+      )
+  );
 }
