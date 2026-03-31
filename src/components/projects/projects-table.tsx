@@ -36,6 +36,19 @@ export function ProjectsTable({ projects }: { projects: ProjectRow[] }) {
   const navigate = useNavigate();
   const router = useRouter();
 
+  const navigateToProject = (project: ProjectRow) => {
+    const params = getProjectRouteParams(project);
+
+    acknowledgeNavigation({
+      href: `/dashboard/projects/${params.projectIdentifier}`,
+    });
+
+    void navigate({
+      to: "/dashboard/projects/$projectIdentifier",
+      params,
+    });
+  };
+
   const preloadProject = (project: ProjectRow) => {
     void router.preloadRoute({
       to: "/dashboard/projects/$projectIdentifier",
@@ -71,30 +84,12 @@ export function ProjectsTable({ projects }: { projects: ProjectRow[] }) {
                       title={`Open ${project.name}`}
                       role="link"
                       tabIndex={0}
-                      onClick={() => {
-                    const params = getProjectRouteParams(project);
-
-                    acknowledgeNavigation({
-                      href: `/dashboard/projects/${params.projectIdentifier}`,
-                    });
-                        void navigate({
-                          to: "/dashboard/projects/$projectIdentifier",
-                          params,
-                        });
-                      }}
-                  onFocus={() => preloadProject(project)}
+                      onClick={() => navigateToProject(project)}
+                      onFocus={() => preloadProject(project)}
                       onKeyDown={(event) => {
                         if (event.key === "Enter" || event.key === " ") {
                           event.preventDefault();
-                      const params = getProjectRouteParams(project);
-
-                      acknowledgeNavigation({
-                        href: `/dashboard/projects/${params.projectIdentifier}`,
-                      });
-                          void navigate({
-                            to: "/dashboard/projects/$projectIdentifier",
-                            params,
-                          });
+                          navigateToProject(project);
                         }
                       }}
                     >
@@ -126,12 +121,7 @@ export function ProjectsTable({ projects }: { projects: ProjectRow[] }) {
                   key={project.id}
                   type="button"
                   className="w-full text-left"
-                  onClick={() =>
-                    navigate({
-                      to: "/dashboard/projects/$projectIdentifier",
-                      params: getProjectRouteParams(project),
-                    })
-                  }
+                  onClick={() => navigateToProject(project)}
                 >
                   <MobileCard className="transition-colors hover:bg-muted/20">
                     <MobileCardHeader

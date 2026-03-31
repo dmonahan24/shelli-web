@@ -154,6 +154,7 @@ export function useShellNavigationFeedback() {
     getNavigationIntentSnapshot,
     getNavigationIntentSnapshot
   );
+  const [hasMounted, setHasMounted] = React.useState(false);
   const [isIntentActive, setIsIntentActive] = React.useState(false);
   const [isAcknowledgingNavigation, setIsAcknowledgingNavigation] = React.useState(false);
   const acknowledgementStartedAtRef = React.useRef<number | null>(null);
@@ -166,6 +167,14 @@ export function useShellNavigationFeedback() {
   } | null>(null);
 
   React.useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  React.useEffect(() => {
+    if (!hasMounted) {
+      return;
+    }
+
     if (!navigationIntent) {
       return;
     }
@@ -185,11 +194,16 @@ export function useShellNavigationFeedback() {
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [navigationIntent]);
+  }, [hasMounted, navigationIntent]);
 
-  const shouldAcknowledgeNavigation = isIntentActive || routerState.isSlowNavigation;
+  const isSlowNavigation = hasMounted && routerState.isSlowNavigation;
+  const shouldAcknowledgeNavigation = hasMounted && (isIntentActive || routerState.isSlowNavigation);
 
   React.useEffect(() => {
+    if (!hasMounted) {
+      return;
+    }
+
     if (typeof window === "undefined") {
       return;
     }
@@ -234,25 +248,27 @@ export function useShellNavigationFeedback() {
         acknowledgementTimeoutRef.current = null;
       }
     };
-  }, [isAcknowledgingNavigation, shouldAcknowledgeNavigation]);
+  }, [hasMounted, isAcknowledgingNavigation, shouldAcknowledgeNavigation]);
 
   React.useEffect(() => {
-    if (routerState.isSlowNavigation) {
-      if (!navigationSessionRef.current) {
-        navigationSessionRef.current = {
-          href: routerState.pendingPath,
-          preload: null,
-          sawSlowNavigation: true,
-          startedAt: performance.now(),
-        };
-      } else {
-        navigationSessionRef.current.sawSlowNavigation = true;
-      }
+    if (!hasMounted || !routerState.isSlowNavigation) {
+      return;
     }
-  }, [routerState.isSlowNavigation, routerState.pendingPath]);
+
+    if (!navigationSessionRef.current) {
+      navigationSessionRef.current = {
+        href: routerState.pendingPath,
+        preload: null,
+        sawSlowNavigation: true,
+        startedAt: performance.now(),
+      };
+    } else {
+      navigationSessionRef.current.sawSlowNavigation = true;
+    }
+  }, [hasMounted, routerState.isSlowNavigation, routerState.pendingPath]);
 
   React.useEffect(() => {
-    if (!import.meta.env.DEV || isAcknowledgingNavigation) {
+    if (!hasMounted || !import.meta.env.DEV || isAcknowledgingNavigation) {
       return;
     }
 
@@ -271,17 +287,27 @@ export function useShellNavigationFeedback() {
 
     console.info(`[navigation-feedback] ${debugState} ${target} ${durationMs}ms`);
     navigationSessionRef.current = null;
-  }, [isAcknowledgingNavigation, routerState.pendingPath]);
+  }, [hasMounted, isAcknowledgingNavigation, routerState.pendingPath]);
+
+  if (!hasMounted) {
+    return {
+      debugState: null,
+      isAcknowledgingNavigation: false,
+      isSlowNavigation: false,
+      liveText: "",
+      pendingPath: routerState.pendingPath,
+    };
+  }
 
   const debugState: NavigationDebugState | null = !isAcknowledgingNavigation
     ? null
-    : routerState.isSlowNavigation
+    : isSlowNavigation
       ? "loader-running"
       : navigationIntent?.preload
         ? "preloaded"
         : "cache-hit";
   const liveText = isAcknowledgingNavigation
-    ? routerState.isSlowNavigation
+    ? isSlowNavigation
       ? "Loading page"
       : "Opening page"
     : "";
@@ -289,7 +315,7 @@ export function useShellNavigationFeedback() {
   return {
     debugState,
     isAcknowledgingNavigation,
-    isSlowNavigation: routerState.isSlowNavigation,
+    isSlowNavigation,
     liveText,
     pendingPath: routerState.pendingPath,
   };

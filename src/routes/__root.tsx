@@ -7,7 +7,7 @@ import {
 import * as React from "react";
 import { DefaultCatchBoundary } from "@/components/default-catch-boundary";
 import { NotFound } from "@/components/not-found";
-import appCss from "@/styles/app.css?url";
+import "@/styles/app.css";
 import { seo } from "@/utils/seo";
 import { Providers } from "@/components/providers";
 
@@ -28,7 +28,6 @@ export const Route = createRootRouteWithContext<Record<string, never>>()({
       }),
     ],
     links: [
-      { rel: "stylesheet", href: appCss },
       {
         rel: "apple-touch-icon",
         sizes: "180x180",
