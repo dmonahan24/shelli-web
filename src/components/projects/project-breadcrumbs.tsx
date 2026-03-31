@@ -7,11 +7,16 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { getProjectRouteParams } from "@/lib/project-paths";
 
 export function ProjectBreadcrumbs({
-  projectName,
+  project,
 }: {
-  projectName: string;
+  project: {
+    id: string;
+    slug?: string | null;
+    name: string;
+  };
 }) {
   return (
     <Breadcrumb>
@@ -29,7 +34,11 @@ export function ProjectBreadcrumbs({
         </BreadcrumbItem>
         <BreadcrumbSeparator />
         <BreadcrumbItem>
-          <BreadcrumbPage>{projectName}</BreadcrumbPage>
+          <BreadcrumbLink asChild>
+            <Link to="/dashboard/projects/$projectIdentifier" params={getProjectRouteParams(project)}>
+              {project.name}
+            </Link>
+          </BreadcrumbLink>
         </BreadcrumbItem>
       </BreadcrumbList>
     </Breadcrumb>

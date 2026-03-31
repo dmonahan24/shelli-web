@@ -12,6 +12,7 @@ export type BreakdownDatum = {
 
 export type ProjectRankingDatum = {
   projectId: string;
+  projectSlug?: string;
   projectName: string;
   value: number;
 };

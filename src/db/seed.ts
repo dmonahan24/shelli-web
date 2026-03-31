@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { projects, pours } from "@/db/schema";
 import { ensureBootstrapData } from "@/db/bootstrap";
+import { generateProjectSlug } from "@/server/navigation/service";
 
 const bootstrap = await ensureBootstrapData();
 
@@ -10,6 +11,19 @@ const existingProjects = await db.query.projects.findMany({
 });
 
 if (existingProjects.length === 0) {
+  const riversideSlug = await generateProjectSlug(
+    bootstrap.companyId,
+    "Riverside Warehouse Slab"
+  );
+  const westGateSlug = await generateProjectSlug(
+    bootstrap.companyId,
+    "West Gate Footings"
+  );
+  const northTowerSlug = await generateProjectSlug(
+    bootstrap.companyId,
+    "North Tower Parking Deck"
+  );
+
   const [warehouseProject, footingProject, deckProject] = await db
     .insert(projects)
     .values([
@@ -18,6 +32,7 @@ if (existingProjects.length === 0) {
         createdByUserId: bootstrap.userId,
         updatedByUserId: bootstrap.userId,
         name: "Riverside Warehouse Slab",
+        slug: riversideSlug,
         address: "1450 River Bend Rd, Albany, NY",
         status: "active",
         projectCode: "ALB-1450-SLAB",
@@ -31,6 +46,7 @@ if (existingProjects.length === 0) {
         createdByUserId: bootstrap.userId,
         updatedByUserId: bootstrap.userId,
         name: "West Gate Footings",
+        slug: westGateSlug,
         address: "77 Industrial Park Dr, Syracuse, NY",
         status: "active",
         projectCode: "SYR-077-FTG",
@@ -44,6 +60,7 @@ if (existingProjects.length === 0) {
         createdByUserId: bootstrap.userId,
         updatedByUserId: bootstrap.userId,
         name: "North Tower Parking Deck",
+        slug: northTowerSlug,
         address: "12 Granite Ave, Rochester, NY",
         status: "active",
         projectCode: "ROC-012-DECK",

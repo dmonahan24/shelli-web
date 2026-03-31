@@ -1,17 +1,34 @@
 // @ts-nocheck
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 import { RecentActivityFeed } from "@/components/analytics/recent-activity-feed";
 import { DocumentationTaskCard } from "@/components/field/documentation-task-card";
 import { FieldProjectHeader } from "@/components/field/field-project-header";
 import { FieldProjectSummaryCard, FieldRecentPoursList, FieldRecentUploadsList } from "@/components/field/field-project-details";
 import { FieldQuickActionsBar } from "@/components/field/field-quick-actions-bar";
+import { projectRouteParamsSchema } from "@/lib/validation/project-list";
 import { getFieldProjectDetailServerFn } from "@/server/field/get-field-project-detail";
+import { resolveProjectRouteServerFn } from "@/server/navigation/resolve-project-route";
 
-export const Route = createFileRoute("/dashboard/field/projects/$projectId")({
-  loader: async ({ params }) =>
-    getFieldProjectDetailServerFn({
-      data: { projectId: params.projectId },
-    }),
+export const Route = createFileRoute("/dashboard/field/projects/$projectIdentifier")({
+  loader: async ({ params }) => {
+    const parsedParams = projectRouteParamsSchema.parse(params);
+    const resolved = await resolveProjectRouteServerFn({ data: parsedParams });
+
+    if (!resolved) {
+      throw notFound();
+    }
+
+    if (!resolved.isCanonical) {
+      throw redirect({
+        to: "/dashboard/field/projects/$projectIdentifier",
+        params: resolved.canonicalParams,
+      });
+    }
+
+    return getFieldProjectDetailServerFn({
+      data: { projectId: resolved.project.id },
+    });
+  },
   component: FieldProjectPage,
 });
 
@@ -25,7 +42,7 @@ function FieldProjectPage() {
   return (
     <div className="space-y-4">
       <FieldProjectHeader name={data.project.name} status={data.project.status} />
-      <FieldQuickActionsBar projectId={data.project.id} />
+      <FieldQuickActionsBar project={data.project} />
       <FieldProjectSummaryCard
         estimatedTotalConcrete={Number(data.project.estimatedTotalConcrete)}
         totalConcretePoured={Number(data.project.totalConcretePoured)}

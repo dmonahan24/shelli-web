@@ -14,6 +14,7 @@ import { failure, success, type ActionResult } from "@/lib/utils/action-result";
 import { buildDocumentationTasks, calculateRemainingConcrete } from "@/server/analytics/calculations";
 import { uploadProjectAttachment } from "@/server/attachments/service";
 import { listRecentActivity, recordActivityEvent } from "@/server/activity/service";
+import { ensureHumanFriendlyUrlSchema } from "@/server/navigation/schema-compat";
 import { refreshProjectAggregateTotals } from "@/server/projects/service";
 
 function zodFieldErrors(error: ZodError) {
@@ -40,6 +41,7 @@ function toNumber(value: string | number | null | undefined) {
 
 export async function getFieldHomeData() {
   const user = await requireTenantUser();
+  await ensureHumanFriendlyUrlSchema();
   const projectIds = await listAccessibleProjectIds(user, user.companyId);
 
   if (projectIds.length === 0) {
@@ -55,6 +57,7 @@ export async function getFieldHomeData() {
       .select({
         id: projects.id,
         name: projects.name,
+        slug: projects.slug,
         status: projects.status,
         estimatedTotalConcrete: projects.estimatedTotalConcrete,
         totalConcretePoured: projects.totalConcretePoured,
@@ -117,6 +120,7 @@ export async function getFieldHomeData() {
 
 export async function getFieldProjectDetail(projectId: string) {
   const access = await requireProjectAccess(projectId, "view");
+  await ensureHumanFriendlyUrlSchema();
   const project = await db.query.projects.findFirst({
     where: eq(projects.id, projectId),
   });

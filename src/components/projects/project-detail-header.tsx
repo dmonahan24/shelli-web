@@ -7,16 +7,18 @@ export function ProjectDetailHeader({
   actions,
 }: {
   project: {
+    id: string;
     address: string;
     name: string;
     projectCode: string | null;
+    slug?: string | null;
     status: string;
   };
   actions: ReactNode;
 }) {
   return (
     <div className="space-y-4 rounded-[28px] border border-border/70 bg-card/90 p-6 shadow-sm">
-      <ProjectBreadcrumbs projectName={project.name} />
+      <ProjectBreadcrumbs project={project} />
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-3">

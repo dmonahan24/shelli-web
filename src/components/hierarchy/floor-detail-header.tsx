@@ -11,23 +11,25 @@ export function FloorDetailHeader({
   building: {
     id: string;
     name: string;
+    slug?: string | null;
   };
   floor: {
+    id?: string;
     name: string;
+    slug?: string | null;
   };
   project: {
     id: string;
     name: string;
+    slug?: string | null;
   };
 }) {
   return (
     <div className="space-y-4 rounded-[28px] border border-border/70 bg-card/90 p-6 shadow-sm">
       <HierarchyBreadcrumbs
-        buildingId={building.id}
-        buildingName={building.name}
-        floorName={floor.name}
-        projectId={project.id}
-        projectName={project.name}
+        building={building}
+        floor={floor}
+        project={project}
       />
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
         <div className="space-y-2">

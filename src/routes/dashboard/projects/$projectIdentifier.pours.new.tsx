@@ -1,18 +1,33 @@
 import * as React from "react";
-import { createFileRoute, notFound, useRouter } from "@tanstack/react-router";
+import { createFileRoute, notFound, redirect, useRouter } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { SubmitButton } from "@/components/auth/submit-button";
 import { ProjectBreadcrumbs } from "@/components/projects/project-breadcrumbs";
 import { PourEventForm } from "@/components/pours/pour-event-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { projectDetailParamsSchema } from "@/lib/validation/project-list";
+import { getProjectRouteParams } from "@/lib/project-paths";
+import { projectRouteParamsSchema } from "@/lib/validation/project-list";
+import { resolveProjectRouteServerFn } from "@/server/navigation/resolve-project-route";
 import { createPourEventServerFn } from "@/server/pours/create-pour-event";
 import { getProjectDetailServerFn } from "@/server/projects/get-project-detail";
 
-export const Route = createFileRoute("/dashboard/projects/$projectId/pours/new")({
+export const Route = createFileRoute("/dashboard/projects/$projectIdentifier/pours/new")({
   loader: async ({ params }) => {
-    const parsedParams = projectDetailParamsSchema.parse(params);
-    const detail = await getProjectDetailServerFn({ data: parsedParams });
+    const parsedParams = projectRouteParamsSchema.parse(params);
+    const resolved = await resolveProjectRouteServerFn({ data: parsedParams });
+
+    if (!resolved) {
+      throw notFound();
+    }
+
+    if (!resolved.isCanonical) {
+      throw redirect({
+        to: "/dashboard/projects/$projectIdentifier/pours/new",
+        params: resolved.canonicalParams,
+      });
+    }
+
+    const detail = await getProjectDetailServerFn({ data: { projectId: resolved.project.id } });
 
     if (!detail) {
       throw notFound();
@@ -26,12 +41,12 @@ export const Route = createFileRoute("/dashboard/projects/$projectId/pours/new")
 function NewPourEventPage() {
   const router = useRouter();
   const detail = Route.useLoaderData();
-  const { projectId } = Route.useParams();
   const [isPending, startTransition] = React.useTransition();
+  const projectParams = getProjectRouteParams(detail.project);
 
   return (
     <div className="space-y-6">
-      <ProjectBreadcrumbs projectName={detail.project.name} />
+      <ProjectBreadcrumbs project={detail.project} />
       <Card className="rounded-[28px] border-border/70 bg-card/90 shadow-sm">
         <CardHeader>
           <CardTitle>Add Pour Event</CardTitle>
@@ -39,7 +54,7 @@ function NewPourEventPage() {
         <CardContent>
           <PourEventForm
             defaultValues={{
-              projectId,
+              projectId: detail.project.id,
               pourDate: "",
               concreteAmount: 0,
               unit: "cubic_yards",
@@ -72,8 +87,8 @@ function NewPourEventPage() {
 
                 toast.success(result.message ?? "Pour event added.");
                 await router.navigate({
-                  to: "/dashboard/projects/$projectId",
-                  params: { projectId },
+                  to: "/dashboard/projects/$projectIdentifier",
+                  params: projectParams,
                 });
               })
             }

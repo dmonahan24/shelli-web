@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { AddBuildingDialog } from "@/components/buildings/add-building-dialog";
 import { BuildingsTable } from "@/components/hierarchy/buildings-table";
+import { getProjectRouteParams } from "@/lib/project-paths";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -9,11 +10,14 @@ type BuildingRow = Parameters<typeof BuildingsTable>[0]["buildings"][number];
 export function ProjectBuildingsSection({
   buildings,
   onMutationComplete,
-  projectId,
+  project,
 }: {
   buildings: BuildingRow[];
   onMutationComplete: () => Promise<void> | void;
-  projectId: string;
+  project: {
+    id: string;
+    slug?: string | null;
+  };
 }) {
   return (
     <div className="space-y-4">
@@ -26,19 +30,19 @@ export function ProjectBuildingsSection({
         </div>
         <div className="flex flex-wrap gap-3">
           <Button asChild variant="outline">
-            <Link to="/dashboard/projects/$projectId/buildings" params={{ projectId }}>
+            <Link to="/dashboard/projects/$projectIdentifier/buildings" params={getProjectRouteParams(project)}>
               Manage Buildings
             </Link>
           </Button>
           <AddBuildingDialog
             onCreated={onMutationComplete}
-            projectId={projectId}
+            projectId={project.id}
             trigger={<Button>Add Building</Button>}
           />
         </div>
       </div>
       {buildings.length > 0 ? (
-        <BuildingsTable buildings={buildings} onMutationComplete={onMutationComplete} projectId={projectId} />
+        <BuildingsTable buildings={buildings} onMutationComplete={onMutationComplete} project={project} />
       ) : (
         <Card className="rounded-[28px] border-border/70 bg-card/90 shadow-sm">
           <CardHeader>

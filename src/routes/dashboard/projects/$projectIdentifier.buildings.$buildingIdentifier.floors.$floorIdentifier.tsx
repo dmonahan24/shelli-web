@@ -1,4 +1,4 @@
-import { createFileRoute, notFound, useNavigate, useRouter } from "@tanstack/react-router";
+import { createFileRoute, notFound, redirect, useNavigate, useRouter } from "@tanstack/react-router";
 import { DeleteFloorDialog } from "@/components/floors/delete-floor-dialog";
 import { EditFloorDialog } from "@/components/floors/edit-floor-dialog";
 import { AddPourTypeDialog } from "@/components/pour-types/add-pour-type-dialog";
@@ -9,16 +9,40 @@ import { PourTypesTable } from "@/components/hierarchy/pour-types-table";
 import { FloorPresetBundleDialog } from "@/components/pour-types/floor-preset-bundle-dialog";
 import { Button } from "@/components/ui/button";
 import {
-  hierarchyFloorParamsSchema,
+  hierarchyFloorRouteParamsSchema,
   hierarchyPourTypesSearchSchema,
 } from "@/lib/validation/hierarchy";
+import {
+  getBuildingRouteParams,
+  getFloorRouteParams,
+} from "@/lib/project-paths";
 import { getFloorDetailServerFn } from "@/server/floors/get-floor-detail";
+import { resolveFloorRouteServerFn } from "@/server/navigation/resolve-floor-route";
 
-export const Route = createFileRoute("/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId")({
+export const Route = createFileRoute("/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier")({
   validateSearch: hierarchyPourTypesSearchSchema,
   loader: async ({ params }) => {
-    const parsedParams = hierarchyFloorParamsSchema.parse(params);
-    const detail = await getFloorDetailServerFn({ data: parsedParams });
+    const parsedParams = hierarchyFloorRouteParamsSchema.parse(params);
+    const resolved = await resolveFloorRouteServerFn({ data: parsedParams });
+
+    if (!resolved) {
+      throw notFound();
+    }
+
+    if (!resolved.isCanonical) {
+      throw redirect({
+        to: "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier",
+        params: resolved.canonicalParams,
+      });
+    }
+
+    const detail = await getFloorDetailServerFn({
+      data: {
+        buildingId: resolved.building.id,
+        floorId: resolved.floor.id,
+        projectId: resolved.project.id,
+      },
+    });
 
     if (!detail) {
       throw notFound();
@@ -31,11 +55,10 @@ export const Route = createFileRoute("/dashboard/projects/$projectId/buildings/$
 
 function FloorDetailPage() {
   const navigate = useNavigate({
-    from: "/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId",
+    from: "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier",
   });
   const router = useRouter();
   const detail = Route.useLoaderData();
-  const { buildingId, floorId } = Route.useParams();
   const search = Route.useSearch();
   const updateSearch = (partial: Partial<typeof search>) =>
     navigate({
@@ -89,35 +112,42 @@ function FloorDetailPage() {
         actions={
           <>
             <AddPourTypeDialog
-              floorId={floorId}
+              floorId={detail.floor.id}
               onCreated={() => router.invalidate()}
               trigger={<Button>Add Pour</Button>}
             />
             <FloorPresetBundleDialog
               defaultBundle={detail.floor.floorType === "foundation" ? "foundation" : "standard"}
-              floorId={floorId}
+              floorId={detail.floor.id}
               onApplied={() => router.invalidate()}
             />
             <EditFloorDialog
               floor={detail.floor}
-              onUpdated={() => router.invalidate()}
+              onUpdated={async (result) => {
+                await router.navigate({
+                  to: "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier",
+                  params: getFloorRouteParams(
+                    { id: detail.project.id, slug: result.projectSlug ?? detail.project.slug },
+                    { id: detail.building.id, slug: result.buildingSlug ?? detail.building.slug },
+                    { id: detail.floor.id, slug: result.slug }
+                  ),
+                });
+                await router.invalidate();
+              }}
               trigger={<Button variant="outline">Edit Floor</Button>}
             />
             <DeleteFloorDialog
               floor={{
                 actualConcreteTotal: detail.floor.actualConcreteTotal,
                 estimatedConcreteTotal: detail.floor.estimatedConcreteTotal,
-                id: floorId,
+                id: detail.floor.id,
                 name: detail.floor.name,
                 pourTypeCount: detail.summary.totalPourTypes,
               }}
               onDeleted={() =>
                 router.navigate({
-                  to: "/dashboard/projects/$projectId/buildings/$buildingId",
-                  params: {
-                    buildingId,
-                    projectId: detail.project.id,
-                  },
+                  to: "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier",
+                  params: getBuildingRouteParams(detail.project, detail.building),
                 })
               }
               trigger={<Button variant="destructive">Delete Floor</Button>}

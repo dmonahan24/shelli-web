@@ -16,8 +16,14 @@ export function EditBuildingDialog({
     displayOrder: number;
     id: string;
     name: string;
+    slug?: string | null;
   };
-  onUpdated: () => Promise<void> | void;
+  onUpdated: (result: {
+    id: string;
+    slug: string;
+    projectId: string;
+    projectSlug: string;
+  }) => Promise<void> | void;
   trigger: React.ReactNode;
 }) {
   const [open, setOpen] = React.useState(false);
@@ -62,7 +68,7 @@ export function EditBuildingDialog({
 
               toast.success(result.message ?? "Building updated.");
               setOpen(false);
-              await onUpdated();
+              await onUpdated(result.data);
             })
           }
           submitButton={

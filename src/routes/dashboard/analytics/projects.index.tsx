@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BarChart3 } from "lucide-react";
+import { getProjectRouteParams } from "@/lib/project-paths";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { listProjectsServerFn } from "@/server/projects/list-projects";
 
@@ -26,7 +27,11 @@ function ProjectAnalyticsIndexPage() {
       </div>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {data.rows.map((project) => (
-          <Link key={project.id} to="/dashboard/analytics/projects/$projectId" params={{ projectId: project.id }}>
+          <Link
+            key={project.id}
+            to="/dashboard/analytics/projects/$projectIdentifier"
+            params={getProjectRouteParams(project)}
+          >
             <Card className="border-border/70 transition hover:border-primary/50">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">

@@ -1,4 +1,4 @@
-import { Link, createFileRoute, notFound, useRouter } from "@tanstack/react-router";
+import { Link, createFileRoute, notFound, redirect, useRouter } from "@tanstack/react-router";
 import { AttachmentUploadDialog } from "@/components/attachments/attachment-upload-dialog";
 import { ProjectAttachmentsCard } from "@/components/attachments/project-attachments-card";
 import { ProjectMembersCard } from "@/components/company/project-members-card";
@@ -10,22 +10,37 @@ import { ProjectSummaryCards } from "@/components/projects/project-summary-cards
 import { PourEventsTable } from "@/components/pours/pour-events-table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getProjectRouteParams } from "@/lib/project-paths";
 import { formatDateTime } from "@/lib/utils/format";
-import { projectDetailParamsSchema } from "@/lib/validation/project-list";
+import { projectRouteParamsSchema } from "@/lib/validation/project-list";
 import { listProjectAttachmentsServerFn } from "@/server/attachments/list-project-attachments";
 import { listBuildingsForProjectServerFn } from "@/server/buildings/list-buildings-for-project";
 import { getProjectAccessRosterServerFn } from "@/server/company/get-project-access-roster";
+import { resolveProjectRouteServerFn } from "@/server/navigation/resolve-project-route";
 import { listProjectPoursServerFn } from "@/server/pours/list-pour-events";
 import { getProjectDetailServerFn } from "@/server/projects/get-project-detail";
 
-export const Route = createFileRoute("/dashboard/projects/$projectId/")({
+export const Route = createFileRoute("/dashboard/projects/$projectIdentifier/")({
   loader: async ({ params }) => {
-    const parsedParams = projectDetailParamsSchema.parse(params);
+    const parsedParams = projectRouteParamsSchema.parse(params);
+    const resolved = await resolveProjectRouteServerFn({ data: parsedParams });
+
+    if (!resolved) {
+      throw notFound();
+    }
+
+    if (!resolved.isCanonical) {
+      throw redirect({
+        to: "/dashboard/projects/$projectIdentifier",
+        params: resolved.canonicalParams,
+      });
+    }
+
     const [detail, pours, attachments, buildings, accessRoster] = await Promise.all([
-      getProjectDetailServerFn({ data: parsedParams }),
+      getProjectDetailServerFn({ data: { projectId: resolved.project.id } }),
       listProjectPoursServerFn({
         data: {
-          projectId: parsedParams.projectId,
+          projectId: resolved.project.id,
           query: {
             page: 1,
             pageSize: 10,
@@ -34,7 +49,7 @@ export const Route = createFileRoute("/dashboard/projects/$projectId/")({
       }),
       listProjectAttachmentsServerFn({
         data: {
-          projectId: parsedParams.projectId,
+          projectId: resolved.project.id,
           query: {
             page: 1,
             pageSize: 8,
@@ -43,12 +58,12 @@ export const Route = createFileRoute("/dashboard/projects/$projectId/")({
       }),
       listBuildingsForProjectServerFn({
         data: {
-          projectId: parsedParams.projectId,
+          projectId: resolved.project.id,
         },
       }),
       getProjectAccessRosterServerFn({
         data: {
-          projectId: parsedParams.projectId,
+          projectId: resolved.project.id,
         },
       }),
     ]);
@@ -71,7 +86,7 @@ export const Route = createFileRoute("/dashboard/projects/$projectId/")({
 function ProjectDetailPage() {
   const router = useRouter();
   const { attachments, accessRoster, buildings, detail, pours } = Route.useLoaderData();
-  const { projectId } = Route.useParams();
+  const projectParams = getProjectRouteParams(detail.project);
 
   return (
     <div className="space-y-6">
@@ -80,17 +95,17 @@ function ProjectDetailPage() {
         actions={
           <>
             <Button asChild>
-              <Link to="/dashboard/projects/$projectId/pours/new" params={{ projectId }}>
+              <Link to="/dashboard/projects/$projectIdentifier/pours/new" params={projectParams}>
                 Add Pour Event
               </Link>
             </Button>
             <AttachmentUploadDialog
-              projectId={projectId}
+              projectId={detail.project.id}
               onUploaded={() => router.invalidate()}
               trigger={<Button variant="outline">Upload Files</Button>}
             />
             <Button asChild variant="outline">
-              <Link to="/dashboard/projects/$projectId/edit" params={{ projectId }}>
+              <Link to="/dashboard/projects/$projectIdentifier/edit" params={projectParams}>
                 Edit Project
               </Link>
             </Button>
@@ -98,7 +113,7 @@ function ProjectDetailPage() {
               attachmentCount={detail.summary.totalAttachments}
               pourEventCount={detail.summary.totalPourEvents}
               projectAddress={detail.project.address}
-              projectId={projectId}
+              projectId={detail.project.id}
               projectName={detail.project.name}
             />
           </>
@@ -111,7 +126,7 @@ function ProjectDetailPage() {
       <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
         <div className="space-y-6">
           <ProjectMembersCard
-            projectId={projectId}
+            projectId={detail.project.id}
             projectName={detail.project.name}
             roster={accessRoster}
             onMutationComplete={() => router.invalidate()}
@@ -119,18 +134,18 @@ function ProjectDetailPage() {
           <ProjectBuildingsSection
             buildings={buildings}
             onMutationComplete={() => router.invalidate()}
-            projectId={projectId}
+            project={detail.project}
           />
           <PourEventsTable
             initialData={pours}
             onMutationComplete={() => router.invalidate()}
             onOpenCreate={() =>
               router.navigate({
-                to: "/dashboard/projects/$projectId/pours/new",
-                params: { projectId },
+                to: "/dashboard/projects/$projectIdentifier/pours/new",
+                params: projectParams,
               })
             }
-            projectId={projectId}
+            projectId={detail.project.id}
           />
         </div>
         <div className="space-y-6">
@@ -138,7 +153,7 @@ function ProjectDetailPage() {
           <ProjectAttachmentsCard
             initialData={attachments}
             onMutationComplete={() => router.invalidate()}
-            projectId={projectId}
+            projectId={detail.project.id}
           />
           <Card className="rounded-[24px] border-border/70 bg-card/90 shadow-sm">
             <CardHeader>
@@ -164,7 +179,7 @@ function ProjectDetailPage() {
               attachmentCount={detail.summary.totalAttachments}
               pourEventCount={detail.summary.totalPourEvents}
               projectAddress={detail.project.address}
-              projectId={projectId}
+              projectId={detail.project.id}
               projectName={detail.project.name}
             />
           </DangerZoneCard>

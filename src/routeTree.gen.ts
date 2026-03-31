@@ -31,27 +31,27 @@ import { Route as DashboardProjectsIndexImport } from './routes/dashboard/projec
 import { Route as DashboardFieldIndexImport } from './routes/dashboard/field/index'
 import { Route as DashboardCompanyIndexImport } from './routes/dashboard/company/index'
 import { Route as DashboardAnalyticsIndexImport } from './routes/dashboard/analytics/index'
-import { Route as DashboardProjectsProjectIdImport } from './routes/dashboard/projects/$projectId'
+import { Route as DashboardProjectsProjectIdentifierImport } from './routes/dashboard/projects/$projectIdentifier'
 import { Route as DashboardCompanyRolesImport } from './routes/dashboard/company/roles'
 import { Route as DashboardCompanyProjectsImport } from './routes/dashboard/company/projects'
 import { Route as DashboardCompanyMembersImport } from './routes/dashboard/company/members'
 import { Route as DashboardCompanyInvitationsImport } from './routes/dashboard/company/invitations'
-import { Route as DashboardProjectsProjectIdIndexImport } from './routes/dashboard/projects/$projectId.index'
+import { Route as DashboardProjectsProjectIdentifierIndexImport } from './routes/dashboard/projects/$projectIdentifier.index'
 import { Route as DashboardAnalyticsProjectsIndexImport } from './routes/dashboard/analytics/projects.index'
-import { Route as DashboardProjectsProjectIdEditImport } from './routes/dashboard/projects/$projectId.edit'
-import { Route as DashboardProjectsProjectIdBuildingsImport } from './routes/dashboard/projects/$projectId.buildings'
-import { Route as DashboardFieldProjectsProjectIdImport } from './routes/dashboard/field/projects.$projectId'
-import { Route as DashboardAnalyticsProjectsProjectIdImport } from './routes/dashboard/analytics/projects.$projectId'
-import { Route as DashboardProjectsProjectIdBuildingsIndexImport } from './routes/dashboard/projects/$projectId.buildings.index'
-import { Route as DashboardProjectsProjectIdPoursNewImport } from './routes/dashboard/projects/$projectId.pours.new'
-import { Route as DashboardProjectsProjectIdBuildingsBuildingIdImport } from './routes/dashboard/projects/$projectId.buildings.$buildingId'
-import { Route as DashboardProjectsProjectIdBuildingsBuildingIdIndexImport } from './routes/dashboard/projects/$projectId.buildings.$buildingId.index'
-import { Route as DashboardProjectsProjectIdBuildingsBuildingIdFloorsImport } from './routes/dashboard/projects/$projectId.buildings.$buildingId.floors'
-import { Route as DashboardProjectsProjectIdBuildingsBuildingIdEditImport } from './routes/dashboard/projects/$projectId.buildings.$buildingId.edit'
-import { Route as DashboardFieldProjectsProjectIdPoursQuickAddImport } from './routes/dashboard/field/projects.$projectId.pours.quick-add'
-import { Route as DashboardFieldProjectsProjectIdPhotosUploadImport } from './routes/dashboard/field/projects.$projectId.photos.upload'
-import { Route as DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdImport } from './routes/dashboard/projects/$projectId.buildings.$buildingId.floors.$floorId'
-import { Route as DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdEditImport } from './routes/dashboard/projects/$projectId.buildings.$buildingId.floors.$floorId.edit'
+import { Route as DashboardProjectsProjectIdentifierEditImport } from './routes/dashboard/projects/$projectIdentifier.edit'
+import { Route as DashboardProjectsProjectIdentifierBuildingsImport } from './routes/dashboard/projects/$projectIdentifier.buildings'
+import { Route as DashboardFieldProjectsProjectIdentifierImport } from './routes/dashboard/field/projects.$projectIdentifier'
+import { Route as DashboardAnalyticsProjectsProjectIdentifierImport } from './routes/dashboard/analytics/projects.$projectIdentifier'
+import { Route as DashboardProjectsProjectIdentifierBuildingsIndexImport } from './routes/dashboard/projects/$projectIdentifier.buildings.index'
+import { Route as DashboardProjectsProjectIdentifierPoursNewImport } from './routes/dashboard/projects/$projectIdentifier.pours.new'
+import { Route as DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierImport } from './routes/dashboard/projects/$projectIdentifier.buildings.$buildingIdentifier'
+import { Route as DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierIndexImport } from './routes/dashboard/projects/$projectIdentifier.buildings.$buildingIdentifier.index'
+import { Route as DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsImport } from './routes/dashboard/projects/$projectIdentifier.buildings.$buildingIdentifier.floors'
+import { Route as DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierEditImport } from './routes/dashboard/projects/$projectIdentifier.buildings.$buildingIdentifier.edit'
+import { Route as DashboardFieldProjectsProjectIdentifierPoursQuickAddImport } from './routes/dashboard/field/projects.$projectIdentifier.pours.quick-add'
+import { Route as DashboardFieldProjectsProjectIdentifierPhotosUploadImport } from './routes/dashboard/field/projects.$projectIdentifier.photos.upload'
+import { Route as DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsFloorIdentifierImport } from './routes/dashboard/projects/$projectIdentifier.buildings.$buildingIdentifier.floors.$floorIdentifier'
+import { Route as DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsFloorIdentifierEditImport } from './routes/dashboard/projects/$projectIdentifier.buildings.$buildingIdentifier.floors.$floorIdentifier.edit'
 
 // Create/Update Routes
 
@@ -175,13 +175,12 @@ const DashboardAnalyticsIndexRoute = DashboardAnalyticsIndexImport.update({
   getParentRoute: () => DashboardRouteRoute,
 } as any)
 
-const DashboardProjectsProjectIdRoute = DashboardProjectsProjectIdImport.update(
-  {
-    id: '/projects/$projectId',
-    path: '/projects/$projectId',
+const DashboardProjectsProjectIdentifierRoute =
+  DashboardProjectsProjectIdentifierImport.update({
+    id: '/projects/$projectIdentifier',
+    path: '/projects/$projectIdentifier',
     getParentRoute: () => DashboardRouteRoute,
-  } as any,
-)
+  } as any)
 
 const DashboardCompanyRolesRoute = DashboardCompanyRolesImport.update({
   id: '/company/roles',
@@ -208,11 +207,11 @@ const DashboardCompanyInvitationsRoute =
     getParentRoute: () => DashboardRouteRoute,
   } as any)
 
-const DashboardProjectsProjectIdIndexRoute =
-  DashboardProjectsProjectIdIndexImport.update({
+const DashboardProjectsProjectIdentifierIndexRoute =
+  DashboardProjectsProjectIdentifierIndexImport.update({
     id: '/',
     path: '/',
-    getParentRoute: () => DashboardProjectsProjectIdRoute,
+    getParentRoute: () => DashboardProjectsProjectIdentifierRoute,
   } as any)
 
 const DashboardAnalyticsProjectsIndexRoute =
@@ -222,105 +221,118 @@ const DashboardAnalyticsProjectsIndexRoute =
     getParentRoute: () => DashboardRouteRoute,
   } as any)
 
-const DashboardProjectsProjectIdEditRoute =
-  DashboardProjectsProjectIdEditImport.update({
+const DashboardProjectsProjectIdentifierEditRoute =
+  DashboardProjectsProjectIdentifierEditImport.update({
     id: '/edit',
     path: '/edit',
-    getParentRoute: () => DashboardProjectsProjectIdRoute,
+    getParentRoute: () => DashboardProjectsProjectIdentifierRoute,
   } as any)
 
-const DashboardProjectsProjectIdBuildingsRoute =
-  DashboardProjectsProjectIdBuildingsImport.update({
+const DashboardProjectsProjectIdentifierBuildingsRoute =
+  DashboardProjectsProjectIdentifierBuildingsImport.update({
     id: '/buildings',
     path: '/buildings',
-    getParentRoute: () => DashboardProjectsProjectIdRoute,
+    getParentRoute: () => DashboardProjectsProjectIdentifierRoute,
   } as any)
 
-const DashboardFieldProjectsProjectIdRoute =
-  DashboardFieldProjectsProjectIdImport.update({
-    id: '/field/projects/$projectId',
-    path: '/field/projects/$projectId',
+const DashboardFieldProjectsProjectIdentifierRoute =
+  DashboardFieldProjectsProjectIdentifierImport.update({
+    id: '/field/projects/$projectIdentifier',
+    path: '/field/projects/$projectIdentifier',
     getParentRoute: () => DashboardRouteRoute,
   } as any)
 
-const DashboardAnalyticsProjectsProjectIdRoute =
-  DashboardAnalyticsProjectsProjectIdImport.update({
-    id: '/analytics/projects/$projectId',
-    path: '/analytics/projects/$projectId',
+const DashboardAnalyticsProjectsProjectIdentifierRoute =
+  DashboardAnalyticsProjectsProjectIdentifierImport.update({
+    id: '/analytics/projects/$projectIdentifier',
+    path: '/analytics/projects/$projectIdentifier',
     getParentRoute: () => DashboardRouteRoute,
   } as any)
 
-const DashboardProjectsProjectIdBuildingsIndexRoute =
-  DashboardProjectsProjectIdBuildingsIndexImport.update({
+const DashboardProjectsProjectIdentifierBuildingsIndexRoute =
+  DashboardProjectsProjectIdentifierBuildingsIndexImport.update({
     id: '/',
     path: '/',
-    getParentRoute: () => DashboardProjectsProjectIdBuildingsRoute,
+    getParentRoute: () => DashboardProjectsProjectIdentifierBuildingsRoute,
   } as any)
 
-const DashboardProjectsProjectIdPoursNewRoute =
-  DashboardProjectsProjectIdPoursNewImport.update({
+const DashboardProjectsProjectIdentifierPoursNewRoute =
+  DashboardProjectsProjectIdentifierPoursNewImport.update({
     id: '/pours/new',
     path: '/pours/new',
-    getParentRoute: () => DashboardProjectsProjectIdRoute,
+    getParentRoute: () => DashboardProjectsProjectIdentifierRoute,
   } as any)
 
-const DashboardProjectsProjectIdBuildingsBuildingIdRoute =
-  DashboardProjectsProjectIdBuildingsBuildingIdImport.update({
-    id: '/$buildingId',
-    path: '/$buildingId',
-    getParentRoute: () => DashboardProjectsProjectIdBuildingsRoute,
+const DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierRoute =
+  DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierImport.update({
+    id: '/$buildingIdentifier',
+    path: '/$buildingIdentifier',
+    getParentRoute: () => DashboardProjectsProjectIdentifierBuildingsRoute,
   } as any)
 
-const DashboardProjectsProjectIdBuildingsBuildingIdIndexRoute =
-  DashboardProjectsProjectIdBuildingsBuildingIdIndexImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => DashboardProjectsProjectIdBuildingsBuildingIdRoute,
-  } as any)
+const DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierIndexRoute =
+  DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierIndexImport.update(
+    {
+      id: '/',
+      path: '/',
+      getParentRoute: () =>
+        DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierRoute,
+    } as any,
+  )
 
-const DashboardProjectsProjectIdBuildingsBuildingIdFloorsRoute =
-  DashboardProjectsProjectIdBuildingsBuildingIdFloorsImport.update({
-    id: '/floors',
-    path: '/floors',
-    getParentRoute: () => DashboardProjectsProjectIdBuildingsBuildingIdRoute,
-  } as any)
+const DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsRoute =
+  DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsImport.update(
+    {
+      id: '/floors',
+      path: '/floors',
+      getParentRoute: () =>
+        DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierRoute,
+    } as any,
+  )
 
-const DashboardProjectsProjectIdBuildingsBuildingIdEditRoute =
-  DashboardProjectsProjectIdBuildingsBuildingIdEditImport.update({
-    id: '/edit',
-    path: '/edit',
-    getParentRoute: () => DashboardProjectsProjectIdBuildingsBuildingIdRoute,
-  } as any)
+const DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierEditRoute =
+  DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierEditImport.update(
+    {
+      id: '/edit',
+      path: '/edit',
+      getParentRoute: () =>
+        DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierRoute,
+    } as any,
+  )
 
-const DashboardFieldProjectsProjectIdPoursQuickAddRoute =
-  DashboardFieldProjectsProjectIdPoursQuickAddImport.update({
+const DashboardFieldProjectsProjectIdentifierPoursQuickAddRoute =
+  DashboardFieldProjectsProjectIdentifierPoursQuickAddImport.update({
     id: '/pours/quick-add',
     path: '/pours/quick-add',
-    getParentRoute: () => DashboardFieldProjectsProjectIdRoute,
+    getParentRoute: () => DashboardFieldProjectsProjectIdentifierRoute,
   } as any)
 
-const DashboardFieldProjectsProjectIdPhotosUploadRoute =
-  DashboardFieldProjectsProjectIdPhotosUploadImport.update({
+const DashboardFieldProjectsProjectIdentifierPhotosUploadRoute =
+  DashboardFieldProjectsProjectIdentifierPhotosUploadImport.update({
     id: '/photos/upload',
     path: '/photos/upload',
-    getParentRoute: () => DashboardFieldProjectsProjectIdRoute,
+    getParentRoute: () => DashboardFieldProjectsProjectIdentifierRoute,
   } as any)
 
-const DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdRoute =
-  DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdImport.update({
-    id: '/$floorId',
-    path: '/$floorId',
-    getParentRoute: () =>
-      DashboardProjectsProjectIdBuildingsBuildingIdFloorsRoute,
-  } as any)
+const DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsFloorIdentifierRoute =
+  DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsFloorIdentifierImport.update(
+    {
+      id: '/$floorIdentifier',
+      path: '/$floorIdentifier',
+      getParentRoute: () =>
+        DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsRoute,
+    } as any,
+  )
 
-const DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdEditRoute =
-  DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdEditImport.update({
-    id: '/edit',
-    path: '/edit',
-    getParentRoute: () =>
-      DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdRoute,
-  } as any)
+const DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsFloorIdentifierEditRoute =
+  DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsFloorIdentifierEditImport.update(
+    {
+      id: '/edit',
+      path: '/edit',
+      getParentRoute: () =>
+        DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsFloorIdentifierRoute,
+    } as any,
+  )
 
 // Populate the FileRoutesByPath interface
 
@@ -466,11 +478,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardCompanyRolesImport
       parentRoute: typeof DashboardRouteImport
     }
-    '/dashboard/projects/$projectId': {
-      id: '/dashboard/projects/$projectId'
-      path: '/projects/$projectId'
-      fullPath: '/dashboard/projects/$projectId'
-      preLoaderRoute: typeof DashboardProjectsProjectIdImport
+    '/dashboard/projects/$projectIdentifier': {
+      id: '/dashboard/projects/$projectIdentifier'
+      path: '/projects/$projectIdentifier'
+      fullPath: '/dashboard/projects/$projectIdentifier'
+      preLoaderRoute: typeof DashboardProjectsProjectIdentifierImport
       parentRoute: typeof DashboardRouteImport
     }
     '/dashboard/analytics/': {
@@ -501,33 +513,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardProjectsIndexImport
       parentRoute: typeof DashboardRouteImport
     }
-    '/dashboard/analytics/projects/$projectId': {
-      id: '/dashboard/analytics/projects/$projectId'
-      path: '/analytics/projects/$projectId'
-      fullPath: '/dashboard/analytics/projects/$projectId'
-      preLoaderRoute: typeof DashboardAnalyticsProjectsProjectIdImport
+    '/dashboard/analytics/projects/$projectIdentifier': {
+      id: '/dashboard/analytics/projects/$projectIdentifier'
+      path: '/analytics/projects/$projectIdentifier'
+      fullPath: '/dashboard/analytics/projects/$projectIdentifier'
+      preLoaderRoute: typeof DashboardAnalyticsProjectsProjectIdentifierImport
       parentRoute: typeof DashboardRouteImport
     }
-    '/dashboard/field/projects/$projectId': {
-      id: '/dashboard/field/projects/$projectId'
-      path: '/field/projects/$projectId'
-      fullPath: '/dashboard/field/projects/$projectId'
-      preLoaderRoute: typeof DashboardFieldProjectsProjectIdImport
+    '/dashboard/field/projects/$projectIdentifier': {
+      id: '/dashboard/field/projects/$projectIdentifier'
+      path: '/field/projects/$projectIdentifier'
+      fullPath: '/dashboard/field/projects/$projectIdentifier'
+      preLoaderRoute: typeof DashboardFieldProjectsProjectIdentifierImport
       parentRoute: typeof DashboardRouteImport
     }
-    '/dashboard/projects/$projectId/buildings': {
-      id: '/dashboard/projects/$projectId/buildings'
+    '/dashboard/projects/$projectIdentifier/buildings': {
+      id: '/dashboard/projects/$projectIdentifier/buildings'
       path: '/buildings'
-      fullPath: '/dashboard/projects/$projectId/buildings'
-      preLoaderRoute: typeof DashboardProjectsProjectIdBuildingsImport
-      parentRoute: typeof DashboardProjectsProjectIdImport
+      fullPath: '/dashboard/projects/$projectIdentifier/buildings'
+      preLoaderRoute: typeof DashboardProjectsProjectIdentifierBuildingsImport
+      parentRoute: typeof DashboardProjectsProjectIdentifierImport
     }
-    '/dashboard/projects/$projectId/edit': {
-      id: '/dashboard/projects/$projectId/edit'
+    '/dashboard/projects/$projectIdentifier/edit': {
+      id: '/dashboard/projects/$projectIdentifier/edit'
       path: '/edit'
-      fullPath: '/dashboard/projects/$projectId/edit'
-      preLoaderRoute: typeof DashboardProjectsProjectIdEditImport
-      parentRoute: typeof DashboardProjectsProjectIdImport
+      fullPath: '/dashboard/projects/$projectIdentifier/edit'
+      preLoaderRoute: typeof DashboardProjectsProjectIdentifierEditImport
+      parentRoute: typeof DashboardProjectsProjectIdentifierImport
     }
     '/dashboard/analytics/projects/': {
       id: '/dashboard/analytics/projects/'
@@ -536,82 +548,82 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAnalyticsProjectsIndexImport
       parentRoute: typeof DashboardRouteImport
     }
-    '/dashboard/projects/$projectId/': {
-      id: '/dashboard/projects/$projectId/'
+    '/dashboard/projects/$projectIdentifier/': {
+      id: '/dashboard/projects/$projectIdentifier/'
       path: '/'
-      fullPath: '/dashboard/projects/$projectId/'
-      preLoaderRoute: typeof DashboardProjectsProjectIdIndexImport
-      parentRoute: typeof DashboardProjectsProjectIdImport
+      fullPath: '/dashboard/projects/$projectIdentifier/'
+      preLoaderRoute: typeof DashboardProjectsProjectIdentifierIndexImport
+      parentRoute: typeof DashboardProjectsProjectIdentifierImport
     }
-    '/dashboard/projects/$projectId/buildings/$buildingId': {
-      id: '/dashboard/projects/$projectId/buildings/$buildingId'
-      path: '/$buildingId'
-      fullPath: '/dashboard/projects/$projectId/buildings/$buildingId'
-      preLoaderRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdImport
-      parentRoute: typeof DashboardProjectsProjectIdBuildingsImport
+    '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier': {
+      id: '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier'
+      path: '/$buildingIdentifier'
+      fullPath: '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier'
+      preLoaderRoute: typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierImport
+      parentRoute: typeof DashboardProjectsProjectIdentifierBuildingsImport
     }
-    '/dashboard/projects/$projectId/pours/new': {
-      id: '/dashboard/projects/$projectId/pours/new'
+    '/dashboard/projects/$projectIdentifier/pours/new': {
+      id: '/dashboard/projects/$projectIdentifier/pours/new'
       path: '/pours/new'
-      fullPath: '/dashboard/projects/$projectId/pours/new'
-      preLoaderRoute: typeof DashboardProjectsProjectIdPoursNewImport
-      parentRoute: typeof DashboardProjectsProjectIdImport
+      fullPath: '/dashboard/projects/$projectIdentifier/pours/new'
+      preLoaderRoute: typeof DashboardProjectsProjectIdentifierPoursNewImport
+      parentRoute: typeof DashboardProjectsProjectIdentifierImport
     }
-    '/dashboard/projects/$projectId/buildings/': {
-      id: '/dashboard/projects/$projectId/buildings/'
+    '/dashboard/projects/$projectIdentifier/buildings/': {
+      id: '/dashboard/projects/$projectIdentifier/buildings/'
       path: '/'
-      fullPath: '/dashboard/projects/$projectId/buildings/'
-      preLoaderRoute: typeof DashboardProjectsProjectIdBuildingsIndexImport
-      parentRoute: typeof DashboardProjectsProjectIdBuildingsImport
+      fullPath: '/dashboard/projects/$projectIdentifier/buildings/'
+      preLoaderRoute: typeof DashboardProjectsProjectIdentifierBuildingsIndexImport
+      parentRoute: typeof DashboardProjectsProjectIdentifierBuildingsImport
     }
-    '/dashboard/field/projects/$projectId/photos/upload': {
-      id: '/dashboard/field/projects/$projectId/photos/upload'
+    '/dashboard/field/projects/$projectIdentifier/photos/upload': {
+      id: '/dashboard/field/projects/$projectIdentifier/photos/upload'
       path: '/photos/upload'
-      fullPath: '/dashboard/field/projects/$projectId/photos/upload'
-      preLoaderRoute: typeof DashboardFieldProjectsProjectIdPhotosUploadImport
-      parentRoute: typeof DashboardFieldProjectsProjectIdImport
+      fullPath: '/dashboard/field/projects/$projectIdentifier/photos/upload'
+      preLoaderRoute: typeof DashboardFieldProjectsProjectIdentifierPhotosUploadImport
+      parentRoute: typeof DashboardFieldProjectsProjectIdentifierImport
     }
-    '/dashboard/field/projects/$projectId/pours/quick-add': {
-      id: '/dashboard/field/projects/$projectId/pours/quick-add'
+    '/dashboard/field/projects/$projectIdentifier/pours/quick-add': {
+      id: '/dashboard/field/projects/$projectIdentifier/pours/quick-add'
       path: '/pours/quick-add'
-      fullPath: '/dashboard/field/projects/$projectId/pours/quick-add'
-      preLoaderRoute: typeof DashboardFieldProjectsProjectIdPoursQuickAddImport
-      parentRoute: typeof DashboardFieldProjectsProjectIdImport
+      fullPath: '/dashboard/field/projects/$projectIdentifier/pours/quick-add'
+      preLoaderRoute: typeof DashboardFieldProjectsProjectIdentifierPoursQuickAddImport
+      parentRoute: typeof DashboardFieldProjectsProjectIdentifierImport
     }
-    '/dashboard/projects/$projectId/buildings/$buildingId/edit': {
-      id: '/dashboard/projects/$projectId/buildings/$buildingId/edit'
+    '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/edit': {
+      id: '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/edit'
       path: '/edit'
-      fullPath: '/dashboard/projects/$projectId/buildings/$buildingId/edit'
-      preLoaderRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdEditImport
-      parentRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdImport
+      fullPath: '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/edit'
+      preLoaderRoute: typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierEditImport
+      parentRoute: typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierImport
     }
-    '/dashboard/projects/$projectId/buildings/$buildingId/floors': {
-      id: '/dashboard/projects/$projectId/buildings/$buildingId/floors'
+    '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors': {
+      id: '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors'
       path: '/floors'
-      fullPath: '/dashboard/projects/$projectId/buildings/$buildingId/floors'
-      preLoaderRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsImport
-      parentRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdImport
+      fullPath: '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors'
+      preLoaderRoute: typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsImport
+      parentRoute: typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierImport
     }
-    '/dashboard/projects/$projectId/buildings/$buildingId/': {
-      id: '/dashboard/projects/$projectId/buildings/$buildingId/'
+    '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/': {
+      id: '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/'
       path: '/'
-      fullPath: '/dashboard/projects/$projectId/buildings/$buildingId/'
-      preLoaderRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdIndexImport
-      parentRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdImport
+      fullPath: '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/'
+      preLoaderRoute: typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierIndexImport
+      parentRoute: typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierImport
     }
-    '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId': {
-      id: '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId'
-      path: '/$floorId'
-      fullPath: '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId'
-      preLoaderRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdImport
-      parentRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsImport
+    '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier': {
+      id: '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier'
+      path: '/$floorIdentifier'
+      fullPath: '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier'
+      preLoaderRoute: typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsFloorIdentifierImport
+      parentRoute: typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsImport
     }
-    '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId/edit': {
-      id: '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId/edit'
+    '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier/edit': {
+      id: '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier/edit'
       path: '/edit'
-      fullPath: '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId/edit'
-      preLoaderRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdEditImport
-      parentRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdImport
+      fullPath: '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier/edit'
+      preLoaderRoute: typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsFloorIdentifierEditImport
+      parentRoute: typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsFloorIdentifierImport
     }
   }
 }
@@ -636,113 +648,115 @@ const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
   AdminRouteRouteChildren,
 )
 
-interface DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdRouteChildren {
-  DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdEditRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdEditRoute
+interface DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsFloorIdentifierRouteChildren {
+  DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsFloorIdentifierEditRoute: typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsFloorIdentifierEditRoute
 }
 
-const DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdRouteChildren: DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdRouteChildren =
+const DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsFloorIdentifierRouteChildren: DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsFloorIdentifierRouteChildren =
   {
-    DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdEditRoute:
-      DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdEditRoute,
+    DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsFloorIdentifierEditRoute:
+      DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsFloorIdentifierEditRoute,
   }
 
-const DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdRouteWithChildren =
-  DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdRoute._addFileChildren(
-    DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdRouteChildren,
+const DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsFloorIdentifierRouteWithChildren =
+  DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsFloorIdentifierRoute._addFileChildren(
+    DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsFloorIdentifierRouteChildren,
   )
 
-interface DashboardProjectsProjectIdBuildingsBuildingIdFloorsRouteChildren {
-  DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdRouteWithChildren
+interface DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsRouteChildren {
+  DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsFloorIdentifierRoute: typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsFloorIdentifierRouteWithChildren
 }
 
-const DashboardProjectsProjectIdBuildingsBuildingIdFloorsRouteChildren: DashboardProjectsProjectIdBuildingsBuildingIdFloorsRouteChildren =
+const DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsRouteChildren: DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsRouteChildren =
   {
-    DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdRoute:
-      DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdRouteWithChildren,
+    DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsFloorIdentifierRoute:
+      DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsFloorIdentifierRouteWithChildren,
   }
 
-const DashboardProjectsProjectIdBuildingsBuildingIdFloorsRouteWithChildren =
-  DashboardProjectsProjectIdBuildingsBuildingIdFloorsRoute._addFileChildren(
-    DashboardProjectsProjectIdBuildingsBuildingIdFloorsRouteChildren,
+const DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsRouteWithChildren =
+  DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsRoute._addFileChildren(
+    DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsRouteChildren,
   )
 
-interface DashboardProjectsProjectIdBuildingsBuildingIdRouteChildren {
-  DashboardProjectsProjectIdBuildingsBuildingIdEditRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdEditRoute
-  DashboardProjectsProjectIdBuildingsBuildingIdFloorsRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsRouteWithChildren
-  DashboardProjectsProjectIdBuildingsBuildingIdIndexRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdIndexRoute
+interface DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierRouteChildren {
+  DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierEditRoute: typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierEditRoute
+  DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsRoute: typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsRouteWithChildren
+  DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierIndexRoute: typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierIndexRoute
 }
 
-const DashboardProjectsProjectIdBuildingsBuildingIdRouteChildren: DashboardProjectsProjectIdBuildingsBuildingIdRouteChildren =
+const DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierRouteChildren: DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierRouteChildren =
   {
-    DashboardProjectsProjectIdBuildingsBuildingIdEditRoute:
-      DashboardProjectsProjectIdBuildingsBuildingIdEditRoute,
-    DashboardProjectsProjectIdBuildingsBuildingIdFloorsRoute:
-      DashboardProjectsProjectIdBuildingsBuildingIdFloorsRouteWithChildren,
-    DashboardProjectsProjectIdBuildingsBuildingIdIndexRoute:
-      DashboardProjectsProjectIdBuildingsBuildingIdIndexRoute,
+    DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierEditRoute:
+      DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierEditRoute,
+    DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsRoute:
+      DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsRouteWithChildren,
+    DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierIndexRoute:
+      DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierIndexRoute,
   }
 
-const DashboardProjectsProjectIdBuildingsBuildingIdRouteWithChildren =
-  DashboardProjectsProjectIdBuildingsBuildingIdRoute._addFileChildren(
-    DashboardProjectsProjectIdBuildingsBuildingIdRouteChildren,
+const DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierRouteWithChildren =
+  DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierRoute._addFileChildren(
+    DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierRouteChildren,
   )
 
-interface DashboardProjectsProjectIdBuildingsRouteChildren {
-  DashboardProjectsProjectIdBuildingsBuildingIdRoute: typeof DashboardProjectsProjectIdBuildingsBuildingIdRouteWithChildren
-  DashboardProjectsProjectIdBuildingsIndexRoute: typeof DashboardProjectsProjectIdBuildingsIndexRoute
+interface DashboardProjectsProjectIdentifierBuildingsRouteChildren {
+  DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierRoute: typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierRouteWithChildren
+  DashboardProjectsProjectIdentifierBuildingsIndexRoute: typeof DashboardProjectsProjectIdentifierBuildingsIndexRoute
 }
 
-const DashboardProjectsProjectIdBuildingsRouteChildren: DashboardProjectsProjectIdBuildingsRouteChildren =
+const DashboardProjectsProjectIdentifierBuildingsRouteChildren: DashboardProjectsProjectIdentifierBuildingsRouteChildren =
   {
-    DashboardProjectsProjectIdBuildingsBuildingIdRoute:
-      DashboardProjectsProjectIdBuildingsBuildingIdRouteWithChildren,
-    DashboardProjectsProjectIdBuildingsIndexRoute:
-      DashboardProjectsProjectIdBuildingsIndexRoute,
+    DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierRoute:
+      DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierRouteWithChildren,
+    DashboardProjectsProjectIdentifierBuildingsIndexRoute:
+      DashboardProjectsProjectIdentifierBuildingsIndexRoute,
   }
 
-const DashboardProjectsProjectIdBuildingsRouteWithChildren =
-  DashboardProjectsProjectIdBuildingsRoute._addFileChildren(
-    DashboardProjectsProjectIdBuildingsRouteChildren,
+const DashboardProjectsProjectIdentifierBuildingsRouteWithChildren =
+  DashboardProjectsProjectIdentifierBuildingsRoute._addFileChildren(
+    DashboardProjectsProjectIdentifierBuildingsRouteChildren,
   )
 
-interface DashboardProjectsProjectIdRouteChildren {
-  DashboardProjectsProjectIdBuildingsRoute: typeof DashboardProjectsProjectIdBuildingsRouteWithChildren
-  DashboardProjectsProjectIdEditRoute: typeof DashboardProjectsProjectIdEditRoute
-  DashboardProjectsProjectIdIndexRoute: typeof DashboardProjectsProjectIdIndexRoute
-  DashboardProjectsProjectIdPoursNewRoute: typeof DashboardProjectsProjectIdPoursNewRoute
+interface DashboardProjectsProjectIdentifierRouteChildren {
+  DashboardProjectsProjectIdentifierBuildingsRoute: typeof DashboardProjectsProjectIdentifierBuildingsRouteWithChildren
+  DashboardProjectsProjectIdentifierEditRoute: typeof DashboardProjectsProjectIdentifierEditRoute
+  DashboardProjectsProjectIdentifierIndexRoute: typeof DashboardProjectsProjectIdentifierIndexRoute
+  DashboardProjectsProjectIdentifierPoursNewRoute: typeof DashboardProjectsProjectIdentifierPoursNewRoute
 }
 
-const DashboardProjectsProjectIdRouteChildren: DashboardProjectsProjectIdRouteChildren =
+const DashboardProjectsProjectIdentifierRouteChildren: DashboardProjectsProjectIdentifierRouteChildren =
   {
-    DashboardProjectsProjectIdBuildingsRoute:
-      DashboardProjectsProjectIdBuildingsRouteWithChildren,
-    DashboardProjectsProjectIdEditRoute: DashboardProjectsProjectIdEditRoute,
-    DashboardProjectsProjectIdIndexRoute: DashboardProjectsProjectIdIndexRoute,
-    DashboardProjectsProjectIdPoursNewRoute:
-      DashboardProjectsProjectIdPoursNewRoute,
+    DashboardProjectsProjectIdentifierBuildingsRoute:
+      DashboardProjectsProjectIdentifierBuildingsRouteWithChildren,
+    DashboardProjectsProjectIdentifierEditRoute:
+      DashboardProjectsProjectIdentifierEditRoute,
+    DashboardProjectsProjectIdentifierIndexRoute:
+      DashboardProjectsProjectIdentifierIndexRoute,
+    DashboardProjectsProjectIdentifierPoursNewRoute:
+      DashboardProjectsProjectIdentifierPoursNewRoute,
   }
 
-const DashboardProjectsProjectIdRouteWithChildren =
-  DashboardProjectsProjectIdRoute._addFileChildren(
-    DashboardProjectsProjectIdRouteChildren,
+const DashboardProjectsProjectIdentifierRouteWithChildren =
+  DashboardProjectsProjectIdentifierRoute._addFileChildren(
+    DashboardProjectsProjectIdentifierRouteChildren,
   )
 
-interface DashboardFieldProjectsProjectIdRouteChildren {
-  DashboardFieldProjectsProjectIdPhotosUploadRoute: typeof DashboardFieldProjectsProjectIdPhotosUploadRoute
-  DashboardFieldProjectsProjectIdPoursQuickAddRoute: typeof DashboardFieldProjectsProjectIdPoursQuickAddRoute
+interface DashboardFieldProjectsProjectIdentifierRouteChildren {
+  DashboardFieldProjectsProjectIdentifierPhotosUploadRoute: typeof DashboardFieldProjectsProjectIdentifierPhotosUploadRoute
+  DashboardFieldProjectsProjectIdentifierPoursQuickAddRoute: typeof DashboardFieldProjectsProjectIdentifierPoursQuickAddRoute
 }
 
-const DashboardFieldProjectsProjectIdRouteChildren: DashboardFieldProjectsProjectIdRouteChildren =
+const DashboardFieldProjectsProjectIdentifierRouteChildren: DashboardFieldProjectsProjectIdentifierRouteChildren =
   {
-    DashboardFieldProjectsProjectIdPhotosUploadRoute:
-      DashboardFieldProjectsProjectIdPhotosUploadRoute,
-    DashboardFieldProjectsProjectIdPoursQuickAddRoute:
-      DashboardFieldProjectsProjectIdPoursQuickAddRoute,
+    DashboardFieldProjectsProjectIdentifierPhotosUploadRoute:
+      DashboardFieldProjectsProjectIdentifierPhotosUploadRoute,
+    DashboardFieldProjectsProjectIdentifierPoursQuickAddRoute:
+      DashboardFieldProjectsProjectIdentifierPoursQuickAddRoute,
   }
 
-const DashboardFieldProjectsProjectIdRouteWithChildren =
-  DashboardFieldProjectsProjectIdRoute._addFileChildren(
-    DashboardFieldProjectsProjectIdRouteChildren,
+const DashboardFieldProjectsProjectIdentifierRouteWithChildren =
+  DashboardFieldProjectsProjectIdentifierRoute._addFileChildren(
+    DashboardFieldProjectsProjectIdentifierRouteChildren,
   )
 
 interface DashboardRouteRouteChildren {
@@ -752,13 +766,13 @@ interface DashboardRouteRouteChildren {
   DashboardCompanyMembersRoute: typeof DashboardCompanyMembersRoute
   DashboardCompanyProjectsRoute: typeof DashboardCompanyProjectsRoute
   DashboardCompanyRolesRoute: typeof DashboardCompanyRolesRoute
-  DashboardProjectsProjectIdRoute: typeof DashboardProjectsProjectIdRouteWithChildren
+  DashboardProjectsProjectIdentifierRoute: typeof DashboardProjectsProjectIdentifierRouteWithChildren
   DashboardAnalyticsIndexRoute: typeof DashboardAnalyticsIndexRoute
   DashboardCompanyIndexRoute: typeof DashboardCompanyIndexRoute
   DashboardFieldIndexRoute: typeof DashboardFieldIndexRoute
   DashboardProjectsIndexRoute: typeof DashboardProjectsIndexRoute
-  DashboardAnalyticsProjectsProjectIdRoute: typeof DashboardAnalyticsProjectsProjectIdRoute
-  DashboardFieldProjectsProjectIdRoute: typeof DashboardFieldProjectsProjectIdRouteWithChildren
+  DashboardAnalyticsProjectsProjectIdentifierRoute: typeof DashboardAnalyticsProjectsProjectIdentifierRoute
+  DashboardFieldProjectsProjectIdentifierRoute: typeof DashboardFieldProjectsProjectIdentifierRouteWithChildren
   DashboardAnalyticsProjectsIndexRoute: typeof DashboardAnalyticsProjectsIndexRoute
 }
 
@@ -769,15 +783,16 @@ const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardCompanyMembersRoute: DashboardCompanyMembersRoute,
   DashboardCompanyProjectsRoute: DashboardCompanyProjectsRoute,
   DashboardCompanyRolesRoute: DashboardCompanyRolesRoute,
-  DashboardProjectsProjectIdRoute: DashboardProjectsProjectIdRouteWithChildren,
+  DashboardProjectsProjectIdentifierRoute:
+    DashboardProjectsProjectIdentifierRouteWithChildren,
   DashboardAnalyticsIndexRoute: DashboardAnalyticsIndexRoute,
   DashboardCompanyIndexRoute: DashboardCompanyIndexRoute,
   DashboardFieldIndexRoute: DashboardFieldIndexRoute,
   DashboardProjectsIndexRoute: DashboardProjectsIndexRoute,
-  DashboardAnalyticsProjectsProjectIdRoute:
-    DashboardAnalyticsProjectsProjectIdRoute,
-  DashboardFieldProjectsProjectIdRoute:
-    DashboardFieldProjectsProjectIdRouteWithChildren,
+  DashboardAnalyticsProjectsProjectIdentifierRoute:
+    DashboardAnalyticsProjectsProjectIdentifierRoute,
+  DashboardFieldProjectsProjectIdentifierRoute:
+    DashboardFieldProjectsProjectIdentifierRouteWithChildren,
   DashboardAnalyticsProjectsIndexRoute: DashboardAnalyticsProjectsIndexRoute,
 }
 
@@ -806,27 +821,27 @@ export interface FileRoutesByFullPath {
   '/dashboard/company/members': typeof DashboardCompanyMembersRoute
   '/dashboard/company/projects': typeof DashboardCompanyProjectsRoute
   '/dashboard/company/roles': typeof DashboardCompanyRolesRoute
-  '/dashboard/projects/$projectId': typeof DashboardProjectsProjectIdRouteWithChildren
+  '/dashboard/projects/$projectIdentifier': typeof DashboardProjectsProjectIdentifierRouteWithChildren
   '/dashboard/analytics': typeof DashboardAnalyticsIndexRoute
   '/dashboard/company': typeof DashboardCompanyIndexRoute
   '/dashboard/field': typeof DashboardFieldIndexRoute
   '/dashboard/projects': typeof DashboardProjectsIndexRoute
-  '/dashboard/analytics/projects/$projectId': typeof DashboardAnalyticsProjectsProjectIdRoute
-  '/dashboard/field/projects/$projectId': typeof DashboardFieldProjectsProjectIdRouteWithChildren
-  '/dashboard/projects/$projectId/buildings': typeof DashboardProjectsProjectIdBuildingsRouteWithChildren
-  '/dashboard/projects/$projectId/edit': typeof DashboardProjectsProjectIdEditRoute
+  '/dashboard/analytics/projects/$projectIdentifier': typeof DashboardAnalyticsProjectsProjectIdentifierRoute
+  '/dashboard/field/projects/$projectIdentifier': typeof DashboardFieldProjectsProjectIdentifierRouteWithChildren
+  '/dashboard/projects/$projectIdentifier/buildings': typeof DashboardProjectsProjectIdentifierBuildingsRouteWithChildren
+  '/dashboard/projects/$projectIdentifier/edit': typeof DashboardProjectsProjectIdentifierEditRoute
   '/dashboard/analytics/projects': typeof DashboardAnalyticsProjectsIndexRoute
-  '/dashboard/projects/$projectId/': typeof DashboardProjectsProjectIdIndexRoute
-  '/dashboard/projects/$projectId/buildings/$buildingId': typeof DashboardProjectsProjectIdBuildingsBuildingIdRouteWithChildren
-  '/dashboard/projects/$projectId/pours/new': typeof DashboardProjectsProjectIdPoursNewRoute
-  '/dashboard/projects/$projectId/buildings/': typeof DashboardProjectsProjectIdBuildingsIndexRoute
-  '/dashboard/field/projects/$projectId/photos/upload': typeof DashboardFieldProjectsProjectIdPhotosUploadRoute
-  '/dashboard/field/projects/$projectId/pours/quick-add': typeof DashboardFieldProjectsProjectIdPoursQuickAddRoute
-  '/dashboard/projects/$projectId/buildings/$buildingId/edit': typeof DashboardProjectsProjectIdBuildingsBuildingIdEditRoute
-  '/dashboard/projects/$projectId/buildings/$buildingId/floors': typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsRouteWithChildren
-  '/dashboard/projects/$projectId/buildings/$buildingId/': typeof DashboardProjectsProjectIdBuildingsBuildingIdIndexRoute
-  '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId': typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdRouteWithChildren
-  '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId/edit': typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdEditRoute
+  '/dashboard/projects/$projectIdentifier/': typeof DashboardProjectsProjectIdentifierIndexRoute
+  '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier': typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierRouteWithChildren
+  '/dashboard/projects/$projectIdentifier/pours/new': typeof DashboardProjectsProjectIdentifierPoursNewRoute
+  '/dashboard/projects/$projectIdentifier/buildings/': typeof DashboardProjectsProjectIdentifierBuildingsIndexRoute
+  '/dashboard/field/projects/$projectIdentifier/photos/upload': typeof DashboardFieldProjectsProjectIdentifierPhotosUploadRoute
+  '/dashboard/field/projects/$projectIdentifier/pours/quick-add': typeof DashboardFieldProjectsProjectIdentifierPoursQuickAddRoute
+  '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/edit': typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierEditRoute
+  '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors': typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsRouteWithChildren
+  '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/': typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierIndexRoute
+  '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier': typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsFloorIdentifierRouteWithChildren
+  '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier/edit': typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsFloorIdentifierEditRoute
 }
 
 export interface FileRoutesByTo {
@@ -852,20 +867,20 @@ export interface FileRoutesByTo {
   '/dashboard/company': typeof DashboardCompanyIndexRoute
   '/dashboard/field': typeof DashboardFieldIndexRoute
   '/dashboard/projects': typeof DashboardProjectsIndexRoute
-  '/dashboard/analytics/projects/$projectId': typeof DashboardAnalyticsProjectsProjectIdRoute
-  '/dashboard/field/projects/$projectId': typeof DashboardFieldProjectsProjectIdRouteWithChildren
-  '/dashboard/projects/$projectId/edit': typeof DashboardProjectsProjectIdEditRoute
+  '/dashboard/analytics/projects/$projectIdentifier': typeof DashboardAnalyticsProjectsProjectIdentifierRoute
+  '/dashboard/field/projects/$projectIdentifier': typeof DashboardFieldProjectsProjectIdentifierRouteWithChildren
+  '/dashboard/projects/$projectIdentifier/edit': typeof DashboardProjectsProjectIdentifierEditRoute
   '/dashboard/analytics/projects': typeof DashboardAnalyticsProjectsIndexRoute
-  '/dashboard/projects/$projectId': typeof DashboardProjectsProjectIdIndexRoute
-  '/dashboard/projects/$projectId/pours/new': typeof DashboardProjectsProjectIdPoursNewRoute
-  '/dashboard/projects/$projectId/buildings': typeof DashboardProjectsProjectIdBuildingsIndexRoute
-  '/dashboard/field/projects/$projectId/photos/upload': typeof DashboardFieldProjectsProjectIdPhotosUploadRoute
-  '/dashboard/field/projects/$projectId/pours/quick-add': typeof DashboardFieldProjectsProjectIdPoursQuickAddRoute
-  '/dashboard/projects/$projectId/buildings/$buildingId/edit': typeof DashboardProjectsProjectIdBuildingsBuildingIdEditRoute
-  '/dashboard/projects/$projectId/buildings/$buildingId/floors': typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsRouteWithChildren
-  '/dashboard/projects/$projectId/buildings/$buildingId': typeof DashboardProjectsProjectIdBuildingsBuildingIdIndexRoute
-  '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId': typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdRouteWithChildren
-  '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId/edit': typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdEditRoute
+  '/dashboard/projects/$projectIdentifier': typeof DashboardProjectsProjectIdentifierIndexRoute
+  '/dashboard/projects/$projectIdentifier/pours/new': typeof DashboardProjectsProjectIdentifierPoursNewRoute
+  '/dashboard/projects/$projectIdentifier/buildings': typeof DashboardProjectsProjectIdentifierBuildingsIndexRoute
+  '/dashboard/field/projects/$projectIdentifier/photos/upload': typeof DashboardFieldProjectsProjectIdentifierPhotosUploadRoute
+  '/dashboard/field/projects/$projectIdentifier/pours/quick-add': typeof DashboardFieldProjectsProjectIdentifierPoursQuickAddRoute
+  '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/edit': typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierEditRoute
+  '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors': typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsRouteWithChildren
+  '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier': typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierIndexRoute
+  '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier': typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsFloorIdentifierRouteWithChildren
+  '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier/edit': typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsFloorIdentifierEditRoute
 }
 
 export interface FileRoutesById {
@@ -890,27 +905,27 @@ export interface FileRoutesById {
   '/dashboard/company/members': typeof DashboardCompanyMembersRoute
   '/dashboard/company/projects': typeof DashboardCompanyProjectsRoute
   '/dashboard/company/roles': typeof DashboardCompanyRolesRoute
-  '/dashboard/projects/$projectId': typeof DashboardProjectsProjectIdRouteWithChildren
+  '/dashboard/projects/$projectIdentifier': typeof DashboardProjectsProjectIdentifierRouteWithChildren
   '/dashboard/analytics/': typeof DashboardAnalyticsIndexRoute
   '/dashboard/company/': typeof DashboardCompanyIndexRoute
   '/dashboard/field/': typeof DashboardFieldIndexRoute
   '/dashboard/projects/': typeof DashboardProjectsIndexRoute
-  '/dashboard/analytics/projects/$projectId': typeof DashboardAnalyticsProjectsProjectIdRoute
-  '/dashboard/field/projects/$projectId': typeof DashboardFieldProjectsProjectIdRouteWithChildren
-  '/dashboard/projects/$projectId/buildings': typeof DashboardProjectsProjectIdBuildingsRouteWithChildren
-  '/dashboard/projects/$projectId/edit': typeof DashboardProjectsProjectIdEditRoute
+  '/dashboard/analytics/projects/$projectIdentifier': typeof DashboardAnalyticsProjectsProjectIdentifierRoute
+  '/dashboard/field/projects/$projectIdentifier': typeof DashboardFieldProjectsProjectIdentifierRouteWithChildren
+  '/dashboard/projects/$projectIdentifier/buildings': typeof DashboardProjectsProjectIdentifierBuildingsRouteWithChildren
+  '/dashboard/projects/$projectIdentifier/edit': typeof DashboardProjectsProjectIdentifierEditRoute
   '/dashboard/analytics/projects/': typeof DashboardAnalyticsProjectsIndexRoute
-  '/dashboard/projects/$projectId/': typeof DashboardProjectsProjectIdIndexRoute
-  '/dashboard/projects/$projectId/buildings/$buildingId': typeof DashboardProjectsProjectIdBuildingsBuildingIdRouteWithChildren
-  '/dashboard/projects/$projectId/pours/new': typeof DashboardProjectsProjectIdPoursNewRoute
-  '/dashboard/projects/$projectId/buildings/': typeof DashboardProjectsProjectIdBuildingsIndexRoute
-  '/dashboard/field/projects/$projectId/photos/upload': typeof DashboardFieldProjectsProjectIdPhotosUploadRoute
-  '/dashboard/field/projects/$projectId/pours/quick-add': typeof DashboardFieldProjectsProjectIdPoursQuickAddRoute
-  '/dashboard/projects/$projectId/buildings/$buildingId/edit': typeof DashboardProjectsProjectIdBuildingsBuildingIdEditRoute
-  '/dashboard/projects/$projectId/buildings/$buildingId/floors': typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsRouteWithChildren
-  '/dashboard/projects/$projectId/buildings/$buildingId/': typeof DashboardProjectsProjectIdBuildingsBuildingIdIndexRoute
-  '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId': typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdRouteWithChildren
-  '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId/edit': typeof DashboardProjectsProjectIdBuildingsBuildingIdFloorsFloorIdEditRoute
+  '/dashboard/projects/$projectIdentifier/': typeof DashboardProjectsProjectIdentifierIndexRoute
+  '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier': typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierRouteWithChildren
+  '/dashboard/projects/$projectIdentifier/pours/new': typeof DashboardProjectsProjectIdentifierPoursNewRoute
+  '/dashboard/projects/$projectIdentifier/buildings/': typeof DashboardProjectsProjectIdentifierBuildingsIndexRoute
+  '/dashboard/field/projects/$projectIdentifier/photos/upload': typeof DashboardFieldProjectsProjectIdentifierPhotosUploadRoute
+  '/dashboard/field/projects/$projectIdentifier/pours/quick-add': typeof DashboardFieldProjectsProjectIdentifierPoursQuickAddRoute
+  '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/edit': typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierEditRoute
+  '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors': typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsRouteWithChildren
+  '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/': typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierIndexRoute
+  '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier': typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsFloorIdentifierRouteWithChildren
+  '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier/edit': typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsFloorIdentifierEditRoute
 }
 
 export interface FileRouteTypes {
@@ -936,27 +951,27 @@ export interface FileRouteTypes {
     | '/dashboard/company/members'
     | '/dashboard/company/projects'
     | '/dashboard/company/roles'
-    | '/dashboard/projects/$projectId'
+    | '/dashboard/projects/$projectIdentifier'
     | '/dashboard/analytics'
     | '/dashboard/company'
     | '/dashboard/field'
     | '/dashboard/projects'
-    | '/dashboard/analytics/projects/$projectId'
-    | '/dashboard/field/projects/$projectId'
-    | '/dashboard/projects/$projectId/buildings'
-    | '/dashboard/projects/$projectId/edit'
+    | '/dashboard/analytics/projects/$projectIdentifier'
+    | '/dashboard/field/projects/$projectIdentifier'
+    | '/dashboard/projects/$projectIdentifier/buildings'
+    | '/dashboard/projects/$projectIdentifier/edit'
     | '/dashboard/analytics/projects'
-    | '/dashboard/projects/$projectId/'
-    | '/dashboard/projects/$projectId/buildings/$buildingId'
-    | '/dashboard/projects/$projectId/pours/new'
-    | '/dashboard/projects/$projectId/buildings/'
-    | '/dashboard/field/projects/$projectId/photos/upload'
-    | '/dashboard/field/projects/$projectId/pours/quick-add'
-    | '/dashboard/projects/$projectId/buildings/$buildingId/edit'
-    | '/dashboard/projects/$projectId/buildings/$buildingId/floors'
-    | '/dashboard/projects/$projectId/buildings/$buildingId/'
-    | '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId'
-    | '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId/edit'
+    | '/dashboard/projects/$projectIdentifier/'
+    | '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier'
+    | '/dashboard/projects/$projectIdentifier/pours/new'
+    | '/dashboard/projects/$projectIdentifier/buildings/'
+    | '/dashboard/field/projects/$projectIdentifier/photos/upload'
+    | '/dashboard/field/projects/$projectIdentifier/pours/quick-add'
+    | '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/edit'
+    | '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors'
+    | '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/'
+    | '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier'
+    | '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -981,20 +996,20 @@ export interface FileRouteTypes {
     | '/dashboard/company'
     | '/dashboard/field'
     | '/dashboard/projects'
-    | '/dashboard/analytics/projects/$projectId'
-    | '/dashboard/field/projects/$projectId'
-    | '/dashboard/projects/$projectId/edit'
+    | '/dashboard/analytics/projects/$projectIdentifier'
+    | '/dashboard/field/projects/$projectIdentifier'
+    | '/dashboard/projects/$projectIdentifier/edit'
     | '/dashboard/analytics/projects'
-    | '/dashboard/projects/$projectId'
-    | '/dashboard/projects/$projectId/pours/new'
-    | '/dashboard/projects/$projectId/buildings'
-    | '/dashboard/field/projects/$projectId/photos/upload'
-    | '/dashboard/field/projects/$projectId/pours/quick-add'
-    | '/dashboard/projects/$projectId/buildings/$buildingId/edit'
-    | '/dashboard/projects/$projectId/buildings/$buildingId/floors'
-    | '/dashboard/projects/$projectId/buildings/$buildingId'
-    | '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId'
-    | '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId/edit'
+    | '/dashboard/projects/$projectIdentifier'
+    | '/dashboard/projects/$projectIdentifier/pours/new'
+    | '/dashboard/projects/$projectIdentifier/buildings'
+    | '/dashboard/field/projects/$projectIdentifier/photos/upload'
+    | '/dashboard/field/projects/$projectIdentifier/pours/quick-add'
+    | '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/edit'
+    | '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors'
+    | '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier'
+    | '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier'
+    | '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier/edit'
   id:
     | '__root__'
     | '/'
@@ -1017,27 +1032,27 @@ export interface FileRouteTypes {
     | '/dashboard/company/members'
     | '/dashboard/company/projects'
     | '/dashboard/company/roles'
-    | '/dashboard/projects/$projectId'
+    | '/dashboard/projects/$projectIdentifier'
     | '/dashboard/analytics/'
     | '/dashboard/company/'
     | '/dashboard/field/'
     | '/dashboard/projects/'
-    | '/dashboard/analytics/projects/$projectId'
-    | '/dashboard/field/projects/$projectId'
-    | '/dashboard/projects/$projectId/buildings'
-    | '/dashboard/projects/$projectId/edit'
+    | '/dashboard/analytics/projects/$projectIdentifier'
+    | '/dashboard/field/projects/$projectIdentifier'
+    | '/dashboard/projects/$projectIdentifier/buildings'
+    | '/dashboard/projects/$projectIdentifier/edit'
     | '/dashboard/analytics/projects/'
-    | '/dashboard/projects/$projectId/'
-    | '/dashboard/projects/$projectId/buildings/$buildingId'
-    | '/dashboard/projects/$projectId/pours/new'
-    | '/dashboard/projects/$projectId/buildings/'
-    | '/dashboard/field/projects/$projectId/photos/upload'
-    | '/dashboard/field/projects/$projectId/pours/quick-add'
-    | '/dashboard/projects/$projectId/buildings/$buildingId/edit'
-    | '/dashboard/projects/$projectId/buildings/$buildingId/floors'
-    | '/dashboard/projects/$projectId/buildings/$buildingId/'
-    | '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId'
-    | '/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId/edit'
+    | '/dashboard/projects/$projectIdentifier/'
+    | '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier'
+    | '/dashboard/projects/$projectIdentifier/pours/new'
+    | '/dashboard/projects/$projectIdentifier/buildings/'
+    | '/dashboard/field/projects/$projectIdentifier/photos/upload'
+    | '/dashboard/field/projects/$projectIdentifier/pours/quick-add'
+    | '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/edit'
+    | '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors'
+    | '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/'
+    | '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier'
+    | '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier/edit'
   fileRoutesById: FileRoutesById
 }
 
@@ -1110,13 +1125,13 @@ export const routeTree = rootRoute
         "/dashboard/company/members",
         "/dashboard/company/projects",
         "/dashboard/company/roles",
-        "/dashboard/projects/$projectId",
+        "/dashboard/projects/$projectIdentifier",
         "/dashboard/analytics/",
         "/dashboard/company/",
         "/dashboard/field/",
         "/dashboard/projects/",
-        "/dashboard/analytics/projects/$projectId",
-        "/dashboard/field/projects/$projectId",
+        "/dashboard/analytics/projects/$projectIdentifier",
+        "/dashboard/field/projects/$projectIdentifier",
         "/dashboard/analytics/projects/"
       ]
     },
@@ -1181,14 +1196,14 @@ export const routeTree = rootRoute
       "filePath": "dashboard/company/roles.tsx",
       "parent": "/dashboard"
     },
-    "/dashboard/projects/$projectId": {
-      "filePath": "dashboard/projects/$projectId.tsx",
+    "/dashboard/projects/$projectIdentifier": {
+      "filePath": "dashboard/projects/$projectIdentifier.tsx",
       "parent": "/dashboard",
       "children": [
-        "/dashboard/projects/$projectId/buildings",
-        "/dashboard/projects/$projectId/edit",
-        "/dashboard/projects/$projectId/",
-        "/dashboard/projects/$projectId/pours/new"
+        "/dashboard/projects/$projectIdentifier/buildings",
+        "/dashboard/projects/$projectIdentifier/edit",
+        "/dashboard/projects/$projectIdentifier/",
+        "/dashboard/projects/$projectIdentifier/pours/new"
       ]
     },
     "/dashboard/analytics/": {
@@ -1207,88 +1222,88 @@ export const routeTree = rootRoute
       "filePath": "dashboard/projects/index.tsx",
       "parent": "/dashboard"
     },
-    "/dashboard/analytics/projects/$projectId": {
-      "filePath": "dashboard/analytics/projects.$projectId.tsx",
+    "/dashboard/analytics/projects/$projectIdentifier": {
+      "filePath": "dashboard/analytics/projects.$projectIdentifier.tsx",
       "parent": "/dashboard"
     },
-    "/dashboard/field/projects/$projectId": {
-      "filePath": "dashboard/field/projects.$projectId.tsx",
+    "/dashboard/field/projects/$projectIdentifier": {
+      "filePath": "dashboard/field/projects.$projectIdentifier.tsx",
       "parent": "/dashboard",
       "children": [
-        "/dashboard/field/projects/$projectId/photos/upload",
-        "/dashboard/field/projects/$projectId/pours/quick-add"
+        "/dashboard/field/projects/$projectIdentifier/photos/upload",
+        "/dashboard/field/projects/$projectIdentifier/pours/quick-add"
       ]
     },
-    "/dashboard/projects/$projectId/buildings": {
-      "filePath": "dashboard/projects/$projectId.buildings.tsx",
-      "parent": "/dashboard/projects/$projectId",
+    "/dashboard/projects/$projectIdentifier/buildings": {
+      "filePath": "dashboard/projects/$projectIdentifier.buildings.tsx",
+      "parent": "/dashboard/projects/$projectIdentifier",
       "children": [
-        "/dashboard/projects/$projectId/buildings/$buildingId",
-        "/dashboard/projects/$projectId/buildings/"
+        "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier",
+        "/dashboard/projects/$projectIdentifier/buildings/"
       ]
     },
-    "/dashboard/projects/$projectId/edit": {
-      "filePath": "dashboard/projects/$projectId.edit.tsx",
-      "parent": "/dashboard/projects/$projectId"
+    "/dashboard/projects/$projectIdentifier/edit": {
+      "filePath": "dashboard/projects/$projectIdentifier.edit.tsx",
+      "parent": "/dashboard/projects/$projectIdentifier"
     },
     "/dashboard/analytics/projects/": {
       "filePath": "dashboard/analytics/projects.index.tsx",
       "parent": "/dashboard"
     },
-    "/dashboard/projects/$projectId/": {
-      "filePath": "dashboard/projects/$projectId.index.tsx",
-      "parent": "/dashboard/projects/$projectId"
+    "/dashboard/projects/$projectIdentifier/": {
+      "filePath": "dashboard/projects/$projectIdentifier.index.tsx",
+      "parent": "/dashboard/projects/$projectIdentifier"
     },
-    "/dashboard/projects/$projectId/buildings/$buildingId": {
-      "filePath": "dashboard/projects/$projectId.buildings.$buildingId.tsx",
-      "parent": "/dashboard/projects/$projectId/buildings",
+    "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier": {
+      "filePath": "dashboard/projects/$projectIdentifier.buildings.$buildingIdentifier.tsx",
+      "parent": "/dashboard/projects/$projectIdentifier/buildings",
       "children": [
-        "/dashboard/projects/$projectId/buildings/$buildingId/edit",
-        "/dashboard/projects/$projectId/buildings/$buildingId/floors",
-        "/dashboard/projects/$projectId/buildings/$buildingId/"
+        "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/edit",
+        "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors",
+        "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/"
       ]
     },
-    "/dashboard/projects/$projectId/pours/new": {
-      "filePath": "dashboard/projects/$projectId.pours.new.tsx",
-      "parent": "/dashboard/projects/$projectId"
+    "/dashboard/projects/$projectIdentifier/pours/new": {
+      "filePath": "dashboard/projects/$projectIdentifier.pours.new.tsx",
+      "parent": "/dashboard/projects/$projectIdentifier"
     },
-    "/dashboard/projects/$projectId/buildings/": {
-      "filePath": "dashboard/projects/$projectId.buildings.index.tsx",
-      "parent": "/dashboard/projects/$projectId/buildings"
+    "/dashboard/projects/$projectIdentifier/buildings/": {
+      "filePath": "dashboard/projects/$projectIdentifier.buildings.index.tsx",
+      "parent": "/dashboard/projects/$projectIdentifier/buildings"
     },
-    "/dashboard/field/projects/$projectId/photos/upload": {
-      "filePath": "dashboard/field/projects.$projectId.photos.upload.tsx",
-      "parent": "/dashboard/field/projects/$projectId"
+    "/dashboard/field/projects/$projectIdentifier/photos/upload": {
+      "filePath": "dashboard/field/projects.$projectIdentifier.photos.upload.tsx",
+      "parent": "/dashboard/field/projects/$projectIdentifier"
     },
-    "/dashboard/field/projects/$projectId/pours/quick-add": {
-      "filePath": "dashboard/field/projects.$projectId.pours.quick-add.tsx",
-      "parent": "/dashboard/field/projects/$projectId"
+    "/dashboard/field/projects/$projectIdentifier/pours/quick-add": {
+      "filePath": "dashboard/field/projects.$projectIdentifier.pours.quick-add.tsx",
+      "parent": "/dashboard/field/projects/$projectIdentifier"
     },
-    "/dashboard/projects/$projectId/buildings/$buildingId/edit": {
-      "filePath": "dashboard/projects/$projectId.buildings.$buildingId.edit.tsx",
-      "parent": "/dashboard/projects/$projectId/buildings/$buildingId"
+    "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/edit": {
+      "filePath": "dashboard/projects/$projectIdentifier.buildings.$buildingIdentifier.edit.tsx",
+      "parent": "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier"
     },
-    "/dashboard/projects/$projectId/buildings/$buildingId/floors": {
-      "filePath": "dashboard/projects/$projectId.buildings.$buildingId.floors.tsx",
-      "parent": "/dashboard/projects/$projectId/buildings/$buildingId",
+    "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors": {
+      "filePath": "dashboard/projects/$projectIdentifier.buildings.$buildingIdentifier.floors.tsx",
+      "parent": "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier",
       "children": [
-        "/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId"
+        "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier"
       ]
     },
-    "/dashboard/projects/$projectId/buildings/$buildingId/": {
-      "filePath": "dashboard/projects/$projectId.buildings.$buildingId.index.tsx",
-      "parent": "/dashboard/projects/$projectId/buildings/$buildingId"
+    "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/": {
+      "filePath": "dashboard/projects/$projectIdentifier.buildings.$buildingIdentifier.index.tsx",
+      "parent": "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier"
     },
-    "/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId": {
-      "filePath": "dashboard/projects/$projectId.buildings.$buildingId.floors.$floorId.tsx",
-      "parent": "/dashboard/projects/$projectId/buildings/$buildingId/floors",
+    "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier": {
+      "filePath": "dashboard/projects/$projectIdentifier.buildings.$buildingIdentifier.floors.$floorIdentifier.tsx",
+      "parent": "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors",
       "children": [
-        "/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId/edit"
+        "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier/edit"
       ]
     },
-    "/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId/edit": {
-      "filePath": "dashboard/projects/$projectId.buildings.$buildingId.floors.$floorId.edit.tsx",
-      "parent": "/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId"
+    "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier/edit": {
+      "filePath": "dashboard/projects/$projectIdentifier.buildings.$buildingIdentifier.floors.$floorIdentifier.edit.tsx",
+      "parent": "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier"
     }
   }
 }

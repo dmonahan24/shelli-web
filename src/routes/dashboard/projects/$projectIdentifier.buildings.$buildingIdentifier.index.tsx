@@ -1,4 +1,4 @@
-import { createFileRoute, notFound, useNavigate, useRouter } from "@tanstack/react-router";
+import { createFileRoute, notFound, redirect, useNavigate, useRouter } from "@tanstack/react-router";
 import { DeleteBuildingDialog } from "@/components/buildings/delete-building-dialog";
 import { BuildingSetupWizard } from "@/components/buildings/building-setup-wizard";
 import { AddFloorDialog } from "@/components/floors/add-floor-dialog";
@@ -10,16 +10,39 @@ import { BuildingSummaryCards } from "@/components/hierarchy/building-summary-ca
 import { FloorsTable } from "@/components/hierarchy/floors-table";
 import { Button } from "@/components/ui/button";
 import {
-  hierarchyBuildingParamsSchema,
+  hierarchyBuildingRouteParamsSchema,
   hierarchyFloorsSearchSchema,
 } from "@/lib/validation/hierarchy";
+import {
+  getBuildingRouteParams,
+  getProjectRouteParams,
+} from "@/lib/project-paths";
 import { getBuildingDetailServerFn } from "@/server/buildings/get-building-detail";
+import { resolveBuildingRouteServerFn } from "@/server/navigation/resolve-building-route";
 
-export const Route = createFileRoute("/dashboard/projects/$projectId/buildings/$buildingId/")({
+export const Route = createFileRoute("/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/")({
   validateSearch: hierarchyFloorsSearchSchema,
   loader: async ({ params }) => {
-    const parsedParams = hierarchyBuildingParamsSchema.parse(params);
-    const detail = await getBuildingDetailServerFn({ data: parsedParams });
+    const parsedParams = hierarchyBuildingRouteParamsSchema.parse(params);
+    const resolved = await resolveBuildingRouteServerFn({ data: parsedParams });
+
+    if (!resolved) {
+      throw notFound();
+    }
+
+    if (!resolved.isCanonical) {
+      throw redirect({
+        to: "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier",
+        params: resolved.canonicalParams,
+      });
+    }
+
+    const detail = await getBuildingDetailServerFn({
+      data: {
+        buildingId: resolved.building.id,
+        projectId: resolved.project.id,
+      },
+    });
 
     if (!detail) {
       throw notFound();
@@ -32,17 +55,16 @@ export const Route = createFileRoute("/dashboard/projects/$projectId/buildings/$
 
 function BuildingDetailPage() {
   const navigate = useNavigate({
-    from: "/dashboard/projects/$projectId/buildings/$buildingId",
+    from: "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier",
   });
   const router = useRouter();
   const detail = Route.useLoaderData();
-  const { buildingId } = Route.useParams();
   const search = Route.useSearch();
   const deleteSummary = {
     actualConcreteTotal: detail.building.actualConcreteTotal,
     estimatedConcreteTotal: detail.building.estimatedConcreteTotal,
     floorCount: detail.summary.totalFloors,
-    id: buildingId,
+    id: detail.building.id,
     name: detail.building.name,
     pourTypeCount: detail.floors.reduce((count: number, floor: any) => count + floor.pourTypeCount, 0),
   };
@@ -86,15 +108,24 @@ function BuildingDetailPage() {
         actions={
           <>
             <AddFloorDialog
-              buildingId={buildingId}
+              buildingId={detail.building.id}
               onCreated={() => router.invalidate()}
               trigger={<Button>Add Floor</Button>}
             />
-            <BuildingSetupWizard buildingId={buildingId} onCreated={() => router.invalidate()} />
-            <BulkCreateFloorsDialog buildingId={buildingId} onCreated={() => router.invalidate()} />
+            <BuildingSetupWizard buildingId={detail.building.id} onCreated={() => router.invalidate()} />
+            <BulkCreateFloorsDialog buildingId={detail.building.id} onCreated={() => router.invalidate()} />
             <EditBuildingDialog
               building={detail.building}
-              onUpdated={() => router.invalidate()}
+              onUpdated={async (result) => {
+                await router.navigate({
+                  to: "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier",
+                  params: getBuildingRouteParams(
+                    { id: detail.project.id, slug: result.projectSlug ?? detail.project.slug },
+                    { id: detail.building.id, slug: result.slug }
+                  ),
+                });
+                await router.invalidate();
+              }}
               trigger={
                 <Button variant="outline">
                   Edit Building
@@ -105,8 +136,8 @@ function BuildingDetailPage() {
               building={deleteSummary}
               onDeleted={() =>
                 router.navigate({
-                  to: "/dashboard/projects/$projectId",
-                  params: { projectId: detail.project.id },
+                  to: "/dashboard/projects/$projectIdentifier",
+                  params: getProjectRouteParams(detail.project),
                 })
               }
               trigger={<Button variant="destructive">Delete Building</Button>}
@@ -136,10 +167,10 @@ function BuildingDetailPage() {
         search={search}
       />
       <FloorsTable
-        buildingId={buildingId}
+        building={detail.building}
         floors={filteredFloors}
         onMutationComplete={() => router.invalidate()}
-        projectId={detail.project.id}
+        project={detail.project}
       />
     </div>
   );

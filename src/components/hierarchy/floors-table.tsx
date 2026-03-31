@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { DeleteFloorDialog } from "@/components/floors/delete-floor-dialog";
 import { EditFloorDialog } from "@/components/floors/edit-floor-dialog";
+import { getFloorRouteParams } from "@/lib/project-paths";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -24,19 +25,26 @@ type FloorRow = {
   name: string;
   pourTypeCount: number;
   projectId: string;
+  slug?: string | null;
   remainingConcrete: number;
 };
 
 export function FloorsTable({
-  buildingId,
+  building,
   floors,
   onMutationComplete,
-  projectId,
+  project,
 }: {
-  buildingId: string;
+  building: {
+    id: string;
+    slug?: string | null;
+  };
   floors: FloorRow[];
   onMutationComplete: () => Promise<void> | void;
-  projectId: string;
+  project: {
+    id: string;
+    slug?: string | null;
+  };
 }) {
   return (
     <Card className="rounded-[28px] border-border/80 bg-card/90 shadow-sm">
@@ -65,8 +73,8 @@ export function FloorsTable({
                     <TableCell className="font-medium">
                       <Link
                         className="hover:underline"
-                        to="/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId"
-                        params={{ buildingId, floorId: floor.id, projectId }}
+                        to="/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier"
+                        params={getFloorRouteParams(project, building, floor)}
                       >
                         {floor.name}
                       </Link>
@@ -87,15 +95,17 @@ export function FloorsTable({
                       <div className="flex justify-end gap-2">
                         <Button asChild size="sm" variant="outline">
                           <Link
-                            to="/dashboard/projects/$projectId/buildings/$buildingId/floors/$floorId"
-                            params={{ buildingId, floorId: floor.id, projectId }}
+                            to="/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier/floors/$floorIdentifier"
+                            params={getFloorRouteParams(project, building, floor)}
                           >
                             View
                           </Link>
                         </Button>
                         <EditFloorDialog
                           floor={floor}
-                          onUpdated={onMutationComplete}
+                          onUpdated={async () => {
+                            await onMutationComplete();
+                          }}
                           trigger={
                             <Button size="sm" variant="outline">
                               Edit

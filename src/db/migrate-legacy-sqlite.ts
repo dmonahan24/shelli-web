@@ -7,6 +7,7 @@ import { attachments, auditEvents, loadTickets, projects, pours } from "@/db/sch
 import { env } from "@/lib/env/server";
 import { ensureBootstrapData } from "@/db/bootstrap";
 import { buildAttachmentStorageKey, writeStoredFile } from "@/server/attachments/storage";
+import { generateProjectSlug } from "@/server/navigation/service";
 
 type LegacyUser = {
   id: string;
@@ -121,6 +122,7 @@ for (const legacyProject of legacyProjects) {
       createdByUserId: bootstrap.userId,
       updatedByUserId: bootstrap.userId,
       name: legacyProject.name,
+      slug: await generateProjectSlug(bootstrap.companyId, legacyProject.name),
       address: legacyProject.address,
       status:
         legacyProject.status === "completed" || legacyProject.status === "on_hold"

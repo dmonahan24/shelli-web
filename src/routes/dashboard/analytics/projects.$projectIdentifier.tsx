@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 import { AnalyticsKpiCards } from "@/components/analytics/analytics-kpi-cards";
 import { AttachmentTimelineChart } from "@/components/analytics/attachment-timeline-chart";
 import { MixTypeDistributionChart } from "@/components/analytics/mix-type-distribution-chart";
@@ -7,6 +7,8 @@ import { ProjectAnalyticsHeader } from "@/components/analytics/project-analytics
 import { ProjectProgressChart } from "@/components/analytics/project-progress-chart";
 import { RecentActivityFeed } from "@/components/analytics/recent-activity-feed";
 import { WeeklyPoursChart } from "@/components/analytics/weekly-pours-chart";
+import { projectRouteParamsSchema } from "@/lib/validation/project-list";
+import { resolveProjectRouteServerFn } from "@/server/navigation/resolve-project-route";
 import { getProjectAnalyticsServerFn } from "@/server/analytics/get-project-analytics";
 
 function defaultDateRange() {
@@ -19,14 +21,29 @@ function defaultDateRange() {
   };
 }
 
-export const Route = createFileRoute("/dashboard/analytics/projects/$projectId")({
-  loader: async ({ params }) =>
-    getProjectAnalyticsServerFn({
+export const Route = createFileRoute("/dashboard/analytics/projects/$projectIdentifier")({
+  loader: async ({ params }) => {
+    const parsedParams = projectRouteParamsSchema.parse(params);
+    const resolved = await resolveProjectRouteServerFn({ data: parsedParams });
+
+    if (!resolved) {
+      throw notFound();
+    }
+
+    if (!resolved.isCanonical) {
+      throw redirect({
+        to: "/dashboard/analytics/projects/$projectIdentifier",
+        params: resolved.canonicalParams,
+      });
+    }
+
+    return getProjectAnalyticsServerFn({
       data: {
-        projectId: params.projectId,
+        projectId: resolved.project.id,
         dateRange: defaultDateRange(),
       },
-    }),
+    });
+  },
   component: ProjectAnalyticsPage,
 });
 

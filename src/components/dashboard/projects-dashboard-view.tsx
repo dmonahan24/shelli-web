@@ -5,6 +5,7 @@ import { ProjectsTable } from "@/components/projects/projects-table";
 
 type ProjectRow = {
   id: string;
+  slug?: string | null;
   name: string;
   address: string;
   dateStarted: string;

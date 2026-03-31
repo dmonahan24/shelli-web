@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Camera, ClipboardPlus, FolderKanban, History } from "lucide-react";
+import { getProjectIdentifier } from "@/lib/project-paths";
 import { Card, CardContent } from "@/components/ui/card";
 
 const iconMap = {
@@ -10,30 +11,38 @@ const iconMap = {
 };
 
 export function FieldActionGrid({
-  projectId,
+  project,
 }: {
-  projectId?: string;
+  project?: {
+    id: string;
+    slug?: string | null;
+  };
 }) {
+  const projectIdentifier = project ? getProjectIdentifier(project) : null;
   const actions = [
     {
       key: "projects" as const,
       label: "My Projects",
-      to: "/dashboard/field",
+      href: "/dashboard/field",
     },
     {
       key: "pour" as const,
       label: "Add Pour",
-      to: projectId ? `/dashboard/field/projects/${projectId}/pours/quick-add` : "/dashboard/field",
+      href: projectIdentifier
+        ? `/dashboard/field/projects/${projectIdentifier}/pours/quick-add`
+        : "/dashboard/field",
     },
     {
       key: "photo" as const,
       label: "Upload Photo",
-      to: projectId ? `/dashboard/field/projects/${projectId}/photos/upload` : "/dashboard/field",
+      href: projectIdentifier
+        ? `/dashboard/field/projects/${projectIdentifier}/photos/upload`
+        : "/dashboard/field",
     },
     {
       key: "activity" as const,
       label: "Recent Activity",
-      to: "/dashboard/field",
+      href: "/dashboard/field",
     },
   ];
 
@@ -43,7 +52,7 @@ export function FieldActionGrid({
         const Icon = iconMap[action.key];
 
         return (
-          <Link key={action.label} to={action.to}>
+          <Link key={action.label} to={action.href}>
             <Card className="border-border/70 bg-background/95">
               <CardContent className="flex min-h-28 flex-col items-start justify-between p-4">
                 <div className="rounded-xl bg-primary/10 p-2 text-primary">

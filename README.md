@@ -120,6 +120,12 @@ Apply Supabase SQL migrations:
 bun run db:migrate
 ```
 
+The slug-based project/building/floor URLs require migration
+`0006_human_friendly_hierarchy_urls.sql`. Run `bun run db:migrate`
+before starting the app after pulling that change, or slug-aware pages
+such as `/dashboard`, `/dashboard/field`, and `/dashboard/analytics`
+will fail with a migration-needed error.
+
 Bootstrap the first platform admin plus the demo tenant company/admin:
 
 ```bash
@@ -168,6 +174,7 @@ If you override the bootstrap env vars, those credentials change with them.
 - `bun test` runs the Bun test suite
 - `bun run db:generate` generates Drizzle migrations
 - `bun run db:migrate` applies Drizzle migrations
+- `bun run db:migrate` is required before running slug-aware app versions that expect migration `0006_human_friendly_hierarchy_urls.sql`
 - `bun run db:bootstrap` provisions the first platform admin plus the demo tenant company/admin in Supabase
 - `bun run db:seed` seeds demo data
 - `bun run db:migrate-legacy` migrates the legacy SQLite dataset into Supabase

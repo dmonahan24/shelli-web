@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { Link } from "@tanstack/react-router";
+import { getProjectRouteParams } from "@/lib/project-paths";
 import { RecentActivityFeed } from "@/components/analytics/recent-activity-feed";
 import { DocumentationTaskCard } from "@/components/field/documentation-task-card";
 import { FieldActionGrid } from "@/components/field/field-action-grid";
@@ -11,6 +12,7 @@ export function MyAssignedProjectsList({
   projects: Array<{
     id: string;
     name: string;
+    slug?: string | null;
     status: string;
     remainingConcrete: number;
   }>;
@@ -27,8 +29,8 @@ export function MyAssignedProjectsList({
           projects.map((project) => (
             <Link
               key={project.id}
-              to="/dashboard/field/projects/$projectId"
-              params={{ projectId: project.id }}
+              to="/dashboard/field/projects/$projectIdentifier"
+              params={getProjectRouteParams(project)}
               className="block rounded-xl border border-border/60 px-3 py-3"
             >
               <p className="font-medium">{project.name}</p>
@@ -60,15 +62,15 @@ export function FieldRecentActivityCard({
 export function QuickProjectSwitcher({
   projects,
 }: {
-  projects: Array<{ id: string; name: string }>;
+  projects: Array<{ id: string; name: string; slug?: string | null }>;
 }) {
   return (
     <div className="flex gap-2 overflow-x-auto pb-1">
       {projects.map((project) => (
         <Link
           key={project.id}
-          to="/dashboard/field/projects/$projectId"
-          params={{ projectId: project.id }}
+          to="/dashboard/field/projects/$projectIdentifier"
+          params={getProjectRouteParams(project)}
           className="rounded-full border border-border/70 bg-background px-3 py-2 text-sm font-medium whitespace-nowrap"
         >
           {project.name}
@@ -86,6 +88,7 @@ export function FieldModeHome({
   projects: Array<{
     id: string;
     name: string;
+    slug?: string | null;
     status: string;
     remainingConcrete: number;
   }>;
@@ -108,8 +111,14 @@ export function FieldModeHome({
         <p className="text-sm font-medium text-muted-foreground">Field mode</p>
         <h1 className="text-2xl font-semibold tracking-tight">Fast job-site actions</h1>
       </div>
-      <QuickProjectSwitcher projects={projects.map((project) => ({ id: project.id, name: project.name }))} />
-      <FieldActionGrid projectId={projects[0]?.id} />
+      <QuickProjectSwitcher
+        projects={projects.map((project) => ({
+          id: project.id,
+          name: project.name,
+          slug: project.slug,
+        }))}
+      />
+      <FieldActionGrid project={projects[0]} />
       <MyAssignedProjectsList projects={projects} />
       <div className="space-y-3">
         {documentationTasks.map((task) => (
