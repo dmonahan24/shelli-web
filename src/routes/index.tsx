@@ -102,6 +102,26 @@ function LandingPage() {
             </Card>
           </section>
         </main>
+
+        <footer className="border-t border-border/60 py-6 sm:hidden">
+          <div className="space-y-4 rounded-[28px] bg-card/70 p-5 shadow-sm backdrop-blur">
+            <div className="space-y-1">
+              <p className="text-sm font-semibold">Keep the field and office aligned.</p>
+              <p className="text-sm leading-6 text-muted-foreground">
+                Sign in to update today&apos;s pours or create an account to start tracking projects,
+                loads, and QC records in one place.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3">
+              <Button asChild>
+                <Link to="/auth/create-account">Create Account</Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link to="/auth/sign-in">Sign In</Link>
+              </Button>
+            </div>
+          </div>
+        </footer>
       </div>
     </div>
   );
