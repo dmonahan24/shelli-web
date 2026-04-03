@@ -42,11 +42,10 @@ function LandingPage() {
                 Production-ready construction tracking
               </p>
               <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-balance sm:text-6xl">
-                Track every project, pour milestone, and concrete total with clarity.
+                Track Every Project, Pour Milestone, and Concrete Total with Clarity.
               </h1>
               <p className="max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
-                Give supers, PMs, QC teams, and operations staff a shared source of truth for schedules,
-                progress, and project records.
+                Give supers, PMs, QC teams, and operations staff a shared source of truth.
               </p>
             </div>
             <div className="hidden flex-col gap-3 sm:flex sm:flex-row sm:flex-wrap sm:gap-4">
@@ -63,17 +62,17 @@ function LandingPage() {
             <div className="grid gap-4 lg:grid-cols-3">
               <FeatureCard
                 icon={<ClipboardList className="size-5" />}
-                title="Project visibility"
+                title="Project Visibility"
                 body="See planned work, active jobs, and concrete quantities in one dashboard."
               />
               <FeatureCard
                 icon={<Workflow className="size-5" />}
-                title="Field-first workflows"
+                title="Field-first Workflows"
                 body="Fast forms for teams who need to update records from tablets and phones."
               />
               <FeatureCard
                 icon={<ShieldCheck className="size-5" />}
-                title="Trusted records"
+                title="Trusted Records"
                 body="User-scoped data and secure auth flows for production use."
               />
             </div>
@@ -82,20 +81,20 @@ function LandingPage() {
           <section className="grid gap-5">
             <Card className="rounded-[32px] border-border/70 bg-stone-950 text-stone-50 shadow-2xl">
               <CardHeader>
-                <CardTitle className="text-2xl">Today’s operations snapshot</CardTitle>
+                <CardTitle className="text-2xl">Today’s Operations Snapshot</CardTitle>
               </CardHeader>
               <CardContent className="grid gap-4">
                 <div className="rounded-2xl bg-white/5 p-5">
-                  <p className="text-sm text-stone-300">Active projects</p>
+                  <p className="text-sm text-stone-900">Active Projects</p>
                   <p className="mt-2 text-4xl font-semibold">12</p>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="rounded-2xl bg-white/5 p-5">
-                    <p className="text-sm text-stone-300">Concrete poured</p>
+                    <p className="text-sm text-stone-900">Concrete Poured</p>
                     <p className="mt-2 text-2xl font-semibold">428.50 CY</p>
                   </div>
                   <div className="rounded-2xl bg-white/5 p-5">
-                    <p className="text-sm text-stone-300">Projects at risk</p>
+                    <p className="text-sm text-stone-900">Projects at Risk</p>
                     <p className="mt-2 text-2xl font-semibold">2</p>
                   </div>
                 </div>
