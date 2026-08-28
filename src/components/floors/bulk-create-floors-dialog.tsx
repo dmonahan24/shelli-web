@@ -35,7 +35,7 @@ export function BulkCreateFloorsDialog({
       <DialogTrigger asChild>
         <Button variant="outline">Add Multiple Floors</Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg rounded-3xl">
+      <DialogContent className="rounded-3xl sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Bulk Create Floors</DialogTitle>
         </DialogHeader>

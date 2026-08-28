@@ -35,7 +35,7 @@ export function BuildingSetupWizard({
       <DialogTrigger asChild>
         <Button variant="outline">Quick Setup</Button>
       </DialogTrigger>
-      <DialogContent className="max-w-xl rounded-3xl">
+      <DialogContent className="rounded-3xl sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Building Setup Wizard</DialogTitle>
         </DialogHeader>

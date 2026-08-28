@@ -58,7 +58,17 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-x-0 bottom-0 z-50 grid max-h-[92vh] w-full gap-4 overflow-y-auto rounded-t-[28px] border border-b-0 p-4 shadow-lg duration-200 data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom sm:top-[50%] sm:left-[50%] sm:max-h-[90vh] sm:max-w-[calc(100%-2rem)] sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-[28px] sm:border sm:p-6 sm:data-[state=closed]:zoom-out-95 sm:data-[state=open]:zoom-in-95 sm:data-[state=closed]:slide-out-to-bottom-0 sm:data-[state=open]:slide-in-from-bottom-0 sm:inset-x-auto sm:bottom-auto sm:w-full sm:max-w-lg",
+          "bg-background fixed z-50 grid w-full gap-4 overflow-y-auto border p-4 shadow-lg duration-200",
+          // Mobile: bottom sheet pinned to the bottom edge, full bleed.
+          "inset-x-0 bottom-0 max-h-[92vh] rounded-t-[28px] border-b-0",
+          // Desktop: centered panel. Every inset is set as a longhand (never
+          // inset-x/inset-y) so tailwind-merge cannot drop `sm:left-[50%]` --
+          // losing it strands the panel half off the left edge of the viewport.
+          // The gutter is held by width, not max-width, so callers stay free to
+          // pass their own `sm:max-w-*` without giving up the 1rem side margin.
+          "sm:top-[50%] sm:right-auto sm:bottom-auto sm:left-[50%] sm:max-h-[90vh] sm:w-[calc(100%-2rem)] sm:max-w-lg sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-[28px] sm:border-b sm:p-6",
+          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
+          "sm:data-[state=closed]:slide-out-to-bottom-0 sm:data-[state=open]:slide-in-from-bottom-0 sm:data-[state=closed]:zoom-out-95 sm:data-[state=open]:zoom-in-95",
           className
         )}
         {...props}

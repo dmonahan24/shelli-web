@@ -23,7 +23,7 @@ export function AddPourTypeDialog({
       <DialogTrigger asChild>
         {trigger ?? <Button>Add Pour Type</Button>}
       </DialogTrigger>
-      <DialogContent className="max-w-2xl rounded-3xl">
+      <DialogContent className="rounded-3xl sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Add Pour Type</DialogTitle>
         </DialogHeader>

@@ -16,7 +16,7 @@ export function AddProjectDialog() {
     <>
       <AddProjectButton onClick={() => setOpen(true)} />
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl rounded-3xl">
+        <DialogContent className="rounded-3xl sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Add New Project</DialogTitle>
           </DialogHeader>

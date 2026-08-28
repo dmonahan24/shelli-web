@@ -237,7 +237,7 @@ export function AssignProjectMemberDialog({
           Add Team Members
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle>Manage Project Access</DialogTitle>
           <DialogDescription>

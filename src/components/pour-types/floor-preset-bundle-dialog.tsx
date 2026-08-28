@@ -35,7 +35,7 @@ export function FloorPresetBundleDialog({
       <DialogTrigger asChild>
         <Button variant="outline">Add Preset Bundle</Button>
       </DialogTrigger>
-      <DialogContent className="max-w-xl rounded-3xl">
+      <DialogContent className="rounded-3xl sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Add Preset Pour Types</DialogTitle>
         </DialogHeader>

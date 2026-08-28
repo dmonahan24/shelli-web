@@ -29,7 +29,7 @@ export function EditPourTypeDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="max-w-2xl rounded-3xl">
+      <DialogContent className="rounded-3xl sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Edit Pour Type</DialogTitle>
         </DialogHeader>
