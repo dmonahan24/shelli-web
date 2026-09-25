@@ -1,18 +1,22 @@
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { ZodError } from "zod";
 import { db } from "@/db";
-import { attachments, loadTickets, pours, projects } from "@/db/schema";
+import { attachments, fieldNotes, loadTickets, pours, projects, users } from "@/db/schema";
 import type { TenantUserPrincipal } from "@/lib/auth/principal";
 import { assertSameOrigin } from "@/lib/auth/csrf";
 import { listAccessibleProjectIds, requireProjectAccess } from "@/lib/auth/project-access";
 import { requireTenantUser } from "@/lib/auth/session";
 import { measureRequestSpan } from "@/lib/server/request-context";
 import {
+  createFieldNoteSchema,
   fieldAttachmentUploadSchema,
+  listFieldNotesSchema,
   quickPourSchema,
+  type CreateFieldNoteInput,
   type QuickPourInput,
 } from "@/lib/validation/field";
 import { failure, success, type ActionResult } from "@/lib/utils/action-result";
+import { truncateText } from "@/lib/utils/format";
 import { buildDocumentationTasks, calculateRemainingConcrete } from "@/server/analytics/calculations";
 import { uploadProjectAttachment } from "@/server/attachments/service";
 import { listRecentActivity, recordActivityEvent } from "@/server/activity/service";
@@ -225,7 +229,7 @@ export async function getFieldProjectDetail(projectId: string) {
     return null;
   }
 
-  const [recentPours, recentUploads, recentActivity] = await Promise.all([
+  const [recentPours, recentUploads, recentActivity, recentNotes] = await Promise.all([
     db
       .select({
         id: pours.id,
@@ -253,6 +257,7 @@ export async function getFieldProjectDetail(projectId: string) {
       projectId,
       limit: 6,
     }),
+    queryFieldNotes(projectId, access.context.project.companyId, 5),
   ]);
 
   const documentationTasks = buildDocumentationTasks({
@@ -276,6 +281,7 @@ export async function getFieldProjectDetail(projectId: string) {
     })),
     recentUploads,
     recentActivity,
+    recentNotes,
     documentationTasks,
   };
 }
@@ -361,6 +367,83 @@ export async function createQuickPour(
     }
 
     return failure("create_quick_pour_failed", "Unable to save the pour right now.");
+  }
+}
+
+async function queryFieldNotes(projectId: string, companyId: string, limit: number) {
+  const rows = await db
+    .select({
+      id: fieldNotes.id,
+      note: fieldNotes.note,
+      createdAt: fieldNotes.createdAt,
+      authorName: users.fullName,
+    })
+    .from(fieldNotes)
+    .leftJoin(users, eq(fieldNotes.createdByUserId, users.id))
+    .where(and(eq(fieldNotes.projectId, projectId), eq(fieldNotes.companyId, companyId)))
+    .orderBy(desc(fieldNotes.createdAt))
+    .limit(limit);
+
+  return rows.map((row) => ({
+    ...row,
+    authorName: row.authorName ?? "Unknown",
+  }));
+}
+
+export async function listFieldNotes(rawInput: unknown) {
+  const input = listFieldNotesSchema.parse(rawInput);
+  const access = await requireProjectAccess(input.projectId, "view");
+
+  return queryFieldNotes(input.projectId, access.context.project.companyId, input.limit);
+}
+
+export async function createFieldNote(
+  rawInput: CreateFieldNoteInput
+): Promise<ActionResult<{ id: string; projectId: string }>> {
+  try {
+    assertSameOrigin();
+    const input = createFieldNoteSchema.parse(rawInput);
+    const access = await requireProjectAccess(input.projectId, "edit");
+    const companyId = access.context.project.companyId;
+
+    const note = await db.transaction(async (tx) => {
+      const [created] = await tx
+        .insert(fieldNotes)
+        .values({
+          companyId,
+          projectId: input.projectId,
+          createdByUserId: access.user.id,
+          note: input.note,
+        })
+        .returning({ id: fieldNotes.id });
+
+      if (!created) {
+        throw new Error("Failed to create field note.");
+      }
+
+      await recordActivityEvent(tx, {
+        companyId,
+        projectId: input.projectId,
+        actorUserId: access.user.id,
+        eventType: "field_note_created",
+        entityType: "field_note",
+        entityId: created.id,
+        summary: `Field note added: ${truncateText(input.note, 80)}`,
+        metadata: {
+          noteLength: input.note.length,
+        },
+      });
+
+      return created;
+    });
+
+    return success({ id: note.id, projectId: input.projectId }, "Note saved.");
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return failure("validation_error", "Please fix the highlighted fields.", zodFieldErrors(error));
+    }
+
+    return failure("create_field_note_failed", "Unable to save the note right now.");
   }
 }
 

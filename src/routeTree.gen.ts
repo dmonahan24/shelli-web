@@ -43,8 +43,10 @@ import { Route as DashboardProjectsProjectIdentifierBuildingsImport } from './ro
 import { Route as DashboardFieldProjectsProjectIdentifierImport } from './routes/dashboard/field/projects.$projectIdentifier'
 import { Route as DashboardAnalyticsProjectsProjectIdentifierImport } from './routes/dashboard/analytics/projects.$projectIdentifier'
 import { Route as DashboardProjectsProjectIdentifierBuildingsIndexImport } from './routes/dashboard/projects/$projectIdentifier.buildings.index'
+import { Route as DashboardFieldProjectsProjectIdentifierIndexImport } from './routes/dashboard/field/projects.$projectIdentifier.index'
 import { Route as DashboardProjectsProjectIdentifierPoursNewImport } from './routes/dashboard/projects/$projectIdentifier.pours.new'
 import { Route as DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierImport } from './routes/dashboard/projects/$projectIdentifier.buildings.$buildingIdentifier'
+import { Route as DashboardFieldProjectsProjectIdentifierNotesImport } from './routes/dashboard/field/projects.$projectIdentifier.notes'
 import { Route as DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierIndexImport } from './routes/dashboard/projects/$projectIdentifier.buildings.$buildingIdentifier.index'
 import { Route as DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierFloorsImport } from './routes/dashboard/projects/$projectIdentifier.buildings.$buildingIdentifier.floors'
 import { Route as DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierEditImport } from './routes/dashboard/projects/$projectIdentifier.buildings.$buildingIdentifier.edit'
@@ -256,6 +258,13 @@ const DashboardProjectsProjectIdentifierBuildingsIndexRoute =
     getParentRoute: () => DashboardProjectsProjectIdentifierBuildingsRoute,
   } as any)
 
+const DashboardFieldProjectsProjectIdentifierIndexRoute =
+  DashboardFieldProjectsProjectIdentifierIndexImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => DashboardFieldProjectsProjectIdentifierRoute,
+  } as any)
+
 const DashboardProjectsProjectIdentifierPoursNewRoute =
   DashboardProjectsProjectIdentifierPoursNewImport.update({
     id: '/pours/new',
@@ -268,6 +277,13 @@ const DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierRoute =
     id: '/$buildingIdentifier',
     path: '/$buildingIdentifier',
     getParentRoute: () => DashboardProjectsProjectIdentifierBuildingsRoute,
+  } as any)
+
+const DashboardFieldProjectsProjectIdentifierNotesRoute =
+  DashboardFieldProjectsProjectIdentifierNotesImport.update({
+    id: '/notes',
+    path: '/notes',
+    getParentRoute: () => DashboardFieldProjectsProjectIdentifierRoute,
   } as any)
 
 const DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierIndexRoute =
@@ -555,6 +571,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardProjectsProjectIdentifierIndexImport
       parentRoute: typeof DashboardProjectsProjectIdentifierImport
     }
+    '/dashboard/field/projects/$projectIdentifier/notes': {
+      id: '/dashboard/field/projects/$projectIdentifier/notes'
+      path: '/notes'
+      fullPath: '/dashboard/field/projects/$projectIdentifier/notes'
+      preLoaderRoute: typeof DashboardFieldProjectsProjectIdentifierNotesImport
+      parentRoute: typeof DashboardFieldProjectsProjectIdentifierImport
+    }
     '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier': {
       id: '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier'
       path: '/$buildingIdentifier'
@@ -568,6 +591,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard/projects/$projectIdentifier/pours/new'
       preLoaderRoute: typeof DashboardProjectsProjectIdentifierPoursNewImport
       parentRoute: typeof DashboardProjectsProjectIdentifierImport
+    }
+    '/dashboard/field/projects/$projectIdentifier/': {
+      id: '/dashboard/field/projects/$projectIdentifier/'
+      path: '/'
+      fullPath: '/dashboard/field/projects/$projectIdentifier/'
+      preLoaderRoute: typeof DashboardFieldProjectsProjectIdentifierIndexImport
+      parentRoute: typeof DashboardFieldProjectsProjectIdentifierImport
     }
     '/dashboard/projects/$projectIdentifier/buildings/': {
       id: '/dashboard/projects/$projectIdentifier/buildings/'
@@ -742,12 +772,18 @@ const DashboardProjectsProjectIdentifierRouteWithChildren =
   )
 
 interface DashboardFieldProjectsProjectIdentifierRouteChildren {
+  DashboardFieldProjectsProjectIdentifierNotesRoute: typeof DashboardFieldProjectsProjectIdentifierNotesRoute
+  DashboardFieldProjectsProjectIdentifierIndexRoute: typeof DashboardFieldProjectsProjectIdentifierIndexRoute
   DashboardFieldProjectsProjectIdentifierPhotosUploadRoute: typeof DashboardFieldProjectsProjectIdentifierPhotosUploadRoute
   DashboardFieldProjectsProjectIdentifierPoursQuickAddRoute: typeof DashboardFieldProjectsProjectIdentifierPoursQuickAddRoute
 }
 
 const DashboardFieldProjectsProjectIdentifierRouteChildren: DashboardFieldProjectsProjectIdentifierRouteChildren =
   {
+    DashboardFieldProjectsProjectIdentifierNotesRoute:
+      DashboardFieldProjectsProjectIdentifierNotesRoute,
+    DashboardFieldProjectsProjectIdentifierIndexRoute:
+      DashboardFieldProjectsProjectIdentifierIndexRoute,
     DashboardFieldProjectsProjectIdentifierPhotosUploadRoute:
       DashboardFieldProjectsProjectIdentifierPhotosUploadRoute,
     DashboardFieldProjectsProjectIdentifierPoursQuickAddRoute:
@@ -832,8 +868,10 @@ export interface FileRoutesByFullPath {
   '/dashboard/projects/$projectIdentifier/edit': typeof DashboardProjectsProjectIdentifierEditRoute
   '/dashboard/analytics/projects': typeof DashboardAnalyticsProjectsIndexRoute
   '/dashboard/projects/$projectIdentifier/': typeof DashboardProjectsProjectIdentifierIndexRoute
+  '/dashboard/field/projects/$projectIdentifier/notes': typeof DashboardFieldProjectsProjectIdentifierNotesRoute
   '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier': typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierRouteWithChildren
   '/dashboard/projects/$projectIdentifier/pours/new': typeof DashboardProjectsProjectIdentifierPoursNewRoute
+  '/dashboard/field/projects/$projectIdentifier/': typeof DashboardFieldProjectsProjectIdentifierIndexRoute
   '/dashboard/projects/$projectIdentifier/buildings/': typeof DashboardProjectsProjectIdentifierBuildingsIndexRoute
   '/dashboard/field/projects/$projectIdentifier/photos/upload': typeof DashboardFieldProjectsProjectIdentifierPhotosUploadRoute
   '/dashboard/field/projects/$projectIdentifier/pours/quick-add': typeof DashboardFieldProjectsProjectIdentifierPoursQuickAddRoute
@@ -868,11 +906,12 @@ export interface FileRoutesByTo {
   '/dashboard/field': typeof DashboardFieldIndexRoute
   '/dashboard/projects': typeof DashboardProjectsIndexRoute
   '/dashboard/analytics/projects/$projectIdentifier': typeof DashboardAnalyticsProjectsProjectIdentifierRoute
-  '/dashboard/field/projects/$projectIdentifier': typeof DashboardFieldProjectsProjectIdentifierRouteWithChildren
   '/dashboard/projects/$projectIdentifier/edit': typeof DashboardProjectsProjectIdentifierEditRoute
   '/dashboard/analytics/projects': typeof DashboardAnalyticsProjectsIndexRoute
   '/dashboard/projects/$projectIdentifier': typeof DashboardProjectsProjectIdentifierIndexRoute
+  '/dashboard/field/projects/$projectIdentifier/notes': typeof DashboardFieldProjectsProjectIdentifierNotesRoute
   '/dashboard/projects/$projectIdentifier/pours/new': typeof DashboardProjectsProjectIdentifierPoursNewRoute
+  '/dashboard/field/projects/$projectIdentifier': typeof DashboardFieldProjectsProjectIdentifierIndexRoute
   '/dashboard/projects/$projectIdentifier/buildings': typeof DashboardProjectsProjectIdentifierBuildingsIndexRoute
   '/dashboard/field/projects/$projectIdentifier/photos/upload': typeof DashboardFieldProjectsProjectIdentifierPhotosUploadRoute
   '/dashboard/field/projects/$projectIdentifier/pours/quick-add': typeof DashboardFieldProjectsProjectIdentifierPoursQuickAddRoute
@@ -916,8 +955,10 @@ export interface FileRoutesById {
   '/dashboard/projects/$projectIdentifier/edit': typeof DashboardProjectsProjectIdentifierEditRoute
   '/dashboard/analytics/projects/': typeof DashboardAnalyticsProjectsIndexRoute
   '/dashboard/projects/$projectIdentifier/': typeof DashboardProjectsProjectIdentifierIndexRoute
+  '/dashboard/field/projects/$projectIdentifier/notes': typeof DashboardFieldProjectsProjectIdentifierNotesRoute
   '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier': typeof DashboardProjectsProjectIdentifierBuildingsBuildingIdentifierRouteWithChildren
   '/dashboard/projects/$projectIdentifier/pours/new': typeof DashboardProjectsProjectIdentifierPoursNewRoute
+  '/dashboard/field/projects/$projectIdentifier/': typeof DashboardFieldProjectsProjectIdentifierIndexRoute
   '/dashboard/projects/$projectIdentifier/buildings/': typeof DashboardProjectsProjectIdentifierBuildingsIndexRoute
   '/dashboard/field/projects/$projectIdentifier/photos/upload': typeof DashboardFieldProjectsProjectIdentifierPhotosUploadRoute
   '/dashboard/field/projects/$projectIdentifier/pours/quick-add': typeof DashboardFieldProjectsProjectIdentifierPoursQuickAddRoute
@@ -962,8 +1003,10 @@ export interface FileRouteTypes {
     | '/dashboard/projects/$projectIdentifier/edit'
     | '/dashboard/analytics/projects'
     | '/dashboard/projects/$projectIdentifier/'
+    | '/dashboard/field/projects/$projectIdentifier/notes'
     | '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier'
     | '/dashboard/projects/$projectIdentifier/pours/new'
+    | '/dashboard/field/projects/$projectIdentifier/'
     | '/dashboard/projects/$projectIdentifier/buildings/'
     | '/dashboard/field/projects/$projectIdentifier/photos/upload'
     | '/dashboard/field/projects/$projectIdentifier/pours/quick-add'
@@ -997,11 +1040,12 @@ export interface FileRouteTypes {
     | '/dashboard/field'
     | '/dashboard/projects'
     | '/dashboard/analytics/projects/$projectIdentifier'
-    | '/dashboard/field/projects/$projectIdentifier'
     | '/dashboard/projects/$projectIdentifier/edit'
     | '/dashboard/analytics/projects'
     | '/dashboard/projects/$projectIdentifier'
+    | '/dashboard/field/projects/$projectIdentifier/notes'
     | '/dashboard/projects/$projectIdentifier/pours/new'
+    | '/dashboard/field/projects/$projectIdentifier'
     | '/dashboard/projects/$projectIdentifier/buildings'
     | '/dashboard/field/projects/$projectIdentifier/photos/upload'
     | '/dashboard/field/projects/$projectIdentifier/pours/quick-add'
@@ -1043,8 +1087,10 @@ export interface FileRouteTypes {
     | '/dashboard/projects/$projectIdentifier/edit'
     | '/dashboard/analytics/projects/'
     | '/dashboard/projects/$projectIdentifier/'
+    | '/dashboard/field/projects/$projectIdentifier/notes'
     | '/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier'
     | '/dashboard/projects/$projectIdentifier/pours/new'
+    | '/dashboard/field/projects/$projectIdentifier/'
     | '/dashboard/projects/$projectIdentifier/buildings/'
     | '/dashboard/field/projects/$projectIdentifier/photos/upload'
     | '/dashboard/field/projects/$projectIdentifier/pours/quick-add'
@@ -1230,6 +1276,8 @@ export const routeTree = rootRoute
       "filePath": "dashboard/field/projects.$projectIdentifier.tsx",
       "parent": "/dashboard",
       "children": [
+        "/dashboard/field/projects/$projectIdentifier/notes",
+        "/dashboard/field/projects/$projectIdentifier/",
         "/dashboard/field/projects/$projectIdentifier/photos/upload",
         "/dashboard/field/projects/$projectIdentifier/pours/quick-add"
       ]
@@ -1254,6 +1302,10 @@ export const routeTree = rootRoute
       "filePath": "dashboard/projects/$projectIdentifier.index.tsx",
       "parent": "/dashboard/projects/$projectIdentifier"
     },
+    "/dashboard/field/projects/$projectIdentifier/notes": {
+      "filePath": "dashboard/field/projects.$projectIdentifier.notes.tsx",
+      "parent": "/dashboard/field/projects/$projectIdentifier"
+    },
     "/dashboard/projects/$projectIdentifier/buildings/$buildingIdentifier": {
       "filePath": "dashboard/projects/$projectIdentifier.buildings.$buildingIdentifier.tsx",
       "parent": "/dashboard/projects/$projectIdentifier/buildings",
@@ -1266,6 +1318,10 @@ export const routeTree = rootRoute
     "/dashboard/projects/$projectIdentifier/pours/new": {
       "filePath": "dashboard/projects/$projectIdentifier.pours.new.tsx",
       "parent": "/dashboard/projects/$projectIdentifier"
+    },
+    "/dashboard/field/projects/$projectIdentifier/": {
+      "filePath": "dashboard/field/projects.$projectIdentifier.index.tsx",
+      "parent": "/dashboard/field/projects/$projectIdentifier"
     },
     "/dashboard/projects/$projectIdentifier/buildings/": {
       "filePath": "dashboard/projects/$projectIdentifier.buildings.index.tsx",

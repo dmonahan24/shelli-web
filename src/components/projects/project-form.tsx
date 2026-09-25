@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -29,11 +30,13 @@ import {
 export function ProjectForm({
   defaultValues,
   disableEstimatedTotalConcrete = false,
+  id,
   onSubmit,
   submitButton,
 }: {
   defaultValues?: Partial<ProjectInput>;
   disableEstimatedTotalConcrete?: boolean;
+  id?: string;
   onSubmit: (
     values: ProjectInput,
     setFieldError: (field: keyof ProjectInput, message: string) => void
@@ -57,6 +60,7 @@ export function ProjectForm({
   return (
     <Form {...form}>
       <form
+        id={id}
         className="space-y-4"
         onSubmit={form.handleSubmit((values) =>
           onSubmit(values, (field, message) => form.setError(field, { message }))
@@ -160,7 +164,7 @@ export function ProjectForm({
           name="estimatedTotalConcrete"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Estimated Total Concrete</FormLabel>
+              <FormLabel>Estimated Total Concrete (CY)</FormLabel>
               <FormControl>
                 <NumericInputField step="0.01" {...field} disabled={disableEstimatedTotalConcrete} />
               </FormControl>
@@ -168,7 +172,9 @@ export function ProjectForm({
                 <p className="text-sm text-muted-foreground">
                   This value is managed by the building, floor, and pour-type hierarchy.
                 </p>
-              ) : null}
+              ) : (
+                <FormDescription>Cubic yards, up to 2 decimal places.</FormDescription>
+              )}
               <FormMessage />
             </FormItem>
           )}

@@ -608,7 +608,9 @@ function getProjectOrderBy(input: ProjectListQuery) {
     dateStarted: projects.dateStarted,
     estimatedCompletionDate: projects.estimatedCompletionDate,
     estimatedTotalConcrete: projects.estimatedTotalConcrete,
+    lastPourDate: projects.lastPourDate,
     name: projects.name,
+    status: projects.status,
     totalConcretePoured: projects.totalConcretePoured,
     updatedAt: projects.updatedAt,
   }[input.sortBy];

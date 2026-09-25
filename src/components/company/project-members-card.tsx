@@ -9,6 +9,7 @@ type ProjectAccessRoster = {
   hasExplicitAssignments: boolean;
   projectManagerUserId: string | null;
   superintendentUserId: string | null;
+  projectAdminUserId: string | null;
   activeMembers: Array<{
     userId: string;
     fullName: string;
@@ -17,6 +18,7 @@ type ProjectAccessRoster = {
     projectRole: string;
     isProjectManager: boolean;
     isSuperintendent: boolean;
+    isProjectAdmin: boolean;
   }>;
   pendingInvitees: Array<{
     invitationId: string;
@@ -33,10 +35,6 @@ type ProjectAccessRoster = {
     companyRole: string;
   }>;
 };
-
-export function RemoveProjectMemberDialog() {
-  return null;
-}
 
 export function ProjectMembersCard({
   projectId,
@@ -80,6 +78,7 @@ export function ProjectMembersCard({
           hasExplicitAssignments={roster.hasExplicitAssignments}
           currentProjectManagerUserId={roster.projectManagerUserId}
           currentSuperintendentUserId={roster.superintendentUserId}
+          currentProjectAdminUserId={roster.projectAdminUserId}
           onComplete={onMutationComplete}
         />
       </CardHeader>
@@ -110,6 +109,7 @@ export function ProjectMembersCard({
                       <Badge variant="secondary">{member.companyRole.replaceAll("_", " ")}</Badge>
                       {member.isProjectManager ? <Badge>Project Manager</Badge> : null}
                       {member.isSuperintendent ? <Badge>Superintendent</Badge> : null}
+                      {member.isProjectAdmin ? <Badge>Project Admin</Badge> : null}
                     </div>
                   </div>
                 ))

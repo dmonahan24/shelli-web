@@ -57,7 +57,18 @@ function ProjectsPage() {
         pageSize={projects.pageSize}
         totalCount={projects.totalCount}
       />
-      <ProjectsTableAdvanced projects={projects.rows} />
+      <ProjectsTableAdvanced
+        projects={projects.rows}
+        sortBy={search.sortBy}
+        sortDir={search.sortDir}
+        onSortChange={(sortBy) =>
+          updateSearch({
+            page: 1,
+            sortBy,
+            sortDir: search.sortBy === sortBy && search.sortDir === "asc" ? "desc" : "asc",
+          })
+        }
+      />
       <ProjectsPagination
         page={projects.page}
         pageCount={projects.pageCount}

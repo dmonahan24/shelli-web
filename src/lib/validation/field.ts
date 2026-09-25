@@ -32,6 +32,20 @@ export const quickPourSchema = z.object({
     .max(120, "Submission id must be 120 characters or fewer"),
 });
 
+export const createFieldNoteSchema = z.object({
+  projectId: z.string().uuid("Invalid project id"),
+  note: z
+    .string()
+    .trim()
+    .min(1, "Note is required")
+    .max(2000, "Note must be 2000 characters or fewer"),
+});
+
+export const listFieldNotesSchema = z.object({
+  projectId: z.string().uuid("Invalid project id"),
+  limit: z.coerce.number().int().min(1).max(50).catch(20).default(20),
+});
+
 export const fieldAttachmentUploadSchema = z.object({
   projectId: z.string().uuid("Invalid project id"),
   attachmentType: attachmentTypeSchema,
@@ -39,3 +53,4 @@ export const fieldAttachmentUploadSchema = z.object({
 });
 
 export type QuickPourInput = z.infer<typeof quickPourSchema>;
+export type CreateFieldNoteInput = z.infer<typeof createFieldNoteSchema>;

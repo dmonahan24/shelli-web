@@ -34,6 +34,7 @@ describe("permission matrix", () => {
         name: "North Tower",
         projectManagerUserId: "user-1",
         superintendentUserId: null,
+        projectAdminUserId: null,
       },
       companyRole: "project_manager",
       projectRole: null,

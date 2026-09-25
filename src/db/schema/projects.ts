@@ -47,6 +47,9 @@ export const projects = pgTable(
     superintendentUserId: uuid("superintendent_user_id").references(() => users.id, {
       onDelete: "set null",
     }),
+    projectAdminUserId: uuid("project_admin_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
     dateStarted: date("date_started", { mode: "string" }).notNull(),
     estimatedCompletionDate: date("estimated_completion_date", { mode: "string" }).notNull(),
     lastPourDate: date("last_pour_date", { mode: "string" }),
@@ -222,6 +225,11 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
     fields: [projects.superintendentUserId],
     references: [users.id],
     relationName: "project_superintendent_user",
+  }),
+  projectAdminUser: one(users, {
+    fields: [projects.projectAdminUserId],
+    references: [users.id],
+    relationName: "project_admin_user",
   }),
   members: many(projectMembers),
   pendingInvitationAssignments: many(projectMemberInvitationAssignments),

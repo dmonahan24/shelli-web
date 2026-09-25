@@ -6,6 +6,7 @@ import {
   hierarchyBuildingRouteParamsSchema,
   hierarchyFloorRouteParamsSchema,
 } from "@/lib/validation/hierarchy";
+import { hasProjectAccess } from "@/lib/auth/project-access";
 import { env } from "@/lib/env/server";
 import { runWithRequestContext } from "@/lib/server/request-context";
 import { listProjectAttachmentsQuery } from "@/server/attachments/service";
@@ -164,12 +165,18 @@ export const getProjectPageDeferredDataServerFn = createServerFn({
         }, resolved.project.companyId),
         getProjectAccessRosterQuery({
           hasExplicitAssignments: resolved.access.context.hasExplicitAssignments,
+          canManageAccess: hasProjectAccess(
+            resolved.access.user,
+            resolved.access.context,
+            "manage"
+          ),
           project: {
             id: resolved.project.id,
             name: resolved.project.name,
             companyId: resolved.project.companyId,
             projectManagerUserId: resolved.project.projectManagerUserId ?? null,
             superintendentUserId: resolved.project.superintendentUserId ?? null,
+            projectAdminUserId: resolved.project.projectAdminUserId ?? null,
           },
         }),
         listRecentActivity({

@@ -16,7 +16,8 @@ export const createPourEventSchema = z.object({
   pourDate: z.string().min(1, "Pour date is required"),
   concreteAmount: z.coerce
     .number({ invalid_type_error: "Enter a valid concrete amount" })
-    .positive("Concrete amount must be greater than 0"),
+    .positive("Concrete amount must be greater than 0")
+    .multipleOf(0.01, "Use up to 2 decimal places"),
   unit: pourUnitSchema.default("cubic_yards"),
   locationDescription: z
     .string()

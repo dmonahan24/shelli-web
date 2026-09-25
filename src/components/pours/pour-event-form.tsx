@@ -4,6 +4,7 @@ import { type Control, useForm } from "react-hook-form";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -61,10 +62,11 @@ export function PourEventForm({
             name="concreteAmount"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Concrete Amount</FormLabel>
+                <FormLabel>Concrete Amount (CY)</FormLabel>
                 <FormControl>
                   <ConcreteAmountInput {...field} />
                 </FormControl>
+                <FormDescription>Cubic yards, up to 2 decimal places.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}

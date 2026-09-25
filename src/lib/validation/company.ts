@@ -85,19 +85,53 @@ export const bulkProjectAssignmentRowSchema = z
     }
   });
 
+/**
+ * A leadership slot accepts a user id to assign it, `null` to clear it, or an
+ * empty string / omission to leave whoever holds it untouched.
+ */
+const projectLeadershipSlotSchema = z
+  .string()
+  .uuid("Invalid user id")
+  .or(z.literal(""))
+  .nullable()
+  .optional();
+
+function isProjectLeadershipUnchanged(value: string | null | undefined) {
+  return value === undefined || value === "";
+}
+
 export const bulkAssignProjectMembersSchema = z
   .object({
     projectId: z.string().uuid("Invalid project id"),
     assignments: z
       .array(bulkProjectAssignmentRowSchema)
-      .min(1, "Add at least one team member.")
       .max(50, "You can assign up to 50 people at a time."),
-    projectManagerUserId: z.string().uuid("Invalid user id").optional().or(z.literal("")),
-    superintendentUserId: z.string().uuid("Invalid user id").optional().or(z.literal("")),
+    removals: z
+      .array(z.string().uuid("Invalid user id"))
+      .max(50, "You can remove up to 50 people at a time.")
+      .optional()
+      .default([]),
+    projectManagerUserId: projectLeadershipSlotSchema,
+    superintendentUserId: projectLeadershipSlotSchema,
+    projectAdminUserId: projectLeadershipSlotSchema,
   })
   .superRefine((value, ctx) => {
     const userIds = new Set<string>();
     const emails = new Set<string>();
+
+    if (
+      value.assignments.length === 0 &&
+      value.removals.length === 0 &&
+      isProjectLeadershipUnchanged(value.projectManagerUserId) &&
+      isProjectLeadershipUnchanged(value.superintendentUserId) &&
+      isProjectLeadershipUnchanged(value.projectAdminUserId)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["assignments"],
+        message: "Add at least one team member or update project leadership.",
+      });
+    }
 
     value.assignments.forEach((assignment, index) => {
       if (assignment.userId) {
@@ -125,16 +159,47 @@ export const bulkAssignProjectMembersSchema = z
       }
     });
 
-    if (
-      value.projectManagerUserId &&
-      value.superintendentUserId &&
-      value.projectManagerUserId === value.superintendentUserId
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["superintendentUserId"],
-        message: "Project manager and superintendent must be different people.",
-      });
+    const removedUserIds = new Set<string>();
+    value.removals.forEach((userId, index) => {
+      if (removedUserIds.has(userId)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["removals", index],
+          message: "This member appears more than once.",
+        });
+      }
+
+      removedUserIds.add(userId);
+
+      if (userIds.has(userId)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["removals", index],
+          message: "This member cannot be assigned and removed in the same save.",
+        });
+      }
+    });
+
+    const takenLeadershipUserIds = new Set<string>();
+    for (const field of [
+      "projectManagerUserId",
+      "superintendentUserId",
+      "projectAdminUserId",
+    ] as const) {
+      const userId = value[field];
+      if (!userId) {
+        continue;
+      }
+
+      if (takenLeadershipUserIds.has(userId)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [field],
+          message: "One person cannot hold two project leadership roles.",
+        });
+      }
+
+      takenLeadershipUserIds.add(userId);
     }
   });
 
@@ -147,11 +212,6 @@ export const listProjectAccessRostersSchema = z.object({
     .array(z.string().uuid("Invalid project id"))
     .min(1, "Select at least one project.")
     .max(50, "You can request up to 50 project rosters at a time."),
-});
-
-export const removeProjectMemberSchema = z.object({
-  projectId: z.string().uuid("Invalid project id"),
-  userId: z.string().uuid("Invalid user id"),
 });
 
 export const resendInvitationSchema = z.object({
@@ -185,7 +245,7 @@ export const companyOnboardingSchema = z.object({
   projectName: z.string().trim().optional().or(z.literal("")),
   projectAddress: z.string().trim().optional().or(z.literal("")),
   projectCode: z.string().trim().optional().or(z.literal("")),
-  projectEstimatedTotalConcrete: z.coerce.number().min(0).optional(),
+  projectEstimatedTotalConcrete: z.coerce.number().min(0).multipleOf(0.01).optional(),
   projectStartDate: z.string().optional().or(z.literal("")),
   projectEstimatedCompletionDate: z.string().optional().or(z.literal("")),
 }).superRefine((value, ctx) => {

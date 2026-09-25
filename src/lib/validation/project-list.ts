@@ -5,7 +5,9 @@ import { projectStatusSchema } from "@/lib/validation/project";
 export const projectSortByValues = [
   "dateStarted",
   "estimatedCompletionDate",
+  "lastPourDate",
   "name",
+  "status",
   "totalConcretePoured",
   "estimatedTotalConcrete",
   "updatedAt",

@@ -20,6 +20,7 @@ export type ProjectAccessContext = {
     name: string;
     projectManagerUserId: string | null;
     superintendentUserId: string | null;
+    projectAdminUserId: string | null;
   };
   companyRole: TenantUserPrincipal["role"];
   projectRole: "project_admin" | "editor" | "contributor" | "viewer" | null;
@@ -50,6 +51,7 @@ async function getProjectAccessContextForUser(
             projectName: projects.name,
             projectManagerUserId: projects.projectManagerUserId,
             superintendentUserId: projects.superintendentUserId,
+            projectAdminUserId: projects.projectAdminUserId,
             companyRole: companyMemberships.role,
             membershipStatus: companyMemberships.status,
             projectRole: projectMembers.role,
@@ -78,6 +80,7 @@ async function getProjectAccessContextForUser(
         const hasExplicitAssignments =
           Boolean(row.projectManagerUserId) ||
           Boolean(row.superintendentUserId) ||
+          Boolean(row.projectAdminUserId) ||
           row.explicitMemberCount > 0;
 
         return {
@@ -87,6 +90,7 @@ async function getProjectAccessContextForUser(
             name: row.projectName,
             projectManagerUserId: row.projectManagerUserId ?? null,
             superintendentUserId: row.superintendentUserId ?? null,
+            projectAdminUserId: row.projectAdminUserId ?? null,
           },
           companyRole: normalizeAppUserRole(row.companyRole),
           projectRole: row.projectRole ?? null,
@@ -107,7 +111,8 @@ function userIsAssignedToProject(
   return (
     context.projectRole !== null ||
     context.project.projectManagerUserId === userId ||
-    context.project.superintendentUserId === userId
+    context.project.superintendentUserId === userId ||
+    context.project.projectAdminUserId === userId
   );
 }
 
@@ -221,10 +226,12 @@ export async function listAccessibleProjectIds(
                   and(
                     isNull(projects.projectManagerUserId),
                     isNull(projects.superintendentUserId),
+                    isNull(projects.projectAdminUserId),
                     sql`coalesce(${assignmentSummary.memberCount}, 0) = 0`
                   ),
                   eq(projects.projectManagerUserId, user.id),
                   eq(projects.superintendentUserId, user.id),
+                  eq(projects.projectAdminUserId, user.id),
                   eq(projectMembers.userId, user.id)
                 )
               )

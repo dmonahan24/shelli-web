@@ -1,8 +1,9 @@
 import { z } from "zod";
 
-const nonNegativeNumber = z.coerce
+const cubicYardsSchema = z.coerce
   .number({ invalid_type_error: "Enter a valid number" })
-  .min(0, "Value must be 0 or greater");
+  .min(0, "Value must be 0 or greater")
+  .multipleOf(0.01, "Use up to 2 decimal places");
 
 export const projectStatusValues = ["active", "completed", "on_hold"] as const;
 
@@ -29,7 +30,7 @@ const baseProjectSchema = z
     estimatedCompletionDate: z
       .string()
       .min(1, "Estimated completion date is required"),
-    estimatedTotalConcrete: nonNegativeNumber,
+    estimatedTotalConcrete: cubicYardsSchema,
   })
   .refine(
     (value) => value.estimatedCompletionDate >= value.dateStarted,

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Activity, Building2, Camera, ClipboardList, Users } from "lucide-react";
+import { Activity, Building2, Camera, ClipboardList, NotebookPen, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -15,6 +15,10 @@ const ssrTimestampFormatter = new Intl.DateTimeFormat("en-US", {
 function iconForEventType(eventType: string) {
   if (eventType.includes("attachment")) {
     return Camera;
+  }
+
+  if (eventType.includes("note")) {
+    return NotebookPen;
   }
 
   if (eventType.includes("member")) {

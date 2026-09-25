@@ -57,8 +57,14 @@ export function UploadProgressCard({ pending }: { pending: boolean }) {
   ) : null;
 }
 
-export function FieldUploadCaptureCard({ projectId }: { projectId: string }) {
-  const [attachmentType, setAttachmentType] = React.useState("photo");
+export function FieldUploadCaptureCard({
+  projectId,
+  defaultAttachmentType = "photo",
+}: {
+  projectId: string;
+  defaultAttachmentType?: string;
+}) {
+  const [attachmentType, setAttachmentType] = React.useState(defaultAttachmentType);
   const [caption, setCaption] = React.useState("");
   const [file, setFile] = React.useState<File | null>(null);
   const [isPending, startTransition] = React.useTransition();

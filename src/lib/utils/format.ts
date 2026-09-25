@@ -14,6 +14,17 @@ export function formatConcreteVolume(value: number) {
   return `${value.toFixed(2)} CY`;
 }
 
+/** Collapses whitespace and clips to `maxLength`, for one-line activity summaries. */
+export function truncateText(value: string, maxLength: number) {
+  const collapsed = value.replace(/\s+/g, " ").trim();
+
+  if (collapsed.length <= maxLength) {
+    return collapsed;
+  }
+
+  return `${collapsed.slice(0, maxLength - 1).trimEnd()}…`;
+}
+
 export function formatFileSize(bytes: number) {
   if (bytes < 1024) {
     return `${bytes} B`;

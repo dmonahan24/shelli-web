@@ -232,6 +232,35 @@ export const issues = pgTable(
   })
 );
 
+/**
+ * Standalone field notes captured from the jobsite. Append-only log: one row per
+ * note so each keeps its own author and timestamp. Distinct from `dailyReports`,
+ * which is a single editable summary document per project per day.
+ */
+export const fieldNotes = pgTable(
+  "field_notes",
+  {
+    id: idColumn(),
+    companyId: companyIdColumn().references(() => companies.id, { onDelete: "cascade" }),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    note: text("note").notNull(),
+    createdByUserId: createdByUserIdColumn().references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: auditColumns.createdAt,
+    updatedAt: auditColumns.updatedAt,
+  },
+  (table) => ({
+    companyProjectCreatedAtIndex: index("field_notes_company_project_created_at_idx").on(
+      table.companyId,
+      table.projectId,
+      table.createdAt.desc()
+    ),
+  })
+);
+
 export const dailyReports = pgTable(
   "daily_reports",
   {

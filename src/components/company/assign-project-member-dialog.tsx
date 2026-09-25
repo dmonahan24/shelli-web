@@ -56,12 +56,14 @@ type InviteDraft = {
 export function ProjectMemberRoleSelect({
   onChange,
   value,
+  disabled = false,
 }: {
   value: string;
   onChange: (value: string) => void;
+  disabled?: boolean;
 }) {
   return (
-    <Select value={value} onValueChange={onChange}>
+    <Select value={value} onValueChange={onChange} disabled={disabled}>
       <SelectTrigger>
         <SelectValue />
       </SelectTrigger>
@@ -99,6 +101,40 @@ function CompanyRoleSelect({
   );
 }
 
+/** One leadership slot in the dialog. Leaving it untouched keeps the current holder. */
+function LeadershipSyncSelect({
+  label,
+  currentHolderName,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  currentHolderName: string | undefined;
+  value: string;
+  options: Array<{ userId: string; fullName: string }>;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="text-sm text-muted-foreground">Current: {currentHolderName ?? "Unassigned"}</p>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger>
+          <SelectValue placeholder="Keep current assignment" />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((member) => (
+            <SelectItem key={member.userId} value={member.userId}>
+              {member.fullName}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
 function createInviteDraft(): InviteDraft {
   return {
     id: crypto.randomUUID(),
@@ -117,6 +153,7 @@ export function AssignProjectMemberDialog({
   hasExplicitAssignments,
   currentProjectManagerUserId,
   currentSuperintendentUserId,
+  currentProjectAdminUserId,
   onComplete,
 }: {
   projectId: string;
@@ -127,6 +164,7 @@ export function AssignProjectMemberDialog({
   hasExplicitAssignments: boolean;
   currentProjectManagerUserId: string | null;
   currentSuperintendentUserId: string | null;
+  currentProjectAdminUserId: string | null;
   onComplete?: () => void;
 }) {
   const [open, setOpen] = React.useState(false);
@@ -138,6 +176,7 @@ export function AssignProjectMemberDialog({
   const [inviteRows, setInviteRows] = React.useState<InviteDraft[]>([]);
   const [projectManagerUserId, setProjectManagerUserId] = React.useState("");
   const [superintendentUserId, setSuperintendentUserId] = React.useState("");
+  const [projectAdminUserId, setProjectAdminUserId] = React.useState("");
 
   const resetState = React.useCallback(() => {
     setSelectedUserIds([]);
@@ -145,6 +184,7 @@ export function AssignProjectMemberDialog({
     setInviteRows([]);
     setProjectManagerUserId("");
     setSuperintendentUserId("");
+    setProjectAdminUserId("");
   }, []);
 
   React.useEffect(() => {
@@ -157,11 +197,15 @@ export function AssignProjectMemberDialog({
     selectedUserIds.includes(member.userId)
   );
 
-  const eligibleProjectManagers = [...activeMembers, ...selectedAvailableMembers].filter(
+  const leadershipCandidates = [...activeMembers, ...selectedAvailableMembers];
+  const eligibleProjectManagers = leadershipCandidates.filter(
     (member) => member.companyRole === "project_manager"
   );
-  const eligibleSuperintendents = [...activeMembers, ...selectedAvailableMembers].filter(
+  const eligibleSuperintendents = leadershipCandidates.filter(
     (member) => member.companyRole === "field_supervisor"
+  );
+  const eligibleProjectAdmins = leadershipCandidates.filter(
+    (member) => member.companyRole === "owner" || member.companyRole === "admin"
   );
 
   const toggleMember = (userId: string, checked: boolean) => {
@@ -215,6 +259,7 @@ export function AssignProjectMemberDialog({
           assignments,
           projectManagerUserId,
           superintendentUserId,
+          projectAdminUserId,
         },
       });
 
@@ -403,51 +448,38 @@ export function AssignProjectMemberDialog({
                 </p>
 
                 <div className="mt-4 space-y-4">
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      Project Manager
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Current:{" "}
-                      {activeMembers.find((member) => member.userId === currentProjectManagerUserId)
-                        ?.fullName ?? "Unassigned"}
-                    </p>
-                    <Select value={projectManagerUserId} onValueChange={setProjectManagerUserId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Keep current assignment" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {eligibleProjectManagers.map((member) => (
-                          <SelectItem key={member.userId} value={member.userId}>
-                            {member.fullName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      Superintendent
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Current:{" "}
-                      {activeMembers.find((member) => member.userId === currentSuperintendentUserId)
-                        ?.fullName ?? "Unassigned"}
-                    </p>
-                    <Select value={superintendentUserId} onValueChange={setSuperintendentUserId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Keep current assignment" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {eligibleSuperintendents.map((member) => (
-                          <SelectItem key={member.userId} value={member.userId}>
-                            {member.fullName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <LeadershipSyncSelect
+                    label="Project Manager"
+                    currentHolderName={
+                      activeMembers.find(
+                        (member) => member.userId === currentProjectManagerUserId
+                      )?.fullName
+                    }
+                    value={projectManagerUserId}
+                    options={eligibleProjectManagers}
+                    onChange={setProjectManagerUserId}
+                  />
+                  <LeadershipSyncSelect
+                    label="Superintendent"
+                    currentHolderName={
+                      activeMembers.find(
+                        (member) => member.userId === currentSuperintendentUserId
+                      )?.fullName
+                    }
+                    value={superintendentUserId}
+                    options={eligibleSuperintendents}
+                    onChange={setSuperintendentUserId}
+                  />
+                  <LeadershipSyncSelect
+                    label="Project Admin"
+                    currentHolderName={
+                      activeMembers.find((member) => member.userId === currentProjectAdminUserId)
+                        ?.fullName
+                    }
+                    value={projectAdminUserId}
+                    options={eligibleProjectAdmins}
+                    onChange={setProjectAdminUserId}
+                  />
                 </div>
               </div>
 

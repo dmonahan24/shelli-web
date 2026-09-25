@@ -15,7 +15,7 @@ import { assertSameOrigin } from "@/lib/auth/csrf";
 import { createRandomToken, hashToken } from "@/lib/auth/crypto";
 import { canManageInvitations, canManageMembers, requireCompanyMembership } from "@/lib/auth/company-access";
 import type { ProjectRole } from "@/lib/auth/principal";
-import { requireProjectAccess } from "@/lib/auth/project-access";
+import { hasProjectAccess, requireProjectAccess } from "@/lib/auth/project-access";
 import { requireTenantUser } from "@/lib/auth/session";
 import {
   assignProjectMemberSchema,
@@ -67,8 +67,10 @@ type ProjectAccessRoster = {
   projectId: string;
   projectName: string;
   hasExplicitAssignments: boolean;
+  canManageAccess: boolean;
   projectManagerUserId: string | null;
   superintendentUserId: string | null;
+  projectAdminUserId: string | null;
   activeMembers: Array<{
     userId: string;
     fullName: string;
@@ -77,6 +79,7 @@ type ProjectAccessRoster = {
     projectRole: string;
     isProjectManager: boolean;
     isSuperintendent: boolean;
+    isProjectAdmin: boolean;
   }>;
   pendingInvitees: Array<{
     invitationId: string;
@@ -98,6 +101,7 @@ type BulkProjectAssignmentSummary = {
   assignedCount: number;
   invitedCount: number;
   updatedCount: number;
+  removedCount: number;
   skippedCount: number;
 };
 
@@ -106,10 +110,52 @@ function formatBulkAssignmentSummary(summary: BulkProjectAssignmentSummary) {
     `${summary.assignedCount} assigned`,
     `${summary.invitedCount} invited`,
     `${summary.updatedCount} updated`,
+    `${summary.removedCount} removed`,
     `${summary.skippedCount} skipped`,
   ];
 
   return `Project access saved: ${parts.join(", ")}.`;
+}
+
+/**
+ * The three project leadership slots, paired with the company role a person must
+ * hold to fill them and the label used in activity summaries.
+ */
+const projectLeadershipSlots = [
+  {
+    key: "projectManagerUserId",
+    label: "project manager",
+    requiredCompanyRoles: ["project_manager"],
+  },
+  {
+    key: "superintendentUserId",
+    label: "superintendent",
+    requiredCompanyRoles: ["field_supervisor"],
+  },
+  {
+    key: "projectAdminUserId",
+    label: "project admin",
+    requiredCompanyRoles: ["owner", "admin"],
+  },
+] as const;
+
+type ProjectLeadershipSlotKey = (typeof projectLeadershipSlots)[number]["key"];
+
+type ProjectLeadership = Record<ProjectLeadershipSlotKey, string | null>;
+
+/**
+ * A requested slot value of `null` clears it; an empty string or `undefined`
+ * leaves whoever holds it in place.
+ */
+function resolveProjectLeadershipSlot(
+  currentUserId: string | null,
+  requestedUserId: string | null | undefined
+) {
+  if (requestedUserId === undefined || requestedUserId === "") {
+    return currentUserId;
+  }
+
+  return requestedUserId;
 }
 
 function isMissingPendingProjectAssignmentSchemaError(error: unknown) {
@@ -294,18 +340,21 @@ export async function getProjectAccessRoster(rawInput: unknown): Promise<Project
 
   return getProjectAccessRosterQuery({
     hasExplicitAssignments: access.context.hasExplicitAssignments,
+    canManageAccess: hasProjectAccess(access.user, access.context, "manage"),
     project,
   });
 }
 
 export async function getProjectAccessRosterQuery(input: {
   hasExplicitAssignments: boolean;
+  canManageAccess: boolean;
   project: {
     id: string;
     name: string;
     companyId: string;
     projectManagerUserId: string | null;
     superintendentUserId: string | null;
+    projectAdminUserId: string | null;
   };
 }): Promise<ProjectAccessRoster> {
   const { project } = input;
@@ -332,12 +381,14 @@ export async function getProjectAccessRosterQuery(input: {
     .where(eq(projectMembers.projectId, projectId))
     .orderBy(asc(users.fullName));
 
-  const missingLeadershipUserIds = [
+  const leadershipUserIds = [
     project.projectManagerUserId,
     project.superintendentUserId,
-  ].filter(
-    (value): value is string =>
-      Boolean(value) && !activeMemberRows.some((member) => member.userId === value)
+    project.projectAdminUserId,
+  ].filter((value): value is string => Boolean(value));
+
+  const missingLeadershipUserIds = leadershipUserIds.filter(
+    (value) => !activeMemberRows.some((member) => member.userId === value)
   );
 
   const leadershipOnlyRows =
@@ -369,11 +420,7 @@ export async function getProjectAccessRosterQuery(input: {
   );
 
   const excludedUserIds = new Set(
-    normalizedActiveMembers.map((row) => row.userId).concat(
-      [project.projectManagerUserId, project.superintendentUserId].filter(
-        (value): value is string => Boolean(value)
-      )
-    )
+    normalizedActiveMembers.map((row) => row.userId).concat(leadershipUserIds)
   );
 
   const availableMemberRows =
@@ -457,12 +504,15 @@ export async function getProjectAccessRosterQuery(input: {
     projectId: project.id,
     projectName: project.name,
     hasExplicitAssignments: input.hasExplicitAssignments,
+    canManageAccess: input.canManageAccess,
     projectManagerUserId: project.projectManagerUserId ?? null,
     superintendentUserId: project.superintendentUserId ?? null,
+    projectAdminUserId: project.projectAdminUserId ?? null,
     activeMembers: normalizedActiveMembers.map((row) => ({
       ...row,
       isProjectManager: row.userId === project.projectManagerUserId,
       isSuperintendent: row.userId === project.superintendentUserId,
+      isProjectAdmin: row.userId === project.projectAdminUserId,
     })),
     pendingInvitees: pendingInviteRows.map((row) => ({
       ...row,
@@ -769,6 +819,7 @@ export async function assignProjectMember(
           projectRole: input.role,
         },
       ],
+      removals: [],
     });
 
     if (!result.ok) {
@@ -878,14 +929,32 @@ export async function bulkAssignProjectMembers(
     const currentRoleByUserId = new Map(
       existingAssignments.map((assignment) => [assignment.userId, assignment.role])
     );
+    const currentLeadership: ProjectLeadership = {
+      projectManagerUserId: access.context.project.projectManagerUserId,
+      superintendentUserId: access.context.project.superintendentUserId,
+      projectAdminUserId: access.context.project.projectAdminUserId,
+    };
+
+    const nextLeadership: ProjectLeadership = {
+      projectManagerUserId: resolveProjectLeadershipSlot(
+        currentLeadership.projectManagerUserId,
+        input.projectManagerUserId
+      ),
+      superintendentUserId: resolveProjectLeadershipSlot(
+        currentLeadership.superintendentUserId,
+        input.superintendentUserId
+      ),
+      projectAdminUserId: resolveProjectLeadershipSlot(
+        currentLeadership.projectAdminUserId,
+        input.projectAdminUserId
+      ),
+    };
+
     const currentlyAssignedUserIds = new Set(
       existingAssignments
         .map((assignment) => assignment.userId)
         .concat(
-          [
-            access.context.project.projectManagerUserId,
-            access.context.project.superintendentUserId,
-          ].filter((value): value is string => Boolean(value))
+          Object.values(currentLeadership).filter((value): value is string => Boolean(value))
         )
     );
 
@@ -895,10 +964,9 @@ export async function bulkAssignProjectMembers(
         .concat(Array.from(currentlyAssignedUserIds))
     );
 
-    const leadershipIds = [
-      input.projectManagerUserId,
-      input.superintendentUserId,
-    ].filter((value): value is string => Boolean(value));
+    const leadershipIds = projectLeadershipSlots
+      .map((slot) => input[slot.key])
+      .filter((value): value is string => Boolean(value));
 
     for (const leadershipUserId of leadershipIds) {
       if (!leadershipCandidateIds.has(leadershipUserId)) {
@@ -957,31 +1025,67 @@ export async function bulkAssignProjectMembers(
       leadershipRoleRows.map((row) => [row.userId, row.companyRole])
     );
 
-    if (
-      input.projectManagerUserId &&
-      leadershipRoleByUserId.get(input.projectManagerUserId) !== "project_manager"
-    ) {
+    for (const slot of projectLeadershipSlots) {
+      const requestedUserId = input[slot.key];
+      if (!requestedUserId) {
+        continue;
+      }
+
+      const companyRole = leadershipRoleByUserId.get(requestedUserId);
+      if (!companyRole || !slot.requiredCompanyRoles.some((role) => role === companyRole)) {
+        return failure(
+          "validation_error",
+          `Only ${slot.requiredCompanyRoles
+            .map((role) => role.replaceAll("_", " "))
+            .join(" or ")} company members can be set as the ${slot.label}.`
+        );
+      }
+    }
+
+    if (input.removals.includes(access.user.id)) {
       return failure(
         "validation_error",
-        "Only company project managers can be set as the project manager."
+        "You cannot remove yourself from this project."
       );
     }
 
-    if (
-      input.superintendentUserId &&
-      leadershipRoleByUserId.get(input.superintendentUserId) !== "field_supervisor"
-    ) {
+    const removalHoldingLeadership = input.removals.find((userId) =>
+      Object.values(nextLeadership).includes(userId)
+    );
+
+    if (removalHoldingLeadership) {
       return failure(
         "validation_error",
-        "Only field supervisors can be set as the superintendent."
+        "Clear a person's leadership role before removing them from the project."
       );
     }
+
+    // Stale removals (already gone, or leadership-only with no membership row) are
+    // skipped rather than failing the save.
+    const removalTargets =
+      input.removals.length === 0
+        ? []
+        : await db
+            .select({
+              userId: users.id,
+              fullName: users.fullName,
+              email: users.email,
+            })
+            .from(projectMembers)
+            .innerJoin(users, eq(projectMembers.userId, users.id))
+            .where(
+              and(
+                eq(projectMembers.projectId, input.projectId),
+                inArray(projectMembers.userId, input.removals)
+              )
+            );
 
     const summary: BulkProjectAssignmentSummary = {
       assignedCount: 0,
       invitedCount: 0,
       updatedCount: 0,
-      skippedCount: 0,
+      removedCount: 0,
+      skippedCount: input.removals.length - removalTargets.length,
     };
     const invitationEmailsToSend: Array<{
       email: string;
@@ -1169,44 +1273,46 @@ export async function bulkAssignProjectMembers(
         });
       }
 
-      if (
-        input.projectManagerUserId ||
-        input.superintendentUserId ||
-        access.context.project.projectManagerUserId ||
-        access.context.project.superintendentUserId
-      ) {
+      for (const target of removalTargets) {
+        await tx
+          .delete(projectMembers)
+          .where(
+            and(
+              eq(projectMembers.projectId, input.projectId),
+              eq(projectMembers.userId, target.userId)
+            )
+          );
+
+        summary.removedCount += 1;
+
+        await recordActivityEvent(tx, {
+          companyId,
+          projectId: input.projectId,
+          actorUserId: access.user.id,
+          eventType: "project_member_removed",
+          entityType: "project_member",
+          entityId: target.userId,
+          summary: `Removed ${target.fullName} from the project`,
+          metadata: {
+            userId: target.userId,
+            email: target.email,
+          },
+        });
+      }
+
+      const changedLeadershipSlots = projectLeadershipSlots.filter(
+        (slot) => nextLeadership[slot.key] !== currentLeadership[slot.key]
+      );
+
+      if (changedLeadershipSlots.length > 0) {
         await tx
           .update(projects)
-          .set({
-            projectManagerUserId:
-              input.projectManagerUserId || access.context.project.projectManagerUserId || null,
-            superintendentUserId:
-              input.superintendentUserId || access.context.project.superintendentUserId || null,
-          })
+          .set(nextLeadership)
           .where(eq(projects.id, input.projectId));
 
-        if (
-          input.projectManagerUserId &&
-          input.projectManagerUserId !== access.context.project.projectManagerUserId
-        ) {
-          await recordActivityEvent(tx, {
-            companyId,
-            projectId: input.projectId,
-            actorUserId: access.user.id,
-            eventType: "project_updated",
-            entityType: "project",
-            entityId: input.projectId,
-            summary: "Updated project manager assignment",
-            metadata: {
-              projectManagerUserId: input.projectManagerUserId,
-            },
-          });
-        }
+        for (const slot of changedLeadershipSlots) {
+          const nextUserId = nextLeadership[slot.key];
 
-        if (
-          input.superintendentUserId &&
-          input.superintendentUserId !== access.context.project.superintendentUserId
-        ) {
           await recordActivityEvent(tx, {
             companyId,
             projectId: input.projectId,
@@ -1214,9 +1320,11 @@ export async function bulkAssignProjectMembers(
             eventType: "project_updated",
             entityType: "project",
             entityId: input.projectId,
-            summary: "Updated superintendent assignment",
+            summary: nextUserId
+              ? `Updated ${slot.label} assignment`
+              : `Cleared ${slot.label} assignment`,
             metadata: {
-              superintendentUserId: input.superintendentUserId,
+              [slot.key]: nextUserId,
             },
           });
         }

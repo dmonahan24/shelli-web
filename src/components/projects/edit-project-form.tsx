@@ -3,25 +3,69 @@ import { useRouter } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { SubmitButton } from "@/components/auth/submit-button";
 import { ProjectForm } from "@/components/projects/project-form";
+import { ProjectTeamCard, type ProjectTeamRoster } from "@/components/projects/project-team-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getProjectRouteParams } from "@/lib/project-paths";
+import { buildProjectTeamChanges, draftFromRoster } from "@/lib/project-team";
+import { bulkAssignProjectMembersServerFn } from "@/server/company/bulk-assign-project-members";
 import { updateProjectServerFn } from "@/server/projects/update-project";
 import type { ProjectInput } from "@/lib/validation/project";
+
+const EDIT_PROJECT_FORM_ID = "edit-project-form";
 
 export function EditProjectForm({
   currentTotalConcretePoured,
   defaultValues,
   isHierarchyManaged = false,
   projectId,
+  teamRoster,
 }: {
   currentTotalConcretePoured: number;
   defaultValues: ProjectInput;
   isHierarchyManaged?: boolean;
   projectId: string;
+  /** Null when the current user cannot manage project access. */
+  teamRoster: ProjectTeamRoster | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = React.useTransition();
+  const [teamDraft, setTeamDraft] = React.useState(() =>
+    teamRoster ? draftFromRoster(teamRoster) : null
+  );
   const remainingConcrete = defaultValues.estimatedTotalConcrete - currentTotalConcretePoured;
+
+  // Project details and team access are separate server writes. Details save first; if the
+  // team step fails we stay on the page with the team edits intact so they can be retried.
+  const saveTeamChanges = async () => {
+    if (!teamRoster || !teamDraft) {
+      return true;
+    }
+
+    const changes = buildProjectTeamChanges(teamRoster, teamDraft);
+    if (!changes.hasChanges) {
+      return true;
+    }
+
+    const result = await bulkAssignProjectMembersServerFn({
+      data: {
+        projectId,
+        assignments: changes.assignments,
+        removals: changes.removals,
+        projectManagerUserId: changes.projectManagerUserId,
+        superintendentUserId: changes.superintendentUserId,
+        projectAdminUserId: changes.projectAdminUserId,
+      },
+    });
+
+    if (!result.ok) {
+      toast.error(
+        `Project details were saved, but the team was not. ${result.formError ?? "Please try again."}`
+      );
+      return false;
+    }
+
+    return true;
+  };
 
   return (
     <div className="space-y-6">
@@ -42,6 +86,7 @@ export function EditProjectForm({
         </CardHeader>
         <CardContent>
           <ProjectForm
+            id={EDIT_PROJECT_FORM_ID}
             defaultValues={defaultValues}
             disableEstimatedTotalConcrete={isHierarchyManaged}
             onSubmit={(values, setFieldError) =>
@@ -67,6 +112,10 @@ export function EditProjectForm({
                   return;
                 }
 
+                if (!(await saveTeamChanges())) {
+                  return;
+                }
+
                 toast.success(result.message ?? "Project updated.");
                 await router.navigate({
                   to: "/dashboard/projects/$projectIdentifier",
@@ -77,14 +126,20 @@ export function EditProjectForm({
                 });
               })
             }
-            submitButton={
-              <SubmitButton pending={isPending} className="w-full sm:w-auto">
-                Save Changes
-              </SubmitButton>
-            }
+            submitButton={null}
           />
         </CardContent>
       </Card>
+      {teamRoster && teamDraft ? (
+        <ProjectTeamCard
+          roster={teamRoster}
+          draft={teamDraft}
+          onDraftChange={(update) => setTeamDraft((current) => (current ? update(current) : current))}
+        />
+      ) : null}
+      <SubmitButton form={EDIT_PROJECT_FORM_ID} pending={isPending} className="w-full sm:w-auto">
+        Save Changes
+      </SubmitButton>
     </div>
   );
 }

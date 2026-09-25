@@ -4,6 +4,7 @@ import { FormPendingPage } from "@/components/navigation/page-pending";
 import { EditProjectForm } from "@/components/projects/edit-project-form";
 import { READ_ROUTE_CACHE_OPTIONS } from "@/lib/router-cache";
 import { projectRouteParamsSchema } from "@/lib/validation/project-list";
+import { getProjectAccessRosterServerFn } from "@/server/company/get-project-access-roster";
 import { resolveProjectRouteServerFn } from "@/server/navigation/resolve-project-route";
 import { getProjectDetailServerFn } from "@/server/projects/get-project-detail";
 
@@ -24,26 +25,30 @@ export const Route = createFileRoute("/dashboard/projects/$projectIdentifier/edi
       });
     }
 
-    const detail = await getProjectDetailServerFn({ data: { projectId: resolved.project.id } });
+    const [detail, accessRoster] = await Promise.all([
+      getProjectDetailServerFn({ data: { projectId: resolved.project.id } }),
+      getProjectAccessRosterServerFn({ data: { projectId: resolved.project.id } }),
+    ]);
 
     if (!detail) {
       throw notFound();
     }
 
-    return detail;
+    return { detail, accessRoster };
   },
   pendingComponent: FormPendingPage,
   component: EditProjectPage,
 });
 
 function EditProjectPage() {
-  const detail = Route.useLoaderData();
+  const { detail, accessRoster } = Route.useLoaderData();
 
   return (
     <EditProjectForm
       projectId={detail.project.id}
       currentTotalConcretePoured={detail.project.totalConcretePoured}
       isHierarchyManaged={detail.summary.totalBuildings > 0}
+      teamRoster={accessRoster.canManageAccess ? accessRoster : null}
       defaultValues={{
         name: detail.project.name,
         address: detail.project.address,
