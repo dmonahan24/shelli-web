@@ -139,6 +139,7 @@ function ProjectDetailPage() {
             project={detail.project}
           />
           <PourEventsTable
+            buildings={buildings}
             initialData={pours}
             onMutationComplete={() => router.invalidate()}
             onOpenCreate={() =>

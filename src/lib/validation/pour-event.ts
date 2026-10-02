@@ -24,6 +24,7 @@ export const createPourEventSchema = z.object({
     .trim()
     .min(1, "Location description is required")
     .max(200, "Location description must be 200 characters or fewer"),
+  buildingId: z.string().uuid("Invalid building").optional().or(z.literal("")),
   mixType: trimmedOptionalString(120),
   supplierName: trimmedOptionalString(120),
   ticketNumber: trimmedOptionalString(120),

@@ -8,6 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  PourBuildingSelect,
+  type PourBuildingOption,
+} from "@/components/pours/pour-building-select";
 import { quickPourSchema, type QuickPourInput } from "@/lib/validation/field";
 import { createQuickPourServerFn } from "@/server/field/create-quick-pour";
 
@@ -67,7 +71,13 @@ export function QuickPourSuccessSheet({
   );
 }
 
-export function QuickPourForm({ projectId }: { projectId: string }) {
+export function QuickPourForm({
+  buildings,
+  projectId,
+}: {
+  buildings: PourBuildingOption[];
+  projectId: string;
+}) {
   const navigate = useNavigate();
   const [showSuccess, setShowSuccess] = React.useState(false);
   const [isPending, startTransition] = React.useTransition();
@@ -78,6 +88,7 @@ export function QuickPourForm({ projectId }: { projectId: string }) {
       pourDate: new Date().toISOString().slice(0, 10),
       concreteAmount: 0,
       locationDescription: "",
+      buildingId: "",
       mixType: "",
       supplierName: "",
       ticketNumber: "",
@@ -93,6 +104,9 @@ export function QuickPourForm({ projectId }: { projectId: string }) {
         const result = await createQuickPourServerFn({ data: values });
 
         if (!result.ok) {
+          for (const [fieldName, message] of Object.entries(result.fieldErrors ?? {})) {
+            form.setError(fieldName as keyof QuickPourInput, { message });
+          }
           toast.error(result.formError ?? "Unable to save the pour.");
           return;
         }
@@ -174,6 +188,21 @@ export function QuickPourForm({ projectId }: { projectId: string }) {
                     <FormControl>
                       <Input placeholder="South slab, phase 2" {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="buildingId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Building</FormLabel>
+                    <PourBuildingSelect
+                      buildings={buildings}
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
                     <FormMessage />
                   </FormItem>
                 )}

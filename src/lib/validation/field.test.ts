@@ -35,6 +35,20 @@ describe("field quick pour validation", () => {
 
     expect(result.success).toBe(false);
   });
+
+  it("accepts a building id or no building, and rejects malformed building ids", () => {
+    const base = {
+      projectId: crypto.randomUUID(),
+      pourDate: "2026-03-30",
+      concreteAmount: 22.5,
+      locationDescription: "South slab strip",
+      clientSubmissionId: "client-12345678",
+    };
+
+    expect(quickPourSchema.safeParse({ ...base, buildingId: crypto.randomUUID() }).success).toBe(true);
+    expect(quickPourSchema.safeParse({ ...base, buildingId: "" }).success).toBe(true);
+    expect(quickPourSchema.safeParse({ ...base, buildingId: "BLDG-A" }).success).toBe(false);
+  });
 });
 
 describe("field note validation", () => {

@@ -1,3 +1,4 @@
+import { formatPourBuildingLabel } from "@/components/pours/pour-building-select";
 import {
   Sheet,
   SheetContent,
@@ -16,6 +17,8 @@ export function PourEventDetailSheet({
   open: boolean;
   pourEvent:
     | {
+        buildingCode: string | null;
+        buildingName: string | null;
         concreteAmount: number;
         createdAt: Date;
         createdBy: string;
@@ -43,6 +46,17 @@ export function PourEventDetailSheet({
               </SheetDescription>
             </SheetHeader>
             <div className="space-y-5 p-4 text-sm">
+              <DetailRow
+                label="Building"
+                value={
+                  pourEvent.buildingName
+                    ? formatPourBuildingLabel({
+                        name: pourEvent.buildingName,
+                        code: pourEvent.buildingCode,
+                      })
+                    : "Not assigned"
+                }
+              />
               <DetailRow label="Mix Type" value={pourEvent.mixType ?? "Not recorded"} />
               <DetailRow label="Supplier" value={pourEvent.supplierName ?? "Not recorded"} />
               <DetailRow label="Ticket Number" value={pourEvent.ticketNumber ?? "Not recorded"} />

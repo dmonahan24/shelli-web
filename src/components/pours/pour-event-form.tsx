@@ -14,15 +14,21 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { NumericInputField } from "@/components/projects/numeric-input-field";
 import {
+  PourBuildingSelect,
+  type PourBuildingOption,
+} from "@/components/pours/pour-building-select";
+import {
   createPourEventSchema,
   type CreatePourEventInput,
 } from "@/lib/validation/pour-event";
 
 export function PourEventForm({
+  buildings,
   defaultValues,
   onSubmit,
   submitButton,
 }: {
+  buildings: PourBuildingOption[];
   defaultValues: CreatePourEventInput;
   onSubmit: (
     values: CreatePourEventInput,
@@ -81,6 +87,24 @@ export function PourEventForm({
               <FormControl>
                 <Input placeholder="North wall strip footing" {...field} />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="buildingId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Building</FormLabel>
+              <PourBuildingSelect
+                buildings={buildings}
+                value={field.value}
+                onChange={field.onChange}
+              />
+              {buildings.length === 0 ? (
+                <FormDescription>Add buildings to this project to assign one.</FormDescription>
+              ) : null}
               <FormMessage />
             </FormItem>
           )}

@@ -3,6 +3,7 @@ import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 import { FormPendingPage } from "@/components/navigation/page-pending";
 import { QuickPourForm } from "@/components/field/quick-pour-form";
 import { projectRouteParamsSchema } from "@/lib/validation/project-list";
+import { listBuildingsForProjectServerFn } from "@/server/buildings/list-buildings-for-project";
 import { resolveProjectRouteServerFn } from "@/server/navigation/resolve-project-route";
 
 export const Route = createFileRoute("/dashboard/field/projects/$projectIdentifier/pours/quick-add")({
@@ -21,14 +22,18 @@ export const Route = createFileRoute("/dashboard/field/projects/$projectIdentifi
       });
     }
 
-    return resolved.project;
+    const buildings = await listBuildingsForProjectServerFn({
+      data: { projectId: resolved.project.id },
+    });
+
+    return { project: resolved.project, buildings };
   },
   pendingComponent: FormPendingPage,
   component: QuickAddPourPage,
 });
 
 function QuickAddPourPage() {
-  const project = Route.useLoaderData();
+  const { buildings, project } = Route.useLoaderData();
 
-  return <QuickPourForm projectId={project.id} />;
+  return <QuickPourForm buildings={buildings} projectId={project.id} />;
 }

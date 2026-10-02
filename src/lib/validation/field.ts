@@ -20,6 +20,7 @@ export const quickPourSchema = z.object({
     .trim()
     .min(1, "Location description is required")
     .max(200, "Location description must be 200 characters or fewer"),
+  buildingId: z.string().uuid("Invalid building").optional().or(z.literal("")),
   mixType: optionalTrimmed(120),
   supplierName: optionalTrimmed(120),
   ticketNumber: optionalTrimmed(120),

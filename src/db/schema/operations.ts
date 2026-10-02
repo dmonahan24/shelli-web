@@ -27,6 +27,7 @@ import {
   volumeColumn,
 } from "@/db/schema/shared";
 import { companies, users } from "@/db/schema/core";
+import { projectBuildings } from "@/db/schema/hierarchy";
 import { crews, mixDesigns, projects } from "@/db/schema/projects";
 
 export const pours = pgTable(
@@ -37,6 +38,9 @@ export const pours = pgTable(
     projectId: uuid("project_id")
       .notNull()
       .references(() => projects.id, { onDelete: "cascade" }),
+    buildingId: uuid("building_id").references(() => projectBuildings.id, {
+      onDelete: "set null",
+    }),
     mixDesignId: uuid("mix_design_id").references(() => mixDesigns.id, {
       onDelete: "set null",
     }),
@@ -78,6 +82,7 @@ export const pours = pgTable(
       table.status,
       table.scheduledDate
     ),
+    buildingIndex: index("pours_building_id_idx").on(table.buildingId),
     submissionIndex: uniqueIndex("pours_company_project_submission_id_idx").on(
       table.companyId,
       table.projectId,

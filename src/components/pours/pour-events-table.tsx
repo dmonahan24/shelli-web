@@ -5,6 +5,7 @@ import { SubmitButton } from "@/components/auth/submit-button";
 import { DeletePourEventDialog } from "@/components/pours/delete-pour-event-dialog";
 import { PourEventDetailSheet } from "@/components/pours/pour-event-detail-sheet";
 import { PourEventFilters, PourEventsPagination } from "@/components/pours/pour-event-filters";
+import type { PourBuildingOption } from "@/components/pours/pour-building-select";
 import { PourEventForm } from "@/components/pours/pour-event-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,11 +46,13 @@ type PoursResponse = Awaited<ReturnType<typeof listProjectPoursServerFn>>;
 type PourRow = PoursResponse["rows"][number];
 
 export function PourEventsTable({
+  buildings,
   initialData,
   onMutationComplete,
   onOpenCreate,
   projectId,
 }: {
+  buildings: PourBuildingOption[];
   initialData: PoursResponse;
   onMutationComplete: () => Promise<void> | void;
   onOpenCreate: () => void;
@@ -143,6 +146,7 @@ export function PourEventsTable({
                       <TableHead className="whitespace-nowrap text-right">Concrete Amount</TableHead>
                       <TableHead className="whitespace-nowrap">Unit</TableHead>
                       <TableHead>Location Description</TableHead>
+                      <TableHead className="whitespace-nowrap">Building</TableHead>
                       <TableHead>Mix Type</TableHead>
                       <TableHead>Supplier</TableHead>
                       <TableHead className="whitespace-nowrap">Ticket Number</TableHead>
@@ -165,6 +169,9 @@ export function PourEventsTable({
                             {pourEvent.unit.replaceAll("_", " ")}
                           </TableCell>
                           <TableCell>{pourEvent.locationDescription}</TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            {pourEvent.buildingCode ?? pourEvent.buildingName ?? "Not assigned"}
+                          </TableCell>
                           <TableCell>{pourEvent.mixType ?? "Not recorded"}</TableCell>
                           <TableCell>{pourEvent.supplierName ?? "Not recorded"}</TableCell>
                           <TableCell className="whitespace-nowrap">
@@ -189,7 +196,7 @@ export function PourEventsTable({
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={10} className="h-24 text-center text-muted-foreground">
+                        <TableCell colSpan={11} className="h-24 text-center text-muted-foreground">
                           {isRefreshing
                             ? "Loading pour events..."
                             : "No pour events found for this project yet."}
@@ -215,6 +222,10 @@ export function PourEventsTable({
                           value={formatConcreteVolume(pourEvent.concreteAmount)}
                         />
                         <MobileMetric label="Unit" value={pourEvent.unit.replaceAll("_", " ")} />
+                        <MobileMetric
+                          label="Building"
+                          value={pourEvent.buildingCode ?? pourEvent.buildingName ?? "Not assigned"}
+                        />
                         <MobileMetric
                           label="Mix"
                           value={pourEvent.mixType ?? "Not recorded"}
@@ -281,6 +292,7 @@ export function PourEventsTable({
         pourEvent={selectedPour}
       />
       <EditPourEventDialog
+        buildings={buildings}
         open={Boolean(editingPour)}
         onOpenChange={(open) => {
           if (!open) {
@@ -329,11 +341,13 @@ export function PourEventRowActions({
 }
 
 export function EditPourEventDialog({
+  buildings,
   onOpenChange,
   onUpdated,
   open,
   pourEvent,
 }: {
+  buildings: PourBuildingOption[];
   onOpenChange: (open: boolean) => void;
   onUpdated: () => Promise<void> | void;
   open: boolean;
@@ -349,12 +363,14 @@ export function EditPourEventDialog({
         </DialogHeader>
         {pourEvent ? (
           <PourEventForm
+            buildings={buildings}
             defaultValues={{
               projectId: pourEvent.projectId,
               pourDate: pourEvent.pourDate,
               concreteAmount: pourEvent.concreteAmount,
               unit: "cubic_yards",
               locationDescription: pourEvent.locationDescription,
+              buildingId: pourEvent.buildingId ?? "",
               mixType: pourEvent.mixType ?? "",
               supplierName: pourEvent.supplierName ?? "",
               ticketNumber: pourEvent.ticketNumber ?? "",

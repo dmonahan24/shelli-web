@@ -12,7 +12,7 @@ import {
 } from "drizzle-orm";
 import { ZodError } from "zod";
 import { db } from "@/db";
-import { loadTickets, mixDesigns, pours, users } from "@/db/schema";
+import { loadTickets, mixDesigns, pours, projectBuildings, users } from "@/db/schema";
 import { assertSameOrigin } from "@/lib/auth/csrf";
 import { requireProjectAccess } from "@/lib/auth/project-access";
 import {
@@ -43,6 +43,37 @@ function zodFieldErrors(error: ZodError) {
 function normalizeOptionalText(value?: string | null) {
   const trimmed = value?.trim();
   return trimmed ? trimmed : null;
+}
+
+export async function resolvePourBuildingId(
+  companyId: string,
+  projectId: string,
+  buildingId?: string | null
+) {
+  if (!buildingId) {
+    return null;
+  }
+
+  const building = await db.query.projectBuildings.findFirst({
+    columns: { id: true },
+    where: and(
+      eq(projectBuildings.id, buildingId),
+      eq(projectBuildings.projectId, projectId),
+      eq(projectBuildings.companyId, companyId)
+    ),
+  });
+
+  if (!building) {
+    throw new ZodError([
+      {
+        code: "custom",
+        path: ["buildingId"],
+        message: "Select a building from this project.",
+      },
+    ]);
+  }
+
+  return building.id;
 }
 
 function toNumber(value: string | number | null | undefined) {
@@ -82,6 +113,9 @@ export async function listProjectPoursQuery(
         concreteAmount: pours.actualVolume,
         unit: pours.unit,
         locationDescription: pours.placementAreaLabel,
+        buildingId: pours.buildingId,
+        buildingName: projectBuildings.name,
+        buildingCode: projectBuildings.code,
         mixType: mixDesigns.name,
         weatherNotes: pours.weatherNotes,
         crewNotes: pours.notes,
@@ -92,6 +126,7 @@ export async function listProjectPoursQuery(
       .from(pours)
       .leftJoin(users, eq(pours.createdByUserId, users.id))
       .leftJoin(mixDesigns, eq(pours.mixDesignId, mixDesigns.id))
+      .leftJoin(projectBuildings, eq(pours.buildingId, projectBuildings.id))
       .where(whereClause)
       .orderBy(...orderByClauses)
       .limit(input.pageSize)
@@ -159,6 +194,11 @@ export async function createPourEvent(
     const access = await requireProjectAccess(input.projectId, "edit");
     const { user } = access;
     const project = await requireOwnedProject(access.context.project.companyId, input.projectId);
+    const buildingId = await resolvePourBuildingId(
+      access.context.project.companyId,
+      project.id,
+      input.buildingId
+    );
 
     const [createdPour] = await db
       .insert(pours)
@@ -167,6 +207,7 @@ export async function createPourEvent(
         projectId: project.id,
         createdByUserId: user.id,
         updatedByUserId: user.id,
+        buildingId,
         scheduledDate: input.pourDate,
         placementAreaLabel: input.locationDescription.trim(),
         placementAreaType: "other",
@@ -202,6 +243,7 @@ export async function createPourEvent(
     await recordProjectActivity(db, {
       actionType: "pour_event_created",
       details: {
+        buildingId,
         concreteAmount: input.concreteAmount,
         locationDescription: input.locationDescription.trim(),
         pourDate: input.pourDate,
@@ -244,11 +286,17 @@ export async function updatePourEvent(
     const access = await requireProjectAccess(input.projectId, "edit");
     const user = access.user;
     const pourEvent = await requireOwnedPourEvent(access.context.project.companyId, input.id);
+    const buildingId = await resolvePourBuildingId(
+      access.context.project.companyId,
+      pourEvent.projectId,
+      input.buildingId
+    );
 
     await db
       .update(pours)
       .set({
         updatedByUserId: user.id,
+        buildingId,
         scheduledDate: input.pourDate,
         actualVolume: String(input.concreteAmount),
         deliveredVolume: String(input.concreteAmount),
@@ -293,6 +341,7 @@ export async function updatePourEvent(
     await recordProjectActivity(db, {
       actionType: "pour_event_updated",
       details: {
+        buildingId,
         concreteAmount: input.concreteAmount,
         locationDescription: input.locationDescription.trim(),
         pourDate: input.pourDate,

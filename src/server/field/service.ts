@@ -21,6 +21,7 @@ import { buildDocumentationTasks, calculateRemainingConcrete } from "@/server/an
 import { uploadProjectAttachment } from "@/server/attachments/service";
 import { listRecentActivity, recordActivityEvent } from "@/server/activity/service";
 import { ensureHumanFriendlyUrlSchema } from "@/server/navigation/schema-compat";
+import { resolvePourBuildingId } from "@/server/pours/service";
 import { refreshProjectAggregateTotals } from "@/server/projects/service";
 
 function zodFieldErrors(error: ZodError) {
@@ -306,6 +307,12 @@ export async function createQuickPour(
       return failure("duplicate_submission", "This pour was already submitted from this device.");
     }
 
+    const buildingId = await resolvePourBuildingId(
+      access.context.project.companyId,
+      input.projectId,
+      input.buildingId
+    );
+
     const [pour] = await db
       .insert(pours)
       .values({
@@ -313,6 +320,7 @@ export async function createQuickPour(
         projectId: input.projectId,
         createdByUserId: access.user.id,
         updatedByUserId: access.user.id,
+        buildingId,
         scheduledDate: input.pourDate,
         placementAreaType: "other",
         placementAreaLabel: input.locationDescription.trim(),
@@ -355,6 +363,7 @@ export async function createQuickPour(
       entityId: pour.id,
       summary: `Quick pour added for ${input.locationDescription.trim()}`,
       metadata: {
+        buildingId,
         concreteAmount: input.concreteAmount,
         locationDescription: input.locationDescription.trim(),
       },

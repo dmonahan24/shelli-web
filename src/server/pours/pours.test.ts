@@ -39,4 +39,20 @@ describe("pour validation", () => {
 
     expect(result.success).toBe(false);
   });
+
+  it("accepts a building id or no building, and rejects malformed building ids", () => {
+    const base = {
+      projectId: crypto.randomUUID(),
+      pourDate: "2026-03-29",
+      concreteAmount: 20,
+      unit: "cubic_yards",
+      locationDescription: "South wall footing",
+    };
+
+    expect(createPourEventSchema.safeParse({ ...base, buildingId: crypto.randomUUID() }).success).toBe(
+      true
+    );
+    expect(createPourEventSchema.safeParse({ ...base, buildingId: "" }).success).toBe(true);
+    expect(createPourEventSchema.safeParse({ ...base, buildingId: "BLDG-A" }).success).toBe(false);
+  });
 });

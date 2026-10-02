@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getProjectRouteParams } from "@/lib/project-paths";
 import { READ_ROUTE_CACHE_OPTIONS } from "@/lib/router-cache";
 import { projectRouteParamsSchema } from "@/lib/validation/project-list";
+import { listBuildingsForProjectServerFn } from "@/server/buildings/list-buildings-for-project";
 import { resolveProjectRouteServerFn } from "@/server/navigation/resolve-project-route";
 import { createPourEventServerFn } from "@/server/pours/create-pour-event";
 import { getProjectDetailServerFn } from "@/server/projects/get-project-detail";
@@ -30,13 +31,16 @@ export const Route = createFileRoute("/dashboard/projects/$projectIdentifier/pou
       });
     }
 
-    const detail = await getProjectDetailServerFn({ data: { projectId: resolved.project.id } });
+    const [detail, buildings] = await Promise.all([
+      getProjectDetailServerFn({ data: { projectId: resolved.project.id } }),
+      listBuildingsForProjectServerFn({ data: { projectId: resolved.project.id } }),
+    ]);
 
     if (!detail) {
       throw notFound();
     }
 
-    return detail;
+    return { ...detail, buildings };
   },
   pendingComponent: FormPendingPage,
   component: NewPourEventPage,
@@ -44,7 +48,7 @@ export const Route = createFileRoute("/dashboard/projects/$projectIdentifier/pou
 
 function NewPourEventPage() {
   const router = useRouter();
-  const detail = Route.useLoaderData();
+  const { buildings, ...detail } = Route.useLoaderData();
   const [isPending, startTransition] = React.useTransition();
   const projectParams = getProjectRouteParams(detail.project);
 
@@ -57,12 +61,14 @@ function NewPourEventPage() {
         </CardHeader>
         <CardContent>
           <PourEventForm
+            buildings={buildings}
             defaultValues={{
               projectId: detail.project.id,
               pourDate: "",
               concreteAmount: 0,
               unit: "cubic_yards",
               locationDescription: "",
+              buildingId: "",
               mixType: "",
               supplierName: "",
               ticketNumber: "",
